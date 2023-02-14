@@ -1,4 +1,3 @@
-### Hi there 👋
 
 <!--
 **seantywork/seantywork** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
@@ -14,3 +13,5 @@ Here are some ideas to get you started:
 - 😄 Pronouns: ...
 - ⚡ Fun fact: ...
 -->
+
+MySql, PostgreSQL, MongoDB, Elasticsearch, Redis, Kafka, Python, Django, Flask, Javascript, ExpressJS, Golang, Gogin, C++, Kotlin, Nginx, Haproxy, AWS, GCP, Git, Linux, Windows, Docker, Kubernetes, OpenAI, Jenkins, Jupyter, Scikit-learn, PyTorch, Prometheus, VBoxManage...
