@@ -1,4 +1,4 @@
-# Yet Another Merging Lumberjack :zany_face:
+# Yet Another Merge-obsessed Loony :zany_face:
 
 See /docs for each repo's description
 
