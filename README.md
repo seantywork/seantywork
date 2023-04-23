@@ -1,4 +1,4 @@
-# Yet Another Merge-obsessed Loony :zany_face:
+# Yet Another Mindless Linux-junky :zany_face:
 
 See /docs for each repo's description
 
