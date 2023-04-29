@@ -1,4 +1,4 @@
-# 20230429: "fetch more projects", how to get web socket connection from another thread, the tough job they have at the fed
+# 2304a: "fetch more projects", how to get web socket connection from another thread, the tough job they have at the fed
 
 - "fetch more projects"
 
