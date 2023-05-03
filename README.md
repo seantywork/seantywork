@@ -1,10 +1,10 @@
 # Yet Another Mindless Linux-junkie :zany_face:
 
-## If you're interested:
+## If you're interested in the projects:
 
 See /docs for each repo's description
 
-Repositories that don't start with a four-digit number are forked or have some external origins equivalent to fork
+Repositories that don't start with a hex sequence are forked or have some external origins equivalent to fork
 
 ## For those with some weird and unlikely impulse to look deeper and find out more about me and the surrounding world:
 

@@ -1,6 +1,6 @@
 # 2304a: "fetch more projects", how to get web socket connection from another thread, the tough job they have at the fed
 
-- "fetch more projects"
+## "fetch more projects"
 
 I'm working at a company where it's crucial to keep the flow of R&D projects running to pay out checks and bills.
 
@@ -22,7 +22,7 @@ fail to make it.
 
 Got two new projects approved running 4 years and 2 years each.
 
-- how to get web socket connection from another thread
+## how to get web socket connection from another thread
 
 Check out my repository [go-chat-frankenstein](https://github.com/seantywork/0014_go-chat-frankenstein) - /sio folder.
 
@@ -32,7 +32,7 @@ insert the key and the corresponding websocket connection pointer into the map.
 
 Then, from another thread or even another program, you can retrieve the exact connection that you want to send to/receive from.
 
-- the tough job they have at the fed
+## the tough job they have at the fed
 
 Jerome Powell and his colleagues at the Fed recently apologized for their lack of appropriate action against the troubled banks, which includes
 
