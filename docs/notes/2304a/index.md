@@ -1,5 +1,3 @@
-# 2304a: "fetch more projects", how to get web socket connection from another thread, the tough job they have at the fed
-
 ## "fetch more projects"
 
 I'm working at a company where it's crucial to keep the flow of R&D projects running to pay out checks and bills.
