@@ -10,7 +10,7 @@ Though I'm tryting to work on that...
 
 Oh, by the way, even if there IS /docs, it doesn't guarantee the code becomes understandable and readable because I'm
 
-suuuuuuuuuper lazy to keep them up to date ¯\_(ツ)_/¯
+suuuuuuuuuper lazy to keep them up to date ¯\\\_(ツ)_/¯
 
 And also, repositories that don't start with a hex sequence are forked or have some external origins equivalent to fork
 
