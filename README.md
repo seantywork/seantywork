@@ -16,9 +16,10 @@ for everybody ¯\\\_(ツ)_/¯
 
 And also, repositories that don't start with a hex sequence are forked or have some external origins equivalent to fork, except for this special repository
 
-## For those with some weird and unlikely impulse to look deeper and find out more about me and the surrounding world:
+Those projects that are pinned down below are the ones most actively engaged with.
 
-[Random, Inconsistent, Preposterous, Surreally Enormously Abnormal Nonsense](https://seantywork.github.io/seantywork/)
+
+## Insignificant Reference
 
 Previously, I have been uploading some none-dev-related matters onto [Medium.com](https://medium.com/@seantywork),
 
