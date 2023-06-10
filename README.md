@@ -21,11 +21,7 @@ Those projects that are pinned down below are the ones most actively engaged wit
 
 ## Insignificant Reference
 
-Previously, I have been uploading some none-dev-related matters onto [Medium.com](https://medium.com/@seantywork),
-
-but at some point I thought my life would be better off merging it into this place and did so, because, after all,
-
-I have to get back here anyway to have some real fun.
+I am uploading some none-dev-related matters onto [Medium.com](https://medium.com/@seantywork),
 
 Added to this, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
