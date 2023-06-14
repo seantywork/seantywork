@@ -14,9 +14,9 @@ suuuuuuuuuper lazy to keep them up to date and to articulate the content enough
 
 for everybody ¯\\\_(ツ)_/¯
 
-And also, repositories that don't start with a hex sequence are forked or have some external origins equivalent to fork, except for this special repository
+And also, repositories that don't start with a hex sequence have some external upstream that I'm not in control of, except for this special repository
 
-Those projects that are pinned down below are the ones most actively engaged with.
+The projects that are pinned down below are the ones most actively engaged with for now.
 
 
 ## Insignificant Reference
