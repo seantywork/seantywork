@@ -14,7 +14,7 @@ suuuuuuuuuper lazy to keep them up to date and to articulate the content enough
 
 for everybody ¯\\\_(ツ)_/¯
 
-And also, repositories that don't start with a hex sequence have some external upstream that I'm not in control of, except for this special repository
+And also, repositories that don't start with a three-digit sequence have some external upstream that I'm not in control of, except for this special repository
 
 The projects that are pinned down below are the ones most actively engaged with for now.
 
@@ -23,6 +23,15 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 I am uploading some none-dev-related matters onto [Medium.com](https://medium.com/@seantywork),
 
-Added to this, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
+Some other places for fun:
+
+    [RootMe](https://www.root-me.org/)
+    [HackTheBox](https://app.hackthebox.com/)
+    [CodeChef](https://www.codechef.com/)
+
+
+Added to all, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
+
+
 
 
