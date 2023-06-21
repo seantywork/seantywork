@@ -26,7 +26,9 @@ I am uploading some none-dev-related matters onto [Medium.com](https://medium.co
 Some other places for fun are
 
 [RootMe](https://www.root-me.org/): One of the most intriguing and challenging CTFs
+
 [HackTheBox](https://app.hackthebox.com/): Same goes for this one!
+
 [CodeChef](https://www.codechef.com/): When I'm stuck with either of the above, I try to refresh from here
 
 
