@@ -29,8 +29,6 @@ Some other places for fun are
 
 [HackTheBox](https://app.hackthebox.com/): Same goes for this one!
 
-[CodeChef](https://www.codechef.com/): When I'm stuck with either of the above, I try to refresh from here
-
 
 Added to all, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
