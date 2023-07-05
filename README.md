@@ -23,12 +23,6 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 I am uploading some none-dev-related matters onto [Medium.com](https://medium.com/@seantywork),
 
-Some other places for fun are
-
-[RootMe](https://www.root-me.org/): One of the most intriguing and challenging CTFs
-
-[HackTheBox](https://app.hackthebox.com/): Same goes for this one!
-
 
 Added to all, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
