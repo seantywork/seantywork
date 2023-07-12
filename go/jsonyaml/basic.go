@@ -34,6 +34,9 @@ func Example_UseJsonStruct() {
 	test_deployment.Spec.Selector.MatchLabels.App = "test-json"
 	test_deployment.Spec.Replicas = 1
 	test_deployment.Spec.Template.Metadata.Labels.App = "test-json"
+
+	// this right here is a Go specific way of something equivalent to appending an element at the end of an array (slice)
+
 	test_deployment.Spec.Template.Spec.ImagePullSecrets = append(test_deployment.Spec.Template.Spec.ImagePullSecrets, test_image_pull_secrets)
 	test_deployment.Spec.Template.Spec.Containers = append(test_deployment.Spec.Template.Spec.Containers, test_containers)
 
@@ -97,6 +100,8 @@ func Example_UseYamlStruct() {
 
 func Example_UseJsonString() {
 
+	// if not make() it, you will see an error that you're trying to assign to a nil map
+
 	var test_deployment = make(map[string]interface{})
 
 	var test_image_pull_secrets = make(map[string]interface{})
@@ -126,6 +131,10 @@ func Example_UseJsonString() {
 	test_deployment["apiVersion"] = "apps/v1"
 	test_deployment["kind"] = "Deployment"
 	test_deployment["metadata"].(map[string]interface{})["name"] = "test-json"
+
+	// read carefully the code right below
+	// though not explicitly being a pointer or a reference type,
+	// the variable on the left side is a reference to the right one
 
 	test_deployment_spec := test_deployment["spec"].(map[string]interface{})
 
