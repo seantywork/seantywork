@@ -1,4 +1,4 @@
-module github.com/seantywork/go
+module github.com/seantywork/seantywork/go
 
 go 1.20
 
