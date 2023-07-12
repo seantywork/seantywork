@@ -228,11 +228,11 @@ func Example_USeYamlString() {
 
 func main() {
 
-	// Example_UseJsonStruct()
+	Example_UseJsonStruct()
 
-	// Example_UseYamlStruct()
+	Example_UseYamlStruct()
 
-	// Example_UseJsonString()
+	Example_UseJsonString()
 
 	Example_USeYamlString()
 

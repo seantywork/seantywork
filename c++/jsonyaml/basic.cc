@@ -88,7 +88,13 @@ void Example_UseYamlString(){
 
 int main(){
 
-    // Example_UseJsonString();
+    cout << "json----------" << endl;
+
+    Example_UseJsonString();
+
+    cout << endl;
+
+    cout << "yaml----------" << endl;
 
     Example_UseYamlString();
 
