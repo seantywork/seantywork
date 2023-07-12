@@ -42,7 +42,57 @@ type Deployment_Containers_Ports struct {
 	ContainerPort int `json,yaml:"containerPort"`
 }
 
-var Deployment_string = `
+var Deployment_json_string = `
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "string"
+  },
+  "spec": {
+    "selector": {
+      "matchLabels": {
+        "app": "string"
+      }
+    },
+    "replicas": "integer",
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "string"
+        }
+      },
+      "spec": {
+        "imagePullSecrets": [],
+        "containers": []
+      }
+    }
+  }
+}
+`
+
+var Deployment_ImagePullSecrets_json_string = `
+{
+  "name": "string"
+}
+`
+
+var Deployment_Containers_json_string = `
+{
+  "name": "string",
+  "image": "string",
+  "imagePullPolicy": "string",
+  "ports": []
+}
+`
+
+var Deployment_Containers_Ports_json_string = `
+{
+  "containerPort": "integer"
+}
+`
+
+var Deployment_yaml_string = `
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -62,17 +112,17 @@ spec:
 
 `
 
-var Deployment_ImagePullSecrets_string = `
+var Deployment_ImagePullSecrets_yaml_string = `
 name: string
 `
 
-var Deployment_Containers_string = `
+var Deployment_Containers_yaml_string = `
 name: string
 image: string
 imagePullPolicy: string
 ports: []
 `
 
-var Deployment_Containers_Ports_string = `
+var Deployment_Containers_Ports_yaml_string = `
 containerPort: integer
 `
