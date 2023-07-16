@@ -27,10 +27,6 @@ and artifacts produced when writing those may (or may not) be found in this spec
 
 Added to that, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
-Also try finding me on [RootMe](https://www.root-me.org/) or [HackTheBox](https://www.hackthebox.com/),
-
-and you will see what an incredibly genuine idiot I am.
-
 Good day!
 
 
