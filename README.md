@@ -17,13 +17,15 @@ for everybody ¯\\\_(ツ)_/¯
 The projects that are pinned down below are the ones most actively engaged with for now.
 
 
-## Insignificant Reference
+## Insignificant reference
 
-I am uploading some none-docs matters onto [Medium.com](https://medium.com/@seantywork),
+I am uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),
 
 and artifacts produced when writing those may (or may not) be found in this special repository.
 
 again, refer to /docs of this repository to get a grip
+
+## Even more insignifican reference
 
 Added to that, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
