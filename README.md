@@ -14,8 +14,6 @@ suuuuuuuuuper lazy to keep them up to date and to articulate the content enough
 
 for everybody ¯\\\_(ツ)_/¯
 
-And also, repositories that don't start with a three-digit sequence have some external upstream that I'm not in control of, except for this special repository
-
 The projects that are pinned down below are the ones most actively engaged with for now.
 
 
@@ -24,6 +22,8 @@ The projects that are pinned down below are the ones most actively engaged with 
 I am uploading some none-docs matters onto [Medium.com](https://medium.com/@seantywork),
 
 and artifacts produced when writing those may (or may not) be found in this special repository.
+
+again, refer to /docs of this repository to get a grip
 
 Added to that, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
