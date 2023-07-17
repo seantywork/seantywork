@@ -1,0 +1,6 @@
+HTTP/1.0 200 OK
+Content-Type: text/html; charset=UTF-8
+Server: numberone
+
+<!doctype html>
+<html><body><h1>A webpage number 1</h1></body></html>
