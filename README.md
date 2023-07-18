@@ -25,7 +25,7 @@ and artifacts produced when writing those may (or may not) be found in this spec
 
 again, refer to /docs of this repository to get a grip
 
-## Even more insignifican reference
+## Even more insignificant reference
 
 Added to that, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
