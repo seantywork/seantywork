@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  
+  fargatetalkback: 
+    build: .
+    container_name: fargatetalkback
+    ports: 
+      - "8888:8888"
