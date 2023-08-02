@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+
+        jupyter:
+                build: ./build_jupyter
+                container_name: jupyter
+                ports:
+                        - "8888:8888"
+                volumes:
+                        - ./jupyter:/root

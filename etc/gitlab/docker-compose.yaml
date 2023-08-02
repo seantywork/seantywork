@@ -1,0 +1,17 @@
+version: "3"
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:15.4.6-ce.0
+    restart: always
+    container_name: gitlab
+    hostname: 'gitlab.usagecorpus.com'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab.usagecorpus.com'
+    ports:
+      - '9367:80'
+    volumes:
+      - './gitlab-data/config:/etc/gitlab'
+      - './gitlab-data/logs:/var/log/gitlab'
+      - './gitlab-data/data:/var/opt/gitlab'
+    shm_size: '256m'

@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter
+  labels:
+    app: jupyter
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8888
+    targetPort: 8888
+    protocol: TCP
+  selector:
+    app: jupyter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyter
+spec:
+  selector:
+    matchLabels:
+      app: jupyter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: jupyter
+    spec:
+      nodeSelector:
+        gpu-ready1: ready
+      volumes:
+        - name: jupyter-storage-jupyter
+          persistentVolumeClaim:
+            claimName: pvc-8g-jupyter-jupyter
+      imagePullSecrets:
+      - name: harbor-secret
+      containers:
+        - name: jupyter
+          image: seantywork/jupyter
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 8888
+          volumeMounts:
+          - mountPath: /root
+            name: jupyter-storage-jupyter

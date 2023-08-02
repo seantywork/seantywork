@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+        jenkins:
+                build: ./JK
+                container_name: jenkins
+                ports:
+
+                        - "8080:8080"
+             
+
+
+                volumes:
+                        - /var/run/docker.sock:/var/run/docker.sock
+                        - ./JK/jenkins_data:/root/.jenkins
+                        - /home/tomcat/.ssh:/root/.ssh
