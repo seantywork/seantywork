@@ -15,6 +15,10 @@ import (
 	"io"
 )
 
+// Fundamentals of Secure Communication: x509 certificate
+// Fundamentals of Secure Communication: Asymmetric And Symmetric Cryptography
+// related matters written in Go
+
 func RandomHex(n int) (string, error) {
 	bytes := make([]byte, n)
 	if _, err := rand.Read(bytes); err != nil {

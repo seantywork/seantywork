@@ -1,0 +1,62 @@
+name: self hosted runner
+
+on :
+  push:
+    branches: [ main ]
+
+jobs:
+
+  uc_self_hosted_build:
+    runs-on: self-hosted
+    steps: 
+      - run: mkdir -p /root/uc
+      - run: git -C /root/uc init
+      - run: git -C /root/uc pull https://github.com/seantywork/uc.git 
+      - run: docker-compose -f /root/uc/docker-compose.yaml up -d --build
+      - run: docker-compose -f /root/uc/docker-compose.yaml down
+      - run: docker tag uc_traffic seantywork/traffic
+      - run: docker tag uc_web seantywork/web
+      - run: docker tag uc_db seantywork/db
+      - run: docker push seantywork/traffic
+      - run: docker push seantywork/web
+      - run: docker push seantywork/db
+      - run: rm -r /root/uc
+
+  uc_self_hosted_deployment:
+    needs: uc_self_hosted_build
+    runs-on: self-hosted
+    steps:
+      - run: ssh $SSH_XY "git -C /home/seantywork/uc pull "
+      - run: ssh $SSH_XY "kind delete cluster --name kindcluster"
+      - run: ssh $SSH_XY "kind create cluster --name kindcluster --config /home/seantywork/uc/k8s/kindcluster.yaml --image=kindest/node:v1.27.2"
+      - run: ssh $SSH_XY "kubectl create namespace uc"
+      - run: ssh $SSH_XY "kubectl create secret generic docker-secret --from-file=.dockerconfigjson=/root/.docker/config.json --type=kubernetes.io/dockerconfigjson -n uc"
+      - run: ssh $SSH_XY "kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml"
+      - run: sleep 3
+      - run: echo "waiting...1"
+      - run: sleep 3
+      - run: echo "waiting...2"
+      - run: sleep 3
+      - run: echo "waiting...3"
+      - run: sleep 3
+      - run: echo "waiting...4"
+      - run: sleep 3
+      - run: echo "waiting...5"
+      - run: ssh $SSH_XY "kubectl -n uc apply -f /home/seantywork/uc/k8s/app.yaml"
+ 
+  uc_self_hosted_service:
+    needs: uc_self_hosted_deployment
+    runs-on: self-hosted
+    steps:
+      - run: sleep 3
+      - run: echo "waiting...1"
+      - run: sleep 3
+      - run: echo "waiting...2"
+      - run: sleep 3
+      - run: echo "waiting...3"
+      - run: sleep 3
+      - run: echo "waiting...4"
+      - run: sleep 3
+      - run: echo "waiting...5"
+      - run: ssh $SSH_XY "kubectl -n uc apply -f /home/seantywork/uc/k8s/ingress.yaml"
+  

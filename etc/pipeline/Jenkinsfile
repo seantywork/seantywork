@@ -1,0 +1,157 @@
+pipeline{
+
+    agent any
+
+        environment {
+
+            // Target Path
+
+            TARGET_PATH="/home/target"
+            TARGET_PREFIX="target_"
+
+            // Preparation Stage
+
+            GIT_ADDR="https://${GIT_ID}:${GIT_PW}@github.com/seantywork/nothing.git"
+            GIT_BRANCH="main"
+            
+            // Build Stage
+
+            REG_ADDR="docker.io -u ${REG_ID} -p ${REG_PW}"
+            IMG_1="${TARGET_PREFIX}nothing"
+            TAG_1="docker.io/seantywork/nothing"
+
+
+            // Deployment Stage
+
+            DEPLOYMENT_NODE="${DEPLOYMENT_NODE}"
+
+            APP_PATH_1="${TARGET_PATH}/k8s/app.yaml"
+
+
+            UPDATE_1="deployment/nothing"
+
+
+            
+            // ********* Safe Scripts **********
+
+            // stage Preparation_checkSafe
+            // --> USAGE: ${SAFE_PREP} ${TARGET_PATH} 
+            SAFE_PREP="/home/safe_preparation"
+
+            // stage Termination_checkSafe
+            // --> USAGE: ${SAFE_TERM} ${TAG_1} ${TAG_2} ...
+            SAFE_TERM="/home/safe_termination"
+
+
+        }
+
+    stages{
+
+
+
+        stage ('Preparation'){
+
+            steps {
+
+                sh ''' #!/bin/bash
+
+                    mkdir -p ${TARGET_PATH}
+
+                    git -C ${TARGET_PATH} init
+
+                    git -C ${TARGET_PATH} pull ${GIT_ADDR} ${GIT_BRANCH}
+
+                '''
+
+            }
+
+        }
+
+        stage ('Preparation-safety-check'){
+
+            steps {
+
+                sh ''' #!/bin/bash
+
+                    ${SAFE_PREP} ${TARGET_PATH} 
+
+                '''
+
+            }
+
+        }
+
+        stage ('Build'){
+
+            steps {
+
+                sh ''' #!/bin/bash
+
+                    docker login ${REG_ADDR}
+
+                    docker-compose -f "${TARGET_PATH}/docker-compose.yaml" up -d --build
+
+                    docker-compose -f "${TARGET_PATH}/docker-compose.yaml" down
+
+                    docker tag ${IMG_1} ${TAG_1}
+
+                    docker push ${TAG_1}
+
+                '''
+
+            }
+
+        }
+
+        stage ('Deployment'){
+
+            steps {
+
+                sh ''' #!/bin/bash
+
+                    scp ${APP_PATH_1} "${DEPLOYMENT_NODE}:/home/src"
+
+                    ssh ${DEPLOYMENT_NODE} "kubectl -n operation apply -f app.yaml"
+
+                    ssh ${DEPLOYMENT_NODE} "kubectl -n operatioin rollout restart ${UPDATE_1}"
+
+                    ssh ${DEPLOYMENT_NODE} "rm ./app.yaml"
+
+                '''
+            }
+
+        }
+
+        stage ('Termination'){
+
+            steps {
+
+                sh ''' #!/bin/bash
+
+                    rm -rf ${TARGET_PATH}
+
+                '''
+
+
+            }
+
+        }
+
+        stage ('Termination-safety-check'){
+
+            steps {
+
+                sh ''' #!/bin/bash
+
+                    ${SAFE_TERM} ${TAG_1} 
+
+                '''
+
+            }
+
+
+        }
+
+
+    }
+}

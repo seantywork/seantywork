@@ -1,1 +1,0 @@
-# seantywork medium matdocs
