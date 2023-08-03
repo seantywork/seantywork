@@ -14,7 +14,7 @@ suuuuuuuuuper lazy to keep them up to date and to articulate the content enough
 
 for everybody ¯\\\_(ツ)_/¯
 
-The projects that are pinned down below are the ones most actively engaged with for now.
+The projects that are pinned down below are the ones most actively engaged with and most interested in for now.
 
 
 ## Insignificant reference
