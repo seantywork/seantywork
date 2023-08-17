@@ -1,5 +1,12 @@
 #!/bin/bash
 
+
+# DO NOT assume the script will go so smoothly that you don't have to tweak a few lines
+# since it is a mere snapshot that has been in use while ago
+# For example, kube and container runtime versions, gpg key address, and CNI version
+# will definitely have to modified
+
+
 set -euxo pipefail
 
 

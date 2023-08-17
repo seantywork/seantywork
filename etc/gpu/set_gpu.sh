@@ -1,6 +1,8 @@
 #!/bin/bash
 
 
+# Adjust versions, or, you might even have to directly download driver installtion script 
+
 sudo apt-get install linux-headers-$(uname -r)
 
 
