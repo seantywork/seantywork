@@ -2,7 +2,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch import helpers
 
 
-es = Elasticsearch("http://elasticsearch.lwelastic:9200",basic_auth=('elastic', 'test'))
+es = Elasticsearch("http://elasticsearch.elastic:9200",basic_auth=('elastic', 'test'))
 
 op_list = []
 with open("./gbif_data.json") as json_file:

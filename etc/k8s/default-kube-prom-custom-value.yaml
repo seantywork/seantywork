@@ -1,0 +1,28 @@
+alertmanager:
+  alertmanagerSpec:
+    storage:
+     volumeClaimTemplate:
+       spec:
+         storageClassName: nfs-default-storageclass
+         accessModes: ["ReadWriteOnce"]
+         resources:
+           requests:
+             storage: 4Gi
+grafana:
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: nfs-default-storageclass
+    accessModes:
+    - ReadWriteOnce
+    size: 4Gi
+prometheus:
+  prometheusSpec:
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: nfs-default-storageclass
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 4Gi

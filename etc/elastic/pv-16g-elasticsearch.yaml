@@ -14,5 +14,5 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    path: /data1/nfs-cluster-vol/lineworld-es-kbn/elastic/elasticsearch/data
+    path: /data1/nfs-cluster-vol/es-kbn/elastic/elasticsearch/data
     server: 192.168.0.100

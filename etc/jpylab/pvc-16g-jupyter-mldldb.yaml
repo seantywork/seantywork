@@ -14,7 +14,7 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    path: /data1/nfs-cluster-vol/lineworld_jupyter/mldldb
+    path: /data1/nfs-cluster-vol/jupyter/mldldb
     server: 192.168.0.100
 ---
 apiVersion: v1

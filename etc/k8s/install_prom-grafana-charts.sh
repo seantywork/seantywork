@@ -6,4 +6,4 @@ helm repo update
 
 cd ./prom-grafana-charts/charts
 
-helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack -f ./kube-prometheus-stack/value.yaml
+helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack -f ./default-kube-prom-custom-value.yaml --version 42.2.0

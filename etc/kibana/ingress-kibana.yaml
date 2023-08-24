@@ -7,7 +7,7 @@ metadata:
 
 spec:
   rules:
-  - host: kibana.mipllab.com
+  - host: kibana.usagecorpus.com
     http:
       paths:
         - path: /

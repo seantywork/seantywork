@@ -14,7 +14,7 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    path: /data1/nfs-cluster-vol/lineworld_jupyter/jupyter
+    path: /data1/nfs-cluster-vol/jupyter/jupyter
     server: 192.168.0.100
 ---
 apiVersion: v1
