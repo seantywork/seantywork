@@ -19,10 +19,10 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
-**Starting from September, 2023, uploads to Medium.com will be ceased until a further notice is made\
-since I'm veering towards publishing of a more theme-oriented series**
+**Starting from September, 2023, uploads to Medium.com will be suspended until a further notice is made\
+since I'm veering towards publishing of a more github-oriented series**
 
-See: [DevEconomics Cheat Sheet](https://github.com/seantywork/dev-economics-cheat-sheet)
+See: [So Help Me, Elon Musk](https://github.com/seantywork/so-help-me-elon-musk)
 
 ~~I am uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),\
 and artifacts produced when writing those may (or may not) be found in this special repository.\
