@@ -24,11 +24,12 @@ since I'm veering towards publishing of a more theme-oriented series**
 
 See: [DevEconomics Cheatsheet](https://github.com/seantywork/deveconomics-cheatsheet)
 
-I am uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),
+~~I am uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),\
+and artifacts produced when writing those may (or may not) be found in this special repository.\
+again, refer to /docs of this repository to get a grip~~
 
-and artifacts produced when writing those may (or may not) be found in this special repository.
-
-again, refer to /docs of this repository to get a grip
+**Having declared that, I'm also thinking of making [this special repository](https://github.com/seantywork/seantywork) as the primary destination for \
+all materials not directly related to projects.** 
 
 ## Even more insignificant reference
 
