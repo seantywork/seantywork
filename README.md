@@ -19,6 +19,11 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
+**Starting from September, 2023, uploads to Medium.com will be ceased until a further notice is made\
+since I'm veering towards publishing of a more theme-oriented series**
+
+See: [Economic Practices for Developers](https://github.com/seantywork/economic-practices-for-developers)
+
 I am uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),
 
 and artifacts produced when writing those may (or may not) be found in this special repository.
