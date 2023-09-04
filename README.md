@@ -19,7 +19,7 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
-~~I am have been uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),\
+~~I have been uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),\
 and artifacts produced when writing those may (or may not) be found in [this special repository](https://github.com/seantywork/seantywork).\
 again, refer to /docs of this repository to get a grip~~
 
