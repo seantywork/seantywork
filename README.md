@@ -22,7 +22,7 @@ The projects that are pinned down below are the ones most actively engaged with 
 **Starting from September, 2023, uploads to Medium.com will be ceased until a further notice is made\
 since I'm veering towards publishing of a more theme-oriented series**
 
-See: [Economic Practices for Developers](https://github.com/seantywork/economic-practices-for-developers)
+See: [DevEconomics Cheatsheet](https://github.com/seantywork/deveconomics-cheatsheet)
 
 I am uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),
 
