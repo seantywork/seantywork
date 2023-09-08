@@ -24,8 +24,8 @@ and artifacts produced when writing those may (or may not) be found in [this spe
 again, refer to /docs of this repository to get a grip~~
 
 Starting from September, 2023, the frequency of uploads to [Medium.com](https://medium.com/@seantywork) is likely to drop significantly\
-as my attention is veering towards something of a more concentrated effort to set up a more easily readable and even interactible format of\
-publishing here on Github.
+as my attention is veering towards something of a more concentrated effort to set up a more easily readable and even\
+interactible format of publishing here on Github.
 
 See: [Pathetic News Addiction](https://github.com/seantywork/pathetic-news-addction)
 
