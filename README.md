@@ -27,7 +27,7 @@ Starting from September, 2023, the frequency of uploads to [Medium.com](https://
 as my attention is veering towards something of a more concentrated effort to set up a more easily readable and even\
 interactible format of publishing here on Github.
 
-See: [Pathetic News Addiction](https://github.com/seantywork/pathetic-news-addction)
+See: [News Is My Only Friend](https://github.com/seantywork/news-is-my-only-friend)
 
 Having decided that, I'm considering making [this special repository](https://github.com/seantywork/seantywork) as my primary destinatioin\
 for materials not directly involved with projects.
