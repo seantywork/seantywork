@@ -29,7 +29,7 @@ interactible format of publishing here on Github.
 
 See: [News Is My Only Friend](https://github.com/seantywork/news-is-my-only-friend)
 
-Having decided that, I'm considering making [this special repository](https://github.com/seantywork/seantywork) as my primary destinatioin\
+Having decided that, I'm considering making [this repository](https://github.com/seantywork/hack) as my primary destinatioin\
 for materials not directly involved with projects.
 
 

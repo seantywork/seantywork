@@ -1,6 +1,0 @@
-{
-    "name": "string",
-    "image": "string",
-    "imagePullPolicy": "string",
-    "ports": []
-}

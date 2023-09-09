@@ -1,6 +1,0 @@
-HTTP/1.0 200 OK
-Content-Type: text/html; charset=UTF-8
-Server: numbertwo
-
-<!doctype html>
-<html><body><h1>A webpage number two</h1></body></html>

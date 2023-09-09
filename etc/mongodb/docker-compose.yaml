@@ -1,9 +1,0 @@
-version: "3"
-services:
-        mongodb:
-                build: ./mdb
-                container_name: mongodb
-                ports:
-                        - 27017:27017
-                volumes:
-                        - ./mdb/data:/data/db
