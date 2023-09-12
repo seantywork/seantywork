@@ -19,18 +19,9 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
-~~I have been uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),\
-and artifacts produced when writing those may (or may not) be found in [this special repository](https://github.com/seantywork/seantywork).\
-again, refer to /docs of this repository to get a grip~~
-
-Starting from September, 2023, the frequency of uploads to [Medium.com](https://medium.com/@seantywork) is likely to drop significantly\
-as my attention is veering towards something of a more concentrated effort to set up a more easily readable and even\
-interactible format of publishing here on Github.
-
-See: [News Junkie](https://github.com/seantywork/news-junkie)
-
-Having decided that, I'm considering making [Hack](https://github.com/seantywork/hack) repository as my primary destinatioin\
-for materials not directly involved with projects.
+I have been uploading some none-project-related matters onto [Medium.com](https://medium.com/@seantywork),\
+and artifacts produced when writing those may (or may not) be found in [Hack](https://github.com/seantywork/hack) repository.\
+The repository also functions as the primary destination for stuff not directly involved with projects. 
 
 
 ## Even more insignificant reference
