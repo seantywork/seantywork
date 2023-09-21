@@ -24,20 +24,6 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 [Medium.com](https://medium.com/@seantywork) is where I'm uploading some none-prject-related matters,\
 and artifacts prodeced when writing those may (or may not) be found in the repository mentioned above.\
-The recent six articles published on the platform are listed below.
-
-<a target="_blank" href="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/0">
-<img src="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/0" alt="Recent article #1"></a>
-<a target="_blank" href="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/1">
-<img src="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/1" alt="Recent article #2"></a>
-<a target="_blank" href="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/2">
-<img src="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/2" alt="Recent article #3"></a>
-<a target="_blank" href="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/3">
-<img src="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/3" alt="Recent article #4"></a>
-<a target="_blank" href="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/4">
-<img src="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/4" alt="Recent article #5"></a>
-<a target="_blank" href="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/5">
-<img src="https://github-readme-medium-recent-article.vercel.app/medium/@seantywork/5" alt="Recent article #6"></a>
 
 
 
