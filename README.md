@@ -20,7 +20,6 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
-[Hack](https://github.com/seantywork/hack) repository functions as the primary destination for stuff not directly involved with projects.
 
 [Medium.com](https://medium.com/@seantywork) is where I'm uploading some none-prject-related matters,\
 and artifacts prodeced when writing those may (or may not) be found in the repository mentioned above.\
