@@ -24,6 +24,17 @@ The projects that are pinned down below are the ones most actively engaged with 
 [Medium.com](https://medium.com/@seantywork) is where I'm uploading some none-prject-related matters,\
 and artifacts prodeced when writing those may (or may not) be found in the repository mentioned above.\
 
+Recently published articles are listed below in descending order.
+
+[A Few Things in My Mind When I Read China News](https://medium.com/@seantywork/a-few-things-in-my-mind-when-i-read-china-news-c3c561b0ca14)
+
+[Orchestrate Your Virtual Machines with Proxmox](https://medium.com/@seantywork/orchestrate-your-virtual-machines-with-proxmox-b960963d4345)
+
+[Call It Journey Or Nightmare: Upgrading Kubernetes Alongside Linux Host + Belatedly Posted HA Cluster Installation Materials](https://medium.com/@seantywork/call-it-journey-or-nightmare-upgrading-kubernetes-alongside-linux-host-belatedly-posted-ha-f253d4191572)
+
+[Broke and Dumb: A Poor Man’s Guide for Running SAM (Segment Anything Model) without GPU](https://medium.com/@seantywork/broke-and-dumb-a-poor-mans-guide-for-running-sam-segment-anything-model-without-gpu-b865301906b4)
+
+[Navigating Serverless Services: Fargate, Lambda](https://medium.com/@seantywork/navigating-serverless-services-fargate-lambda-3ac0cb34dc1)
 
 
 ## Even more insignificant reference
