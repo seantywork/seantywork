@@ -22,9 +22,11 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 
 [Medium.com](https://medium.com/@seantywork) is where I'm uploading some none-prject-related matters,\
-and artifacts prodeced when writing those may (or may not) be found in the repository mentioned above.\
+and artifacts prodeced when writing those may (or may not) be found in the repository mentioned above.
 
 Recently published articles are listed below in descending order.
+
+[Life at an Xtra(…)ordinary Company in South Korea: The Reason](https://medium.com/@seantywork/life-at-an-xtra-ordinary-company-in-south-korea-the-reason-10bfd0b7cfc5)
 
 [A Few Things in My Mind When I Read China News](https://medium.com/@seantywork/a-few-things-in-my-mind-when-i-read-china-news-c3c561b0ca14)
 
