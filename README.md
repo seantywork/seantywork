@@ -26,7 +26,7 @@ and artifacts prodeced when writing those may (or may not) be found in the repos
 
 Recently published articles are listed below in descending order.
 
-[Life of an Xtra(…)ordinary Coder in South Korea: The Reason](https://medium.com/@seantywork/life-at-an-xtra-ordinary-company-in-south-korea-the-reason-10bfd0b7cfc5)
+[Linux-junkie and an Xtra(…)ordinary Company in South Korea: The Reason](https://medium.com/@seantywork/life-at-an-xtra-ordinary-company-in-south-korea-the-reason-10bfd0b7cfc5)
 
 [A Few Things in My Mind When I Read China News](https://medium.com/@seantywork/a-few-things-in-my-mind-when-i-read-china-news-c3c561b0ca14)
 
