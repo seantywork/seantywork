@@ -26,6 +26,8 @@ and artifacts prodeced when writing those may (or may not) be found in the repos
 
 Recently published articles are listed below in descending order.
 
+[Debugging South Korean Small Company Life: The Lifeblood 1](https://medium.com/@seantywork/debugging-south-korean-small-company-life-the-lifeblood-1-665f7fd148cb)
+
 [Debugging South Korean Small Company Life: The Plunge](https://medium.com/@seantywork/debugging-south-korean-small-company-life-the-plunge-e10028da6f5a)
 
 [Debugging South Korean Small Company Life: The Reason](https://medium.com/@seantywork/life-at-an-xtra-ordinary-company-in-south-korea-the-reason-10bfd0b7cfc5)
