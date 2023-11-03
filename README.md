@@ -26,21 +26,13 @@ and artifacts prodeced when writing those may (or may not) be found in the repos
 
 Recently published articles are listed below in descending order.
 
+[Debugging South Korean Small Company Life: The Lifeblood 2](https://medium.com/@seantywork/debugging-south-korean-small-company-life-the-lifeblood-2-e81e0c596060)
+
 [Debugging South Korean Small Company Life: The Lifeblood 1](https://medium.com/@seantywork/debugging-south-korean-small-company-life-the-lifeblood-1-665f7fd148cb)
 
 [Debugging South Korean Small Company Life: The Plunge](https://medium.com/@seantywork/debugging-south-korean-small-company-life-the-plunge-e10028da6f5a)
 
 [Debugging South Korean Small Company Life: The Reason](https://medium.com/@seantywork/life-at-an-xtra-ordinary-company-in-south-korea-the-reason-10bfd0b7cfc5)
-
-[A Few Things in My Mind When I Read China News](https://medium.com/@seantywork/a-few-things-in-my-mind-when-i-read-china-news-c3c561b0ca14)
-
-[Orchestrate Your Virtual Machines with Proxmox](https://medium.com/@seantywork/orchestrate-your-virtual-machines-with-proxmox-b960963d4345)
-
-[Call It Journey Or Nightmare: Upgrading Kubernetes Alongside Linux Host + Belatedly Posted HA Cluster Installation Materials](https://medium.com/@seantywork/call-it-journey-or-nightmare-upgrading-kubernetes-alongside-linux-host-belatedly-posted-ha-f253d4191572)
-
-[Broke and Dumb: A Poor Man’s Guide for Running SAM (Segment Anything Model) without GPU](https://medium.com/@seantywork/broke-and-dumb-a-poor-mans-guide-for-running-sam-segment-anything-model-without-gpu-b865301906b4)
-
-[Navigating Serverless Services: Fargate, Lambda](https://medium.com/@seantywork/navigating-serverless-services-fargate-lambda-3ac0cb34dc1)
 
 
 ## Even more insignificant reference
