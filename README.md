@@ -21,8 +21,10 @@ The projects that are pinned down below are the ones most actively engaged with 
 ## Insignificant reference
 
 
-[Medium.com](https://medium.com/@seantywork) is where I'm uploading some none-prject-related matters,\
+[Medium.com](https://medium.com/@seantywork) has been the place where I'm uploading some none-prject-related matters,\
 and artifacts prodeced when writing those may (or may not) be found in the repository mentioned above.
+
+But, I'm thinking about experimenting uploading directly to GitHub, to [this](https://github.com/seantywork/seantywork) special repository
 
 Recently published articles are listed below in descending order.
 
