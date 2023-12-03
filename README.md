@@ -24,10 +24,6 @@ The projects that are pinned down below are the ones most actively engaged with 
 [Medium.com](https://medium.com/@seantywork) has been the place where I'm uploading some none-prject-related matters,\
 and artifacts prodeced when writing those may (or may not) be found in the repository mentioned above.
 
-But, I'm thinking about experimenting uploading directly to GitHub, to [this](https://github.com/seantywork/seantywork) special repository
-
-Recently published articles are listed below in descending order.
-
 [Curiosity Turned Madness: The Story of My First Kubernetes Contribution 2](https://medium.com/@seantywork/curiosity-turned-madness-the-story-of-my-first-kubernetes-contribution-2-06849bfe3782)
 
 [Curiosity Turned Madness: The Story of My First Kubernetes Contribution 1](https://medium.com/@seantywork/curiosity-turned-madness-the-story-of-my-first-kubernetes-contribution-1-2eb7dc70340b)
