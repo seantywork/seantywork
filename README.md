@@ -21,7 +21,7 @@ The projects that are pinned down below are the ones most actively engaged with 
 ## Insignificant reference
 
 
-[Medium.com](https://medium.com/@seantywork) has been the place where I'm uploading some none-prject-related matters,\
+[Medium.com](https://medium.com/@seantywork) is where I'm uploading some none-prject-related matters,\
 and artifacts prodeced when writing those may (or may not) be found in the repository mentioned above.
 
 [Curiosity Turned Madness: The Story of My First Kubernetes Contribution 2](https://medium.com/@seantywork/curiosity-turned-madness-the-story-of-my-first-kubernetes-contribution-2-06849bfe3782)
