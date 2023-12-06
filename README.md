@@ -1,7 +1,13 @@
 # Yet Another Mindless Linux-junkie :zany_face:
 
-## For those interested in the projects:
 
+
+## As an emergency dementia prevention measure...
+
+I keep this and that about what I read [here]() in chronical or thematical order
+
+
+## For those interested in the projects
 
 Refer to /docs for each project
 
@@ -20,24 +26,7 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
-
-[Medium.com](https://medium.com/@seantywork) is where I'm uploading some none-prject-related matters,\
-and artifacts prodeced when writing those may (or may not) be found in the repository mentioned above.
-
-[Curiosity Turned Madness: The Story of My First Kubernetes Contribution 2](https://medium.com/@seantywork/curiosity-turned-madness-the-story-of-my-first-kubernetes-contribution-2-06849bfe3782)
-
-[Curiosity Turned Madness: The Story of My First Kubernetes Contribution 1](https://medium.com/@seantywork/curiosity-turned-madness-the-story-of-my-first-kubernetes-contribution-1-2eb7dc70340b)
-
-[Debugging South Korean Small Company Life: The Lifeblood 2](https://medium.com/@seantywork/debugging-south-korean-small-company-life-the-lifeblood-2-e81e0c596060)
-
-[Debugging South Korean Small Company Life: The Lifeblood 1](https://medium.com/@seantywork/debugging-south-korean-small-company-life-the-lifeblood-1-665f7fd148cb)
-
-[Debugging South Korean Small Company Life: The Plunge](https://medium.com/@seantywork/debugging-south-korean-small-company-life-the-plunge-e10028da6f5a)
-
-[Debugging South Korean Small Company Life: The Reason](https://medium.com/@seantywork/life-at-an-xtra-ordinary-company-in-south-korea-the-reason-10bfd0b7cfc5)
-
-
-## Even more insignificant reference
+I occasionally upload to [Medium.com](https://medium.com/@seantywork), but the frequency has dropped somewhat significantly.
 
 Added to that, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
