@@ -20,7 +20,7 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
-I'm uploading none-project related materials to [Notion]().
+I'm uploading none-project related materials to [Notion](https://seantyworkint.notion.site/sint-4777f63cfb4e47f3952cfad456520275?pvs=4).
 
 Before that I occasionally uploaded to [Medium.com](https://medium.com/@seantywork), but the frequency has dropped somewhat significantly.
 
