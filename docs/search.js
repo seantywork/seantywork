@@ -31,7 +31,8 @@ function Search(){
 
         var el = query_split[i]
 
-        
+        el = el.toLowerCase()
+
         if(el == ""){
             continue
         }

@@ -23,5 +23,5 @@
 
 [index](#index)
 
-[starting the piece](2023/2023-12-06-starting-the-piece.md)
+[Starting The Piece](2023-12-06-starting-the-piece.md)
 
