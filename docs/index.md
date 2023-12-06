@@ -1,6 +1,6 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-<style src="https://seantywork.github.io/seantywork/readme.css"></style>
+<link rel="stylesheet" href="readme.css"></link>
 
 <div class="topnav">
     <a class="active" href="#home">seantywork docs</a>
@@ -12,7 +12,7 @@
 
 </ul>
 
-<script src="https://seantywork.github.io/seantywork/search.js"></script>
+<script src="search.js"></script>
 
 # ---
 
