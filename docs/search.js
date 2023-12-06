@@ -37,7 +37,7 @@ function Search(){
 
             if(search_key.includes(el)){
 
-                path_id = INDEX[search_value]["addr"]
+                path_id = INDEX[search_value]["address"]
 
                 title_id = INDEX[search_value]["title"]
 
