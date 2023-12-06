@@ -18,7 +18,7 @@ async function Fetch(){
 
 function Search(){
 
-    var query_line = $("#seantywork-search-query").val()
+    var query_line = $("#seantywork-index-query").val()
 
     var query_split = query_line.split(" ")
 
