@@ -1,12 +1,6 @@
 # Yet Another Mindless Linux-junkie :zany_face:
 
 
-
-## As an emergency dementia prevention measure...
-
-I keep this and that about what I read [here](https://seantywork.github.io/seantywork/) in chronical or thematical order
-
-
 ## For those interested in the projects
 
 Refer to /docs for each project
@@ -26,7 +20,9 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
-I occasionally upload to [Medium.com](https://medium.com/@seantywork), but the frequency has dropped somewhat significantly.
+I'm uploading none-project related materials to [Notion]().
+
+Before that I occasionally uploaded to [Medium.com](https://medium.com/@seantywork), but the frequency has dropped somewhat significantly.
 
 Added to that, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
