@@ -72,4 +72,4 @@ function Search(){
 
 Fetch()
 
-$("#seantywork-search-query").on("change",Search)
+$("#seantywork-index-query").on("change",Search)
