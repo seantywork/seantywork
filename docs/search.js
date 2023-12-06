@@ -4,10 +4,13 @@ var INDEX
 
 async function Fetch(){
 
-    SEARCH = await axios.get('search.json')
+    var search_dat = await axios.get('search.json')
 
-    INDEX = await axios.get('index.json')
+    var index_dat = await axios.get('index.json')
 
+    SEARCH = search_dat.data
+
+    INDEX = index_dat.data
 
 }
 
