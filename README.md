@@ -4,7 +4,7 @@
 
 ## As an emergency dementia prevention measure...
 
-I keep this and that about what I read [here]() in chronical or thematical order
+I keep this and that about what I read [here](https://seantywork.github.io/seantywork/) in chronical or thematical order
 
 
 ## For those interested in the projects
