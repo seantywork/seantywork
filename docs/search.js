@@ -32,6 +32,10 @@ function Search(){
         var el = query_split[i]
 
         
+        if(el == ""){
+            continue
+        }
+
         for (const [search_key, search_value] of Object.entries(SEARCH)){
 
             var path_id = ""
@@ -72,4 +76,4 @@ function Search(){
 
 Fetch()
 
-$("#seantywork-index-query").on("change",Search)
+$("#seantywork-index-query").on("input",Search)

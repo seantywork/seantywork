@@ -9,7 +9,6 @@
 </div>
 
 <ul id="seantywork-search-result">
-
 </ul>
 
 <script src="search.js"></script>
