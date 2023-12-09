@@ -20,11 +20,8 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
-I'm uploading none-project related materials to [Notion](https://seantyworkint.notion.site/SINT-4777f63cfb4e47f3952cfad456520275?pvs=4).
+I'm documenting some none-project related materials on [Notion](https://seantyworkint.notion.site/SINT-4777f63cfb4e47f3952cfad456520275?pvs=4).
 
-Before that I occasionally uploaded to [Medium.com](https://medium.com/@seantywork), but the frequency has dropped somewhat significantly.
-
-Added to that, I also have a [Linkedin](https://www.linkedin.com/in/sean-taehoon-yoon/) account, but s**t is hardly given to it.
 
 Good day!
 
