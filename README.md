@@ -20,8 +20,7 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 ## Insignificant reference
 
-I'm documenting some none-project related materials on [Notion](https://seantyworkint.notion.site/SINT-4777f63cfb4e47f3952cfad456520275?pvs=4).
-
+I'm documenting some none-project related materials on [Notion](https://seantyworkint.notion.site/STYINT-4777f63cfb4e47f3952cfad456520275?pvs=4).
 
 Good day!
 
