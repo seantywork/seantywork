@@ -22,7 +22,19 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 I'm documenting some none-project related materials [right here](https://github.com/seantywork/seantywork).
 
-I also upload to [Medium](https://medium.com/@seantywork) but the frequency has somewhat dropped as I'm trying to concentrate my works at one place.
+[This]() is GitHub page link.
+
+Remember when you visit the site or intend to learn anything from there:
+
+### NEVER TAKE IT SERIOUSLY ¯\\\_(ツ)_/¯ 
+
+A cat's meowing has more meanings in it than them.
+
+<img src="cat.jpg" width="480">
+
+I truly and viscerally envy his life. 
+
+I also try to upload to [Medium](https://medium.com/@seantywork).
 
 Good day!
 
