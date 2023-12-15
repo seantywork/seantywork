@@ -22,9 +22,9 @@ The projects that are pinned down below are the ones most actively engaged with 
 
 I'm documenting some none-project related materials [right here](https://github.com/seantywork/seantywork).
 
-[This]() is GitHub page link.
+[This](https://seantywork.github.io/seantywork/) is GitHub page link.
 
-Remember when you visit the site or intend to learn anything from there:
+However, be extra cautious when you visit the site or intend to learn anything from there:
 
 ### NEVER TAKE IT SERIOUSLY ¯\\\_(ツ)_/¯ 
 
