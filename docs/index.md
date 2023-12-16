@@ -10,7 +10,6 @@
 
 </ul>
 
-<script src="index.js"></script>
 
 # ---
 
@@ -27,5 +26,7 @@
 
 
 <div id="seantywork-index"> 
-    <p>failed to fetch, go to <a href="https://github.com/seantywork/seantywork"></a></p>
+    <p>Go to <a href="https://github.com/seantywork/seantywork"></a></p>
 </div>
+
+<script src="index.js"></script>
