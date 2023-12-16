@@ -30,7 +30,7 @@ Anyway, some simple explanations for each are:
 
 - no kube in the ass
 
-&nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is an added layer for managing multi-cloud based Kubernetes cluster
+&nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is an added layer for managing multi-cloud based Kubernetes cluster </br>
 &nbsp;&nbsp;&nbsp;&nbsp; with aggregation into other projects within the organization in mind. 
 
 
