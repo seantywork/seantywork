@@ -9,12 +9,43 @@ I'm trying to get the docomentation for each to catch up but...
 
 So sorry so far!
 
+Anyway, some simple explanations for each are:
+
+- seantywork 
+
+&nbsp;&nbsp;&nbsp;&nbsp; This is where all sorts of none-project related documentation are. The below GitHub page points to this repository.
+
+- hack
+
+&nbsp;&nbsp;&nbsp;&nbsp; You can think of it as curry sauce for Linux, </br> 
+&nbsp;&nbsp;&nbsp;&nbsp; because everything I encounter, be that C/C++ codes, commands, shell scripts, python codes, </br>
+&nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, an you can too if you want :)
+
+
+- sorrylinus
+
+&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C++ mainly to primarily control my AC from outside my house. </br>
+&nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cay's funny face whenever I want and share it with other people
+
+
+- no kube in the ass
+
+&nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is supposed to be an added layer for managing multi-cloud based Kubernetes cluster
+
+
+- kubernetes
+
+&nbsp;&nbsp;&nbsp;&nbsp; I don't think I have to explain this. So far, though I'm trying, I've gotten only one PR merged. 
+
+
+- zoom-o
+
+&nbsp;&nbsp;&nbsp;&nbsp; This is to try to imitate Zoom as simple as possible, with some willing colleagues from my company.
+
 
 ## Insignificant reference
 
-I'm documenting some none-project related materials [right here](https://github.com/seantywork/seantywork).
-
-[This](https://seantywork.github.io/seantywork/) is GitHub page link.
+I'm documenting some none-project related materials and they are accesible on [GitHub page](https://seantywork.github.io/seantywork).
 
 I also try to share things on [Medium](https://medium.com/@seantywork).
 
@@ -24,7 +55,9 @@ However, be extra cautious when you visit the site or intend to learn anything f
 
 Very often, a cat's meowing has more meanings in it than them.
 
-By the way, I truly and viscerally envy the life of [my cat from seantywork/sorrylinus](https://feebdaed.xyz/)
+"A cat" I mean whose life I truly and viscerally envy.
+
+Take a look at him from [seantywork/sorrylinus/hub](https://feebdaed.xyz/)
 
 Good day!
 
