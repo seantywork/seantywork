@@ -25,4 +25,4 @@
 
 # index
 
-[how to use notion](howtousenotion)
+[How to Use Notion](how-to-use-notion)
