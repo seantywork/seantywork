@@ -10,7 +10,7 @@
 
 </ul>
 
-<script src="search.js"></script>
+<script src="index.js"></script>
 
 # ---
 
@@ -25,9 +25,7 @@
 
 # index
 
-[How to Use Notion](how-to-use-notion)
 
-[Converting CPP Server to Node JS](converting-cpp-js)
-
-[Me Practicing Robotics ???](me-practicing-robotics-q)
-
+<div id="seantywork-index"> 
+    <p>failed to fetch, go to <a href="https://github.com/seantywork/seantywork"></a></p>
+</div>
