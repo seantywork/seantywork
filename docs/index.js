@@ -34,14 +34,13 @@ function Search(){
         }
         for (const [seq, index_obj] of Object.entries(INDEX)){
             var id = index_obj["id"]
-            var title = index_obj["title"]
             var index = index_obj["index"]
             if(index.includes(el)){
                 if(search_result.includes(id)){
                     continue
                 }else{
                     search_result.push(id)
-                    search_result_html += `<li><a href="${id}">` + title + `</a></li>`
+                    search_result_html += `<li><a href="${id}">${seq}</a></li>`
                 }
             }
         }
