@@ -19,18 +19,19 @@ Anyway, some simple explanations for each are:
 
 &nbsp;&nbsp;&nbsp;&nbsp; You can think of it as curry sauce for Linux, </br> 
 &nbsp;&nbsp;&nbsp;&nbsp; because everything I encounter, be that C/C++ codes, commands, shell scripts, python codes, </br>
-&nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, an you can too if you want :)
+&nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, and you can too if you want :)
 
 
 - sorrylinus
 
-&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C++ mainly to primarily control my AC from outside my house. </br>
+&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C++ to primarily control my AC from outside my house. </br>
 &nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cay's funny face whenever I want and share it with other people
 
 
 - no kube in the ass
 
-&nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is supposed to be an added layer for managing multi-cloud based Kubernetes cluster
+&nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is an added layer for managing multi-cloud based Kubernetes cluster
+&nbsp;&nbsp;&nbsp;&nbsp; with aggregation into other projects within the organization in mind. 
 
 
 - kubernetes
@@ -40,7 +41,7 @@ Anyway, some simple explanations for each are:
 
 - zoom-o
 
-&nbsp;&nbsp;&nbsp;&nbsp; This is to try to imitate Zoom as simple as possible, with some willing colleagues from my company.
+&nbsp;&nbsp;&nbsp;&nbsp; This is to try to mimic Zoom as simple as possible, with some willing colleagues from my company.
 
 
 ## Insignificant reference

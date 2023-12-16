@@ -25,7 +25,7 @@ function Search(){
             var path_id = ""
             var title_id = ""
             if(search_key.includes(el)){
-                path_id = INDEX[search_value]["address"]
+                path_id = search_value
                 title_id = INDEX[search_value]["title"]
                 if(search_result.includes(path_id)){
                     continue

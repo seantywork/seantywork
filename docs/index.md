@@ -26,3 +26,8 @@
 # index
 
 [How to Use Notion](how-to-use-notion)
+
+[Converting CPP Server to Node JS](converting-cpp-js)
+
+[Me Practicing Robotics ???](me-practicing-robotics-q)
+
