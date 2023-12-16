@@ -3,19 +3,11 @@
 
 ## For those interested in the projects
 
-Refer to /docs for each project
-
-If no /docs is there for you to read, then it means you have to parse the whole code by yourself, which is rarely commented :)
-
-Though I'm trying to work on that...
-
-Oh, by the way, even if there IS /docs, it cannot be guaranteed that the code becomes  understandable and readable because I'm
-
-suuuuuuuuuper lazy to keep them up to date and to articulate the content enough
-
-for everybody ¯\\\_(ツ)_/¯
-
 The projects that are pinned down below are the ones most actively engaged with and most interested in for now.
+
+I'm trying to get the docomentation for each to catch up but...
+
+So sorry so far!
 
 
 ## Insignificant reference
@@ -24,17 +16,15 @@ I'm documenting some none-project related materials [right here](https://github.
 
 [This](https://seantywork.github.io/seantywork/) is GitHub page link.
 
-However, be extra cautious when you visit the site or intend to learn anything from there:
+I also try to share things on [Medium](https://medium.com/@seantywork).
 
-### NEVER TAKE IT SERIOUSLY ¯\\\_(ツ)_/¯ 
+However, be extra cautious when you visit the site or intend to learn anything from here and there:
 
-A cat's meowing has more meanings in it than them.
+### NEVER TAKE THEM SERIOUSLY ¯\\\_(ツ)_/¯ 
 
-<img src="cat.jpg" width="480">
+Very often, a cat's meowing has more meanings in it than them.
 
-I truly and viscerally envy his life. 
-
-I also try to upload to [Medium](https://medium.com/@seantywork).
+By the way, I truly and viscerally envy the life of [my cat from seantywork/sorrylinus](https://feebdaed.xyz/)
 
 Good day!
 
