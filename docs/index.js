@@ -5,15 +5,13 @@ async function FetchAndSetUpIndex(){
 
     var index_html = ''
 
-    for(let i=0;i<INDEX.length;i++){
-
-        var index_obj = INDEX[i]
+    for(const [seq, index_obj] of Object.entries(INDEX)){
 
         var id = index_obj["id"]
 
         var title = index_obj["title"]
 
-        index_html += `<p><a href="${id}">${title}</a></p>`
+        index_html += `<p><a href="${id}">${seq}. ${title}</a></p>`
 
     }
  
