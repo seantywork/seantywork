@@ -1,1 +1,0 @@
-# Optimized, Multi-Cloud based Microservice Operation Platform

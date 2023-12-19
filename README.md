@@ -1,6 +1,26 @@
 # Yet Another Mindless Linux-junkie :zany_face:
 
 
+## Insignificant reference
+
+I'm documenting some none-project related materials and they are accesible on [Notion](https://seantyworkint.notion.site/seantywork-137adaedc7ff41758c884ad22634048a?pvs=4).
+
+I also try to share things on [Medium](https://medium.com/@seantywork).
+
+However, be extra cautious when you visit the site or intend to learn anything from here and there:
+
+### NEVER TAKE THEM TOO SERIOUSLY ¯\\\_(ツ)_/¯ 
+
+Very often, a cat's meowing has more meanings in it than them.
+
+"A cat" I mean whose life I truly and viscerally envy.
+
+Take a look at him from [seantywork/sorrylinus/hub](https://feebdaed.xyz/)
+
+Good day!
+
+
+
 ## For those interested in the projects
 
 The projects that are pinned down below are the ones most actively engaged with and most interested in for now.
@@ -11,9 +31,6 @@ So sorry so far!
 
 Anyway, some simple explanations for each are:
 
-- seantywork 
-
-&nbsp;&nbsp;&nbsp;&nbsp; This is where all sorts of none-project related documentation are. The below GitHub page points to this repository.
 
 - hack
 
@@ -43,24 +60,6 @@ Anyway, some simple explanations for each are:
 
 &nbsp;&nbsp;&nbsp;&nbsp; This is to try to mimic Zoom as simple as possible, with some willing colleagues from my company.
 
-
-## Insignificant reference
-
-I'm documenting some none-project related materials and they are accesible on [GitHub page](https://seantywork.github.io/seantywork).
-
-I also try to share things on [Medium](https://medium.com/@seantywork).
-
-However, be extra cautious when you visit the site or intend to learn anything from here and there:
-
-### NEVER TAKE THEM SERIOUSLY ¯\\\_(ツ)_/¯ 
-
-Very often, a cat's meowing has more meanings in it than them.
-
-"A cat" I mean whose life I truly and viscerally envy.
-
-Take a look at him from [seantywork/sorrylinus/hub](https://feebdaed.xyz/)
-
-Good day!
 
 
 

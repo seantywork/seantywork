@@ -1,1 +1,0 @@
-# Lineworld Website and Setting up On-prem Kubernetes Cluster
