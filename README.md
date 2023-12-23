@@ -3,7 +3,7 @@
 
 ## Insignificant reference
 
-I'm documenting some none-project related materials and they are accesible on [Notion](https://seantyworkint.notion.site/seantywork-137adaedc7ff41758c884ad22634048a?pvs=4).
+I'm documenting some none-project related materials and they are accesible on [GitHub Page](https://seantywork.github.io).
 
 I also try to share things on [Medium](https://medium.com/@seantywork).
 

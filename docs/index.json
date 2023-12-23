@@ -1,0 +1,33 @@
+{
+
+    "0": {
+        "id":"lw-csms-cluster-cert",
+        "title": "Operating Charging Station Management Service and certificates system on on-prem clusterand",
+        "index":"electric vehicle charg station certificate kubernetes cluster"
+    },
+
+    "1": {
+        "id":"lw-website-cluster",
+        "title": "Developing company website along with setting up & operating Kubernetes cluster",
+        "index":"company website on premise kubernetes cluster set up operat"
+    },
+
+    "2": {
+        "id":"microservice-consortium",
+        "title": "Developing Optimized, Multi-Cloud based Open Source Microservice Operation Platform",
+        "index":"optimiz multi cloud micro service operat platform kubernetes"
+    },
+
+    "3": {
+        "id":"me-practicing-robotics-q",
+        "title": "Embedded Linux based General Purpose AGV",
+        "index":"me practic robotic ros robot"
+    },
+
+    "4": {
+        "id": "converting-cpp-js",
+        "title": "Rewriting Flatbuffer based CPP Sensor Data Server into Node JS",
+        "index": "convert translat cpp server node js"
+
+    }
+}
