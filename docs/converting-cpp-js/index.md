@@ -49,18 +49,26 @@ a few challenges I had to deal with emerged
 
 1. Seeing the typed C++ code base and thinking of rewriting them in Javascript was already terrifying enough 
 
-plus, I had no idea how Typescript works nor the time to learn it
+Plus, I had no idea how Typescript works nor the time to learn it
 
 2. Javascript is one hell of an amazing language. But I had no previous experience in seeing how it speaks the concept in C++
 
-especially, within this context, reconciling async/await in Javascript and threads in C++ seemed like a devil as the C++ code used it a lot,\
-and I had my own doubt that single-threaded Javascript event loop would be sufficient to handle what the C++ code handled previously
+
+Especially, within this context, reconciling async/await in Javascript and threads in C++ seemed like a devil as the C++ code used it a lot.\
+And not only that, I had my own doubt that single-threaded Javascript event loop would be sufficient to handle what the C++ code handled previously.
 
 3. Shame on me, but I rarely used Javascript Class when it's up to me
 
-and even when I use C++, I'm not super fan of going with classes. But in the code, everything except for the main was class.
+and even when I use C++, I'm not super fan of going with classes. But in the code, everything except for the main was class.\
+And I also had no time to redesign the whole structure as my marginal understanding of the code base didn't let me to take the risk and\
+redesign the whole thing in functional way because I had only two weeks for the whole 15,000 lines. What that meant was,\
+if I make tweaks in the underlying logics and then later find out something is horrendously off, there will not be enough\
+resource to recover. (though as I made progress it seemed more and more appropriate if everything in there was functional from the first place) 
 
-
+Those were what frightened me.
 
 
 ## Progress
+
+To do this properly, in a stark contrast to the usual myself, 
+
