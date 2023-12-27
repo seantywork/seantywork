@@ -28,18 +28,37 @@ Before laying down some of them, Here are key takeaways to keep in mind.
 
 - I can deal with the fact that everything is in a single file, but why does SensorData2String reside in AIDATA.cpp while AIDATA2String is in SensorData.cpp?? 
 
-- And why did you leave out all the essential information for building the project (flatc version, header include path, header files, link libraries and their versions...) and just tell me "make" (just simply "make", not cmake or wget or curl or apt or anything) would work, whereas it is absolutely insufficient to do anything
+- And why did you leave out all the essential information for building the project (flatc version, header include path, header files, link libraries and their versions...) and just tell me "make" (just simply "make", not cmake or wget or curl or apt or anything) would work, whereas it is absolutely insufficient to do anything.
 
-It took me two whole days to get it just up and running!
+It took me two whole days of infinite make-ing and apt-get-ing to get it just up and running!
 
 I was briefly relieved that I finally got it to run at least, but that was the only the beginning of the real challenge.
 
 I had to convert this mysterious and intractable C++ code base that uses Flatbuffer a lot into a maintainable and friendly NodeJS one.
 
+*pseudocode will follow soon*
+
+[pseudocode](thecode)
 
 
 ## Challenges
 
+
+After all, as I finally got to the point where I could somehow get a grasp of what the heck is going on inside this enigma\
+a few challenges I had to deal with emerged
+
+1. Seeing the typed C++ code base and thinking of rewriting them in Javascript was already terrifying enough 
+
+plus, I had no idea how Typescript works nor the time to learn it
+
+2. Javascript is one hell of an amazing language. But I had no previous experience in seeing how it speaks the concept in C++
+
+especially, within this context, reconciling async/await in Javascript and threads in C++ seemed like a devil as the C++ code used it a lot,\
+and I had my own doubt that single-threaded Javascript event loop would be sufficient to handle what the C++ code handled previously
+
+3. Shame on me, but I rarely used Javascript Class when it's up to me
+
+and even when I use C++, I'm not super fan of going with classes. But in the code, everything except for the main was class.
 
 
 
