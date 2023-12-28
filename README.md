@@ -35,7 +35,7 @@ Anyway, some simple explanations for each are:
 - hack
 
 &nbsp;&nbsp;&nbsp;&nbsp; You can think of it as curry sauce for Linux, </br> 
-&nbsp;&nbsp;&nbsp;&nbsp; because everything I encounter, be that C/C++ codes, commands, shell scripts, python codes, </br>
+&nbsp;&nbsp;&nbsp;&nbsp; because everything I encounter, be that C/C++ codes, commands, shell scripts, Go codes, Python and Javascript codes </br>
 &nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, and you can too if you want :)
 
 
@@ -45,9 +45,15 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cay's funny face whenever I want and share it with other people
 
 
+- terminal game
+
+&nbsp;&nbsp;&nbsp;&nbsp; This is an another project built with C++ to mitigate my irrational anxiety that terminal interface </br>
+&nbsp;&nbsp;&nbsp;&nbsp; is headed for the extinction. Long live terminal!!
+
+
 - no kube in the ass
 
-&nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is an added layer for managing multi-cloud based Kubernetes cluster </br>
+&nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is an added layer written in Go for managing multi-cloud based Kubernetes cluster </br>
 &nbsp;&nbsp;&nbsp;&nbsp; with aggregation into other projects within the organization in mind. 
 
 
