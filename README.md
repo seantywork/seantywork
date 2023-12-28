@@ -51,15 +51,6 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; with aggregation into other projects within the organization in mind. 
 
 
-- kubernetes
-
-&nbsp;&nbsp;&nbsp;&nbsp; I don't think I have to explain this. So far, though I'm trying, I've gotten only one PR merged. 
-
-
-- zoom-o
-
-&nbsp;&nbsp;&nbsp;&nbsp; This is to try to mimic Zoom as simple as possible, with some willing colleagues from my company.
-
 
 
 
