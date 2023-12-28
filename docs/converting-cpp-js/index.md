@@ -70,5 +70,15 @@ Those were what frightened me.
 
 ## Progress
 
-To do this properly, in a stark contrast to the usual myself, 
+To do this properly, in a stark contrast to the usual myself, I made a list that looks somewhat similar to the below one on Notion
 
+- Strategy
+- Issue
+- Disaster*
+- Flow
+- Messages
+- Progress
+
+*: *Disaster was later added due to an incident* 
+
+**Strategy** contains the sort of principles that I thought I had to stick to, which include
