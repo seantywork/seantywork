@@ -1,6 +1,18 @@
 # Rewriting Flatbuffer based CPP Sensor Data Server into Node JS 
 
 
+[Context](#context)
+
+[Oh my god, what did they do to you?](#oh-my-god-what-did-they-do-to-you)
+
+[Challenges](#challenges)
+
+[Muddling through](#muddling-through)
+
+[JESUS CHRIST PLEASE DON'T](#jesus-christ-please-dont)
+
+[Finger Kung Fu](#finger-kung-fu)
+
 ## Context
 
 We all know from time to time, as a developer, one has to face the destiny where he is called upon a task that has been neglected,\
@@ -59,7 +71,7 @@ And not only that, I had my own doubt that single-threaded Javascript event loop
 
 3. Shame on me, but I rarely used Javascript Class when it's up to me
 
-and even when I use C++, I'm not super fan of going with classes. But in the code, everything except for the main was class.\
+And even when I use C++, I'm not super fan of going with classes. But in the code, everything except for the main was class.\
 And I also had no time to redesign the whole structure as my marginal understanding of the code base didn't let me to take the risk and\
 redesign the whole thing in functional way because I had only two weeks for the whole 15,000 lines. What that meant was,\
 if I make tweaks in the underlying logics and then later find out something is horrendously off, there will not be enough\
@@ -68,7 +80,7 @@ resource to recover. (though as I made progress it seemed more and more appropri
 Those were what frightened me.
 
 
-## Progress
+## Muddling through
 
 To do this properly, in a stark contrast to the usual myself, I made a list that looks somewhat similar to the below one on Notion
 
@@ -81,4 +93,31 @@ To do this properly, in a stark contrast to the usual myself, I made a list that
 
 *: *Disaster was later added due to an incident* 
 
-**Strategy** contains the sort of principles that I thought I had to stick to, which include
+**Strategy** contains the sort of principles that I thought I had to stick to, which include 
+
+
+&nbsp;&nbsp;&nbsp;&nbsp; 1. Let's NEVER fiddle with the underlying logic until fully completing one cycle\
+&nbsp;&nbsp;&nbsp;&nbsp; 2. Let's implement depth first, not breadth first\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - This was because I got the impresson while scheming through the code that there is some fair amount of common building blocks\
+&nbsp;&nbsp;&nbsp;&nbsp; 3. Among the packet receiver part, message handler part, and DB querying part, let's prioritize the first two\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - This was because the last part seemed fairly easier and repetitive compared to the first two parts\
+&nbsp;&nbsp;&nbsp;&nbsp; ... and so on
+
+
+**Issue** has all the things that \*IF\* anything unfathomable happens along the way as I debug and test the codes, I have to look for immediately.\
+Namely, some unfathomable logic in calculating nd arrays and missing logics that seemed were supposed to be there for constructing session structure
+
+**Flow** is where the overall control flow is laid out so that anyone who might follow me into this would easily get the whole structure, unlike me in the beginning
+
+**Messages** is the single most important block of it all. Because this section has all the information of each packet including whether a packet of interest\
+has been implemented, tested, has a client side example, and the location of the packet handler within the code base
+
+**Progress** is where I documented daily status of progress, marked with the date
+
+In hindsight, making 
+
+
+## JESUS CHRIST PLEASE DON'T
+
+
+## Finger Kung Fu
