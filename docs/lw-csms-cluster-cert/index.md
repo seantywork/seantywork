@@ -1,6 +1,6 @@
 # Operating Charging Station Management Service and certificates system on on-prem cluster
 
-[Hey, \*simple task\*, run this on our server so that we can test out](#hey-simple-task-run-this-on-our-server-so-that-we-can-test-out)
+[Hey, \*simple task\*, run this on our server so that our clients can test out](#hey-simple-task-run-this-on-our-server-so-that-we-can-test-out)
 
 [The disaster](#the-disaster)
 
