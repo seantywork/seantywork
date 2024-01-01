@@ -45,7 +45,7 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cay's funny face whenever I want and share it with other people
 
 
-- terminal game
+- multi terminal games
 
 &nbsp;&nbsp;&nbsp;&nbsp; This is an another project built with C++ to mitigate my irrational anxiety that terminal interface </br>
 &nbsp;&nbsp;&nbsp;&nbsp; is headed for the extinction. Long live terminal!!
