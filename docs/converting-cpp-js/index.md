@@ -13,6 +13,8 @@
 
 [Finger Kung Fu](#finger-kung-fu)
 
+[Testing Out](#testing-out)
+
 ## Context
 
 We all know from time to time, as a developer, one has to face the destiny where he is called upon a task that has been neglected,\
@@ -114,10 +116,375 @@ has been implemented, tested, has a client side example, and the location of the
 
 **Progress** is where I documented daily status of progress, marked with the date
 
-In hindsight, making 
+At first my intention in keeping this was to not get any unnecessary poking around from my superior about the progress, but soon it turned out\
+to be one great way to organize my development path forward by checking out the actual amount of time taken to complete each component.
+
+For example, when I first saw the below output of [cloc](https://github.com/AlDanial/cloc), I had no idea how I would break those down into\
+actionable time chunks.
+
+
+```shell
+
+github.com/AlDanial/cloc v 1.82  T=0.79 s (2403.2 files/s, 474589.8 lines/s)
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+C/C++ Header                   138           7534           6827          61815
+C++                             93           6255           4536          48610
+```
+
+However, as I gave up planning all the way and just started coding the functions one by one,\
+I figured out that was unexpectedly efficient as I was able to collect the actual detailed data on how\
+I had progressed, as shown below.
+
+
+```shell
+December 21, 2023 
+
+- class DEVICE_LIST
+- class LOG_QUEUE
+- class REUSE_QUEUE
+- class IP_BAN_LIST
+
+December 22, 2023 
+
+- global g_add_log
+- global get_time_string
+- global Init_Server
+- global GetNewClientID
+- global GetClientRange
+- global packet_id_to_string
+- global do_log_print
+- global get_schedules
+- global find_controller
+- global process_schedule
+- global do_ai
+- global do_cleaning
+- global disconnect_validated_devices
+- global do_device_update
+- class server
+- class ssl_server
+- Packet receiver completed
+
+December 26, 2023 
+
+- class player 
+- session::send_XX completed
+- working on message handler 
+
+...
+
+
+January 3, 2024 
+
+- influxdb querying part completed
+- class INFLUX_SENSOR_DATA
+
+January 4, 2024 
+
+- mysql querying part completed
+- class MYSQL_SENSOR_DATA
+- all db querying parts completed
+- first draft completed, scheduled for endpoint test using available client sample data on tomorrow
+
+January 5, 2024 
+
+- endpoint test completed
+
+```
+
+
+Well, given how unoranized the C++ code was at first, I feel pretty proud of my self for converting everything in two weeks\
+though, this could have taken even shorter if there were not "the incident"....
 
 
 ## JESUS CHRIST PLEASE DON'T
 
+Calling out Jesus' name after more than a decade of not attending church was all because I had not carefully read the Flatbuffer message file\
+and gone too fast without checking on some necessary details.
+
+There are few things to note when serializing and deserializing Flatbuffer messages.
+
+1. Your main target of serialization is Table type
+   
+```shell
+
+# it usually looks like this
+# you can see those familiar scalar types
+
+
+table SOMETHING {
+	Blah1 : int;
+	Blah2 : short;
+	Blah3 : short;	
+}
+
+
+```
+
+
+2. And then you have Struct type
+
+```shell
+
+# looking like this
+
+
+struct SOMETHING_STRUCT {
+	Blah1 : int;
+	Blah2 : short;
+	Blah3 : short;	
+}
+
+# looks a lot like table type but this type usually
+# goes under a table type as its field
+# like below
+
+table SOMETHING {
+	Blah1 : int;
+	Blah2 : short;
+	Blah3 : short;
+    Blah4 : SOMETHING_STRUCT;	
+}
+
+
+```
+
+3. Finally (which turned out not to be), there is Array type
+
+```shell
+
+table SOMETHING {
+	Blah1 : int;
+	Blah2 : short;
+	Blah3 : short;
+    Blah4 : SOMETHING_STRUCT;	
+    Blah5 : [byte];
+    Blah6 : [SOMETHING_STRUCT];
+}
+
+```
+
+Flatbuffer is a message type that goes even further beyond the hassel you first face when dealing with Protocolbuffer\
+in exchange for better memory efficiency.
+
+You have to finish creating a field of Array type before adding other scalar fields.
+
+Hence, the building of the final byte buffer to be sent looks very weird and tedious.
+
+C++ example, which doesn't look so pleasant, of it is:
+
+```cpp
+
+/*
+message for below serialization looks like this
+
+
+struct EXAMPLE_DATA {
+    Val1 : short;
+    Val2 : int;
+}
+
+table EXAMPLE_DATA_TABLE {
+    FIELD1 : int;
+    FIELD2 : short;
+    FIELD3 : short;
+    EXAMPLE_DATA : [EXAMPLE_DATA];	
+}
+
+*/
+
+flatbuffers::FlatBufferBuilder fbb;
+
+
+auto example_data1 = EXAMPLE_DATA(example_short, example_int);
+
+auto example_data2 = EXAMPLE_DATA(example_short, example_int);
+
+EXAMPLE_DATA eds[2] = { example_data1, example_data2 };
+
+// this has to come before we initiate exdt_builder(fbb)
+
+auto eds_offset = fbb.CreateVectorOfStructs(eds, 2);
+
+EXAMPLE_DATA_TABLEBuilder exdt_builder(fbb);
+
+exdt_builder.add_FIELD1(field1_val);
+
+exdt_builder.add_FIELD2(field2_val);
+
+exdt_builder.add_FIELD3(field3_val);
+
+exdt_builder.add_EXAMPLE_DATA(eds_offset);
+
+auto message = exdt_builder.Finish();
+
+fbb.Finish(message);
+
+```
+
+Javascript equivalent, which looks fantasitic(ally bad for your finger joints and eyes), is:
+
+
+```js
+
+let builder = new flatbuffers.Builder()
+
+
+fbproto.EXAMPLE_DATA_TABLE.startExampleDataVector(builder, 2)
+
+for(let i = 0; i < 2; i++){
+
+
+    fbproto.EXAMPLE_DATA.createEXAMPLE_DATA(
+        builder,
+        example_short, 
+        example_int
+    )
+
+
+}
+
+// if below line goes anywhere after startEXAMPLE_DATA_TABLE, it will throw error
+
+let eds_offset = builder.endVector()
+
+fbproto.EXAMPLE_DATA_TABLE.startEXAMPLE_DATA_TABLE(builder)
+
+fbproto.EXAMPLE_DATA_TABLE.addField1(builder, field1_val)
+
+fbproto.EXAMPLE_DATA_TABLE.addField2(builder, field2_val)
+
+fbproto.EXAMPLE_DATA_TABLE.addField3(builder, field3_val)
+
+fbproto.EXAMPLE_DATA_TABLE.addExampleData(builder, eds_offset)
+
+let root_table = fbproto.EXAMPLE_DATA_TABLE.endEXAMPLE_DATA_TABLE(builder)
+
+builder.finish(root_table)
+    
+
+
+```
+
+
+It was already too bloated to process for me at the moment, but I had fought it and fought it hard....\
+until I found out that there is a particular way to handle "string" type and was unable to serialize it properly.
+
+In Protocolbuffer, adding it to a field is just as simple as other types ex) int, short...
+
+However, at that very moment when I was puzzled by the null string field even though\
+I triple checked that I had added "test" to the field, I realized I had failed to appereciate \
+the full extent of this Flatbuffer's amazing feat that refuses to take the road already taken by Protocolbuffer.
+
+
+```js
+
+/*
+
+if our beloved EXAMPLE_DATA_TABLE has a string array field like below one
+
+
+table EXAMPLE_DATA_TABLE {
+    FIELD1 : int;
+    FIELD2 : short;
+    FIELD3 : short;
+    EXAMPLE_DATA : [EXAMPLE_DATA];	
+    STR_FIELD : [string];
+}
+
+then javascript code will become like this....
+
+*/
+
+
+let builder = new flatbuffers.Builder()
+
+// adding this tmp array
+let tmp = []
+
+fbproto.EXAMPLE_DATA_TABLE.startExampleDataVector(builder, 2)
+
+for(let i = 0; i < 2; i++){
+
+
+
+
+    fbproto.EXAMPLE_DATA.createEXAMPLE_DATA(
+        builder,
+        example_short, 
+        example_int
+    )
+
+    tmp.push(example_str)
+
+}
+
+
+let eds_offset = builder.endVector()
+
+
+// yes, another loop just to serialize these strings
+
+for (let i = 0 ; i < 2; i ++){
+
+    tmp[i] = builder.createString(tmp[i])
+}
+
+// below line cannot go anywhere after startEXAMPLE_DATA_TABLE 
+// or
+// before builder.endVector() 
+//
+// happy coding!!!! :) 
+
+let str_field_offset = fbproto.EXAMPLE_DATA_TABLE.createStrFieldVector(builder, tmp)
+
+fbproto.EXAMPLE_DATA_TABLE.startEXAMPLE_DATA_TABLE(builder)
+
+fbproto.EXAMPLE_DATA_TABLE.addField1(builder, field1_val)
+
+fbproto.EXAMPLE_DATA_TABLE.addField2(builder, field2_val)
+
+fbproto.EXAMPLE_DATA_TABLE.addField3(builder, field3_val)
+
+fbproto.EXAMPLE_DATA_TABLE.addExampleData(builder, eds_offset)
+
+fbproto.EXAMPLE_DATA_TABLE.addStrField(builder, str_field_offset)
+
+let root_table = fbproto.EXAMPLE_DATA_TABLE.endEXAMPLE_DATA_TABLE(builder)
+
+builder.finish(root_table)
+    
+
+
+```
+
+
+
+And the problem was, among 42 messages, with its evil implication, string type was lurking in almost every table type I had already\
+(thought to have) completed.
+
+There I cried Jesus Christ with the sincerity I had never been able to garner when I read bible at the behest of my father.
+
+
 
 ## Finger Kung Fu
+
+
+
+
+
+
+```shell
+github.com/AlDanial/cloc v 1.82  T=0.79 s (2403.2 files/s, 474589.8 lines/s)
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+C/C++ Header                   138           7534           6827          61815
+C++                             93           6255           4536          48610
+JavaScript                     320           6684           4228          38781
+
+```
+
+
+## Testing out
