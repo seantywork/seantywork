@@ -3,19 +3,13 @@
 
 ## Insignificant reference
 
-I'm documenting some none-project related materials and they are accesible on [GitHub Page](https://seantywork.github.io/seantywork/).
-
-I also try to share things on [Medium](https://medium.com/@seantywork).
+[This GitHub page](https://seantywork.github.io/seantywork/) is where I'm documenting some none-project related materials.
 
 However, be extra cautious when you visit the site or intend to learn anything from here and there:
 
 ### NEVER TAKE THEM TOO SERIOUSLY ¯\\\_(ツ)_/¯ 
 
 Very often, a cat's meowing has more meanings in it than them.
-
-"A cat" I mean whose life I truly and viscerally envy.
-
-Take a look at him from [seantywork/sorrylinus/hub](https://feebdaed.xyz/)
 
 Good day!
 
@@ -38,11 +32,17 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; because everything I encounter, be that C/C++ codes, commands, shell scripts, Go codes, Python and Javascript codes </br>
 &nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, and you can too if you want :)
 
+- kcrack-rtl8852au
+
+&nbsp;&nbsp;&nbsp;&nbsp; Picked up from [this great repo](https://github.com/lwfinger/rtl8852au)  </br> 
+&nbsp;&nbsp;&nbsp;&nbsp; now it is gradually becoming not-always-super-safe playground for kernel networking module of mine  </br>
+
 
 - sorrylinus
 
 &nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C++ to primarily control my AC from outside my house. </br>
-&nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cay's funny face whenever I want and share it with other people
+&nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cat's funny face whenever I want and share it with other people. </br>
+&nbsp;&nbsp;&nbsp;&nbsp; [Take a look](https://feebdaed.xyz/) (if you want)
 
 
 - multi terminal games
