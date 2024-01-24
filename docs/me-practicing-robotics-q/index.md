@@ -16,7 +16,7 @@
 [ROS2, the savior](#ros2-the-savior)
 
 
-[C/C++ plumber](#hardware-interface-optimization)
+[C plumber](#c-plumber)
 
 
 
@@ -170,8 +170,124 @@ serious challenges such as navigating by pointing to a location on a map or base
 Frankly, ROS2 was already on our team's mind even before Jetson was picked as our computing platform as we had explored various ways\
 to appeal to the potential client ("the government bid, let's not forget that") 
 
+Scrambling all over the place, we've managed to find out something that looked promising and it's called "**hardware interface**".
 
-## Hardware interface optimization
+Don't be bothered by the fact that it sounds very unfamiliar because I too was viscerally bothered by the fact that I'd never heard of that\
+and instantly had to catch up with it.
+
+But the basic idea here is more than simple. It works as if it is a driver to a regular OS (hence, partly, the name Robot OS). ROS offers only the\
+controlling logic for a particular set of algorithms, which include NAV2 that is, based on differential gear & LiDAR sensors, helps a 2-wheel vehicle to calculate and \
+navigate the path leading to a particular point on a given map.
+
+A developer who wants to harness the power of theses controllers just simply has to fill up the codes needed for a particular "call" which ROS algorithm makes. As a\
+disk driver developer's job is to write vendor-specific codes for .read, .write, .lseek, .open, .close, etc syscalls that are required by the target OS,\
+ROS hardware interface developer's job is to fill up read(), write(), start(), stop(), etc so that the ROS system can control the underlying hardware while entirely\
+unware of its specifics.
+
+It goes something like the below one.
+
+
+```cpp
+
+... 
+
+
+hardware_interface::return_type RosSystemHardware::configure(
+  const hardware_interface::HardwareInfo & info)
+{
+
+    // stuff before starting the controle phase...
+
+    return hardware_interface::return_type::OK;
+}
+
+
+// data structure for the wheels should be exported so that
+// NAV2 can tell the hardware interface the value to be targeted to 
+
+...
+
+hardware_interface::return_type RosSystemHardware::read()
+{
+
+    // stuff for reading the current status of the robot...
+    // in this case the status of the wheels
+
+    RCLCPP_INFO(rclcpp::get_logger("RosSystemHardware"), "Reading...");
+    for (Wheel &wheel : wheels_) {
+        wheel.pos = wheel.pos + dt * wheel.cmd;
+        wheel.vel = wheel.cmd;
+
+        RCLCPP_INFO(
+        rclcpp::get_logger("RosSystemHardware"),
+        "Got position state %.5f and velocity state %.5f for '%s'!", 
+        wheel.pos, wheel.vel, wheel.name.c_str()
+        );
+    }
+
+    // blah blah...
+
+    return hardware_interface::return_type::OK;
+}
+
+
+hardware_interface::return_type ros2hwif::RosSystemHardware::write()
+{
+    // stuff for writing to the wheels data structured exported at the start.
+    // below canopen_comm_ object should handle the NAV2-injected value 
+    // and actually send the command to the target interface. 
+    // In this case, the target is CAN interface
+
+    for (Wheel &wheel : wheels_) {
+        RCLCPP_INFO(
+        rclcpp::get_logger("RosSystemHardware"), "Got command %.5f for '%s'!", 
+        wheel.cmd, wheel.name.c_str()
+        );
+
+        wheel.dec = static_cast<int>(wheel.cmd * M_PI / 30 * 512 * 4096 / 1875);
+    }    
+
+    canopen_comm_.writeVelocity(wheels_);
+
+    // blah blah...
+
+    return hardware_interface::return_type::OK;
+
+}
+
+...
+
+
+```
+
+Now, as we got our hands on how to coordinate between the mighty ROS and the measly wheels of our robot,
+the time came to do some plumbing job.
+
+
+
+## C plumber
+
+As I've already mentioned above, we were using [CANopenLinux](https://github.com/CANopenNode/CANopenLinux) as our main tool for talking to the\
+CAN interface.
+
+But, despite its God-like utility, there was a bit of hassle over it when used in conjunction with ROS system. 
+
+1. First of all, a toolset has to be compiled before anything is ready to run  
+2. Then local unix socket first has to be created manually upon which CANopenLinux command line tool is listening
+3. Then, for the sake of expediency, the above canopen_comm_ object was using another cli tool included in the packe to send command under the hood.
+
+In my opinion, all three can be (and frankly should be) avoided in efficient and graceful way, so I put myself up for the job as no one else was \
+used to program in C, which makes up the entire CANopenLinux package.
+
+But all of a sudden, [this job](https://seantywork.github.io/seantywork/converting-cpp-js/) kicked in. So I had to digress.
+
+I returned about a week and a half later and picked up where I left.
+
+While I'm gone, there were trials being made to streamline the process but at unfourtunate pace. A guy from our team kept trying to make a socket connection\
+to the one created by the command line tool with no luck. 
+
+And to be frank, upon hearing the situration, I was a bit nervous too. Because, even though I love programming in C due to its computer-friendly nature(thus \
+making it very humand-unfriendly and quarky), I usually prefer not using it for anything that might be going public and our team's best man was failing at it. 
 
 
 
