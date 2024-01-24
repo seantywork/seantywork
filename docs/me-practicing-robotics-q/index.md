@@ -9,15 +9,13 @@
 
 [CANopen, not CAN](#canopen-not-can)
 
-
 [Jetson and the spin](#jetson-and-the-spin)
-
 
 [ROS2, the savior](#ros2-the-savior)
 
-
 [C plumber](#c-plumber)
 
+[The different angle](#the-different-angle)
 
 
 
@@ -273,10 +271,10 @@ CAN interface.
 But, despite its God-like utility, there was a bit of hassle over it when used in conjunction with ROS system. 
 
 1. First of all, a toolset has to be compiled before anything is ready to run  
-2. Then local unix socket first has to be created manually upon which CANopenLinux command line tool is listening
-3. Then, for the sake of expediency, the above canopen_comm_ object was using another cli tool included in the packe to send command under the hood.
+2. Then local unix socket has to be created manually upon which CANopenLinux command line tool is listening
+3. Then, for the sake of expediency, the above canopen_comm_ object was using another cli tool included in the package to send command under the hood.
 
-In my opinion, all three can be (and frankly should be) avoided in efficient and graceful way, so I put myself up for the job as no one else was \
+In my opinion, all three can be (and frankly should be) abstracted away in efficient and graceful way, so I put myself up for the job as no one else was \
 used to program in C, which makes up the entire CANopenLinux package.
 
 But all of a sudden, [this job](https://seantywork.github.io/seantywork/converting-cpp-js/) kicked in. So I had to digress.
@@ -286,8 +284,44 @@ I returned about a week and a half later and picked up where I left.
 While I'm gone, there were trials being made to streamline the process but at unfourtunate pace. A guy from our team kept trying to make a socket connection\
 to the one created by the command line tool with no luck. 
 
-And to be frank, upon hearing the situration, I was a bit nervous too. Because, even though I love programming in C due to its computer-friendly nature(thus \
-making it very humand-unfriendly and quarky), I usually prefer not using it for anything that might be going public and our team's best man was failing at it. 
+And to be frank, upon hearing the situation, I was a bit nervous too. Because, even though I love programming in C due to its computer-friendly nature(thus \
+making it very humand-unfriendly and quirky), I usually prefer not using it for anything that might be going public and our team's best man was failing at \
+not using it (which means an approach based on Python programming has been failing).
+
+Anyway, I took on from there and started to dissect the CANopenLinux code.
+
+Luckily for me, just a little tweak was sufficient to turn that command line tool into a API-only shared library and I was able to turn the build script\
+into a cmake file that is called into a main CMakeLists.txt file used by ROS when building the project.\
+Below code shows the final abstraction we had.
+
+
+```c
+
+// this function will be called in the section ::configure in ROS hardware interface
+// and create a thread that initiates the unix socket that relays ascii command to the processing bloc within
+// CANopenLinux source code
+
+int InitCanComm(char* can_if_name, uint8_t node_id);
+
+// this function will also be called in the section ::configure and create a socket fd that is connected to
+// the command unix socket created by InitCanComm, ready to send the command
+
+int InitCmdGateway();
+
+
+// this function will send the ascii input command using the socket fd created by InitCmdGateway and receive output
+// from the command socket 
+
+int CmdGatewayASCII(char* in, char* out);
+
+```
+
+And I was glad the job had been done relatively quickly and easily.
+
+For a very short time.
+
+
+## The different angle
 
 
 
