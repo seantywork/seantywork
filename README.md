@@ -47,7 +47,7 @@ Anyway, some simple explanations for each are:
 
 - multi terminal games
 
-&nbsp;&nbsp;&nbsp;&nbsp; This is an another project built with C++ to mitigate my irrational anxiety that terminal interface </br>
+&nbsp;&nbsp;&nbsp;&nbsp; This is an another project built with C++ and gRPC to mitigate my irrational anxiety that terminal interface </br>
 &nbsp;&nbsp;&nbsp;&nbsp; is headed for the extinction. Long live terminal!!
 
 
