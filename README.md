@@ -3,7 +3,7 @@
 
 ## Insignificant reference
 
-[This GitHub page](https://seantywork.github.io/seantywork/) is where I'm documenting some none-project related materials.
+[Medium.com](https://medium.com/@seantywork) is where I'm documenting some none-project related materials.
 
 However, be extra cautious when you visit the site or intend to learn anything from here and there:
 
