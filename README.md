@@ -32,10 +32,10 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; because everything I encounter, be that C/C++ codes, commands, shell scripts, Go codes, Python and Javascript codes </br>
 &nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, and you can too if you want :)
 
-- kcrack-rtl8852au
+- kap-rtl8852au
 
-&nbsp;&nbsp;&nbsp;&nbsp; Picked up from [this great repo](https://github.com/lwfinger/rtl8852au)  </br> 
-&nbsp;&nbsp;&nbsp;&nbsp; now it is gradually becoming not-always-super-safe playground for kernel networking module of mine  </br>
+&nbsp;&nbsp;&nbsp;&nbsp; router/modem access point that can directly control custom network driver for rtl8852au  </br>
+&nbsp;&nbsp;&nbsp;&nbsp; from browser  </br>
 
 
 - sorrylinus
