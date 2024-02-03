@@ -13,6 +13,9 @@ Very often, a cat's meowing has more meanings in it than them.
 
 Good day!
 
+## Some good materials that I think need attention to...
+
+[Death by Thousand Microservices](https://renegadeotter.com/2023/09/10/death-by-a-thousand-microservices.html)
 
 
 ## For those interested in the projects
