@@ -17,6 +17,7 @@ Good day!
 
 [Death by Thousand Microservices](https://renegadeotter.com/2023/09/10/death-by-a-thousand-microservices.html)
 
+[9 MONTHS WITH GPT-4: CAN I FIRE MY DEVELOPERS YET?](https://blog.boot.dev/computer-science/ai-taking-programming-jobs/)
 
 ## For those interested in the projects
 
