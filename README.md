@@ -19,6 +19,8 @@ Good day!
 
 [9 MONTHS WITH GPT-4: CAN I FIRE MY DEVELOPERS YET?](https://blog.boot.dev/computer-science/ai-taking-programming-jobs/)
 
+[Less is exponentially more](https://commandcenter.blogspot.com/2012/06/less-is-exponentially-more.html)
+
 ## For those interested in the projects
 
 The projects that are pinned down below are the ones most actively engaged with and most interested in for now.
