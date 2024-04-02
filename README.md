@@ -38,11 +38,6 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; because everything I encounter, be that C/C++ codes, commands, shell scripts, Go codes, Python and Javascript codes </br>
 &nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, and you can too if you want :)
 
-- ap4ko
-
-&nbsp;&nbsp;&nbsp;&nbsp; router/modem access point that can directly control custom network drivers </br>
-&nbsp;&nbsp;&nbsp;&nbsp; from browser  </br>
-
 
 - sorrylinus
 
