@@ -41,15 +41,10 @@ Anyway, some simple explanations for each are:
 
 - sorrylinus
 
-&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C++ to primarily control my AC from outside my house. </br>
+&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C/C++ to primarily control my AC from outside my house. </br>
 &nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cat's funny face whenever I want and share it with other people. </br>
 &nbsp;&nbsp;&nbsp;&nbsp; [Take a look](https://feebdaed.xyz/) (if you want)
 
-
-- multi terminal games
-
-&nbsp;&nbsp;&nbsp;&nbsp; This is an another project built with C++ and gRPC to mitigate my irrational anxiety that terminal interface </br>
-&nbsp;&nbsp;&nbsp;&nbsp; is headed for the extinction. Long live terminal!!
 
 
 - no kube in the ass
