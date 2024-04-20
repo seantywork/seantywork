@@ -39,6 +39,13 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, and you can too if you want :)
 
 
+- rtl8852au-playground
+
+&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C to address my own frustration in learning how to write a kernel network driver. </br>
+&nbsp;&nbsp;&nbsp;&nbsp; Hope this could become an interesting reference for those who practice kernel module development someday, </br>
+&nbsp;&nbsp;&nbsp;&nbsp; as I intend to record all sorts of zanny whimsical clueless stuff I do with the kernel module
+
+
 - sorrylinus
 
 &nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C/C++ to primarily control my AC from outside my house. </br>
