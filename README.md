@@ -41,7 +41,7 @@ Anyway, some simple explanations for each are:
 
 - sorrylinus
 
-&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C/C++ to primarily control my AC from outside my house.
+&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C/C++ to primarily control my AC from outside my house. </br>
 &nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cat's funny face whenever I want and share it with other people. </br>
 &nbsp;&nbsp;&nbsp;&nbsp; [Take a look](https://feebdaed.xyz/) (if you want)
 
