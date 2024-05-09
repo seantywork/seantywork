@@ -41,7 +41,11 @@ Anyway, some simple explanations for each are:
 
 - sorrylinus
 
-&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C/C++ to primarily control my AC from outside my house. </br>
+&nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C to primarily control my AC from outside my house. </br>
+&nbsp;&nbsp;&nbsp;&nbsp; It cosists of TCP/TLS socket hub for authenticating a remote machine (primarily Raspberry Pi) and </br>
+&nbsp;&nbsp;&nbsp;&nbsp; delivering messages between the machine and the user server, </br>
+&nbsp;&nbsp;&nbsp;&nbsp; and the HTTP & WebSocket server (the user server) for authenticating user and </br> 
+&nbsp;&nbsp;&nbsp;&nbsp; communicating with the socket hub, both deployed on Kubernetes. </br> 
 &nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cat's funny face whenever I want and share it with other people. </br>
 &nbsp;&nbsp;&nbsp;&nbsp; [Take a look](https://feebdaed.xyz/) (if you want)
 
@@ -52,6 +56,9 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is an added layer written in Go for managing multi-cloud based Kubernetes cluster </br>
 &nbsp;&nbsp;&nbsp;&nbsp; with aggregation into other projects within the organization in mind. 
 
+- kubernetes
+
+&nbsp;&nbsp;&nbsp;&nbsp; Production-Grade Container Scheduling and Management that I love and contribute to </br>
 
 
 
