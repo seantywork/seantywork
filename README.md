@@ -25,7 +25,7 @@ Good day!
 
 The projects that are pinned down below are the ones most actively engaged with and most interested in for now.
 
-I'm trying to get the docomentation for each to catch up but...
+I'm trying to get the documentation for each to catch up but...
 
 So sorry so far!
 
@@ -45,7 +45,7 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; It cosists of TCP/TLS socket hub for authenticating a remote machine (primarily Raspberry Pi) and </br>
 &nbsp;&nbsp;&nbsp;&nbsp; delivering messages between the machine and the user server, </br>
 &nbsp;&nbsp;&nbsp;&nbsp; and the HTTP & WebSocket server (the user server) for authenticating user and </br> 
-&nbsp;&nbsp;&nbsp;&nbsp; communicating with the socket hub, both deployed on Kubernetes. </br> 
+&nbsp;&nbsp;&nbsp;&nbsp; communicating with the socket hub, all deployed on Kubernetes. </br> 
 &nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cat's funny face whenever I want and share it with other people. </br>
 &nbsp;&nbsp;&nbsp;&nbsp; [Take a look](https://feebdaed.xyz/) (if you want)
 
