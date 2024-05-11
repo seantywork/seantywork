@@ -54,7 +54,13 @@ Anyway, some simple explanations for each are:
 - no kube in the ass
 
 &nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is an added layer written in Go for managing multi-cloud based Kubernetes cluster </br>
-&nbsp;&nbsp;&nbsp;&nbsp; with aggregation into other projects within the organization in mind. 
+&nbsp;&nbsp;&nbsp;&nbsp; with aggregation into other projects within the organization in mind.  </br>
+&nbsp;&nbsp;&nbsp;&nbsp; The orchestration server has HTTP and WebSocket communication channel.</br>
+&nbsp;&nbsp;&nbsp;&nbsp; HTTP channel is for user registration, modification, and serving up WebSocket channel on web interface.  </br>
+&nbsp;&nbsp;&nbsp;&nbsp; WebSocket channel is sending actual control message and receiving result data from remote clusters.  </br>
+&nbsp;&nbsp;&nbsp;&nbsp; The orchestration server and remote cluster agent also are connected by and communicate with WebSocket </br>
+&nbsp;&nbsp;&nbsp;&nbsp; with Kubernetes x509 data based authentication and encryption in place. </br>
+&nbsp;&nbsp;&nbsp;&nbsp; Check out [here](https://okestro-aidevops.github.io/nkia-doc/) if you want to know more
 
 - kubernetes
 
