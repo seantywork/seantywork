@@ -35,7 +35,7 @@ Anyway, some simple explanations for each are:
 - hack
 
 &nbsp;&nbsp;&nbsp;&nbsp; You can think of it as curry sauce for Linux, </br> 
-&nbsp;&nbsp;&nbsp;&nbsp; because everything I encounter, be that C/C++ codes, commands, shell scripts, Go codes, Python and Javascript codes </br>
+&nbsp;&nbsp;&nbsp;&nbsp; because everything I encounter, be that C, commands, shell scripts, Go codes, Python and Javascript codes </br>
 &nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, and you can too if you want :)
 
 
