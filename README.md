@@ -50,6 +50,10 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; [Take a look](https://feebdaed.xyz/) (if you want)
 
 
+- 0xbox
+
+&nbsp;&nbsp;&nbsp;&nbsp; Mostly from solving ctf, some benign, some not so much  </br>
+
 
 - no kube in the ass
 
