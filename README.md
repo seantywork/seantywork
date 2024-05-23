@@ -39,6 +39,12 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, and you can too if you want :)
 
 
+- 0xbox
+
+&nbsp;&nbsp;&nbsp;&nbsp; Mostly from solving ctf, some benign, some not so much  </br>
+
+
+
 - sorrylinus
 
 &nbsp;&nbsp;&nbsp;&nbsp; This is the project built with C to primarily control my AC from outside my house. </br>
@@ -49,10 +55,6 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cat's funny face whenever I want and share it with other people. </br>
 &nbsp;&nbsp;&nbsp;&nbsp; [Take a look](https://feebdaed.xyz/) (if you want)
 
-
-- 0xbox
-
-&nbsp;&nbsp;&nbsp;&nbsp; Mostly from solving ctf, some benign, some not so much  </br>
 
 
 - no kube in the ass
