@@ -52,11 +52,6 @@ Anyway, some simple explanations for each are:
 
 
 
-- 0xbox
-
-&nbsp;&nbsp;&nbsp;&nbsp; If it's not too serious, it is likely to end up here  </br>
-
-
 - no kube in the ass
 
 &nbsp;&nbsp;&nbsp;&nbsp; Long story short, this is an added layer written in Go for managing multi-cloud based Kubernetes cluster </br>
