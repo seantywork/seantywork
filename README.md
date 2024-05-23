@@ -39,11 +39,6 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; is thrown in there. I personally use it as a quick search using Ctrl+F, and you can too if you want :)
 
 
-- 0xbox
-
-&nbsp;&nbsp;&nbsp;&nbsp; Mostly from solving ctf, some benign, some not so much  </br>
-
-
 
 - sorrylinus
 
@@ -55,6 +50,11 @@ Anyway, some simple explanations for each are:
 &nbsp;&nbsp;&nbsp;&nbsp; As a perk, I can check out my cat's funny face whenever I want and share it with other people. </br>
 &nbsp;&nbsp;&nbsp;&nbsp; [Take a look](https://feebdaed.xyz/) (if you want)
 
+
+
+- 0xbox
+
+&nbsp;&nbsp;&nbsp;&nbsp; If it's not too serious, it is likely to end up here  </br>
 
 
 - no kube in the ass
@@ -71,6 +71,7 @@ Anyway, some simple explanations for each are:
 - kubernetes
 
 &nbsp;&nbsp;&nbsp;&nbsp; Production-Grade Container Scheduling and Management that I love and contribute to </br>
+
 
 
 
