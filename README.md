@@ -1,5 +1,7 @@
 # Yet Another Mindless Linux-junkie :zany_face:
 
+[GitHub Page of this page](https://seantywork.github.io/seantywork/)
+
 Below is a collection of things that caught my attention at the moment, some my own thoughts and some from others
 
 [Death by Thousand Microservices](https://renegadeotter.com/2023/09/10/death-by-a-thousand-microservices.html)
