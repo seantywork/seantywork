@@ -8400,16 +8400,14 @@ systemctl start crio
 # install go
 
 
-curl -OL https://golang.org/dl/go1.22.3.linux-amd64.tar.gz
 
-sudo tar -C /usr/local -xvf go1.22.3.linux-amd64.tar.gz
+curl -OL https://golang.org/dl/go1.23.2.linux-amd64.tar.gz
 
-sudo nano ~/.profile
+sudo tar -C /usr/local -xvf go1.23.2.linux-amd64.tar.gz
 
-export GOPATH=/usr/local/go
-export PATH=$PATH:$GOPATH/bin
+rm -rf *.tar.gz
 
-
+echo "export PATH=\$PATH:/usr/local/go/bin" >> $HOME/.profile
 
 
 source ~/.profile
