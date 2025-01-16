@@ -1815,10 +1815,38 @@ arp -i interface -s ip mac
 
 ```
 
+```shell
+# longer cache expiration
+
+net.ipv4.neigh.default.gc_stale_time=57600
+
+# larger garbage collection threshold
+
+net.ipv4.neigh.default.gc_thresh1 = 32768
+net.ipv4.neigh.default.gc_thresh2 = 32768
+net.ipv4.neigh.default.gc_thresh3 = 32768
+
+
+```
+
+# REDIRECT
+
+```shell
+
+sysctl -w net.ipv4.conf.enp134s0f2.accept_redirects=0
+sysctl -w net.ipv4.conf.enp134s0f2.send_redirects=0
+sysctl -w net.ipv4.conf.enp134s0f0.accept_redirects=0
+sysctl -w net.ipv4.conf.enp134s0f0.send_redirects=0
+
+
+```
+
 # ETHTOOL
 
 
 ```shell
+
+# queue
 
 ethtool -l devname 
 
@@ -1826,6 +1854,26 @@ ethtool -l devname
 
 ethtool -L devname combined 1
 
+
+```
+
+```shell
+
+# ring buffer
+
+ethtool -G enp134s0f0 rx 4096
+ethtool -G enp134s0f0 tx 4096
+ethtool -G enp134s0f2 rx 4096
+ethtool -G enp134s0f2 tx 4096
+
+```
+
+```shell
+
+# flow
+
+ethtool -N eth0 rx-flow-hash udp4 fn
+ethtool -N eth0 flow-type udp4 src-port 4242 dst-port 4242 action 16
 
 ```
 
@@ -12125,5 +12173,51 @@ sudo systemctl restart systemd-logind
 ```shell
 
 sudo apt install liburing
+
+```
+
+
+# AVALANCHE DUT SETUP
+
+```shell
+
+sysctl -w net.ipv4.ip_forward=1
+sysctl -w net.ipv4.conf.enp134s0f2.accept_redirects=0
+sysctl -w net.ipv4.conf.enp134s0f2.send_redirects=0
+sysctl -w net.ipv4.conf.enp134s0f0.accept_redirects=0
+sysctl -w net.ipv4.conf.enp134s0f0.send_redirects=0
+
+ethtool -G enp134s0f0 rx 4096
+ethtool -G enp134s0f0 tx 4096
+ethtool -G enp134s0f2 rx 4096
+ethtool -G enp134s0f2 tx 4096
+
+net.ipv4.neigh.default.gc_stale_time=57600
+net.ipv4.neigh.default.gc_thresh1 = 32768
+net.ipv4.neigh.default.gc_thresh2 = 32768
+net.ipv4.neigh.default.gc_thresh3 = 32768
+
+
+##########################################
+#                                        #
+#                  DUT                   #
+#  10.4.11.237/16     192.168.200.237/16 #
+## if0 ############## if1 ################
+   #                  #
+   #                  #
+   #                  #
+   #                  #
+   #                  #
+10.1.5.0/16 + 20000   192.168.200.0 + ? (8, 16...) 
+   #
+tun(192.168.0.0/16 + 20000)  
+
+# height means tunnel per sec
+# if 8 cores, set it to the multiples of 8
+# 8, 16, 24, 32, 64...
+# and client action and server count shoud match, 8
+# if server count and client action doubled, tunnel per sec doubles also
+# responder ips should be server ips
+
 
 ```
