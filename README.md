@@ -1,1 +1,1 @@
-# Yet Another Mindless Linux-junkie :zany_face:
+# Loony Linux Maniac :zany_face:
