@@ -39,11 +39,31 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	buf := make([]byte, 1024)
-	_, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println(err)
-		return
+
+	for {
+
+		readlen := 0
+
+		for readlen != 1024 {
+
+			n, err := conn.Read(buf[readlen:])
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			readlen += n
+		}
+
+		fmt.Printf("Received: %s", buf)
+
+		_, err := conn.Write(buf)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
 	}
 
-	fmt.Printf("Received: %s", buf)
 }
