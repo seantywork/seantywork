@@ -45,19 +45,24 @@ func handleClient(conn net.Conn) {
 	defer conn.Close()
 	buf := make([]byte, 512)
 	for {
+		readlen := 0
 		log.Print("server: conn: waiting")
-		n, err := conn.Read(buf)
-		if err != nil {
-			if err != nil {
-				log.Printf("server: conn: read: %s", err)
-			}
-			break
-		}
-		log.Printf("server: conn: echo %q\n", string(buf[:n]))
-		n, err = conn.Write(buf[:n])
 
-		n, err = conn.Write(buf[:n])
-		log.Printf("server: conn: wrote %d bytes", n)
+		for readlen != 512 {
+
+			n, err := conn.Read(buf[readlen:])
+			if err != nil {
+				if err != nil {
+					log.Printf("server: conn: read: %s", err)
+				}
+				break
+			}
+
+			readlen += n
+		}
+
+		log.Printf("server: conn: echo %q\n", string(buf))
+		_, err := conn.Write(buf)
 
 		if err != nil {
 			log.Printf("server: write: %s", err)
