@@ -12151,6 +12151,25 @@ sudo apt install fcitx5 fcitx5-hangul
 
 sudo reboot
 
+```
+
+```shell 
+
+apt-get install locales-all fonts-nanum 
+
+```
+
+```shell
+
+# debian
+
+sudo apt install fcitx5 fcitx5-hangul
+
+# enter fcitx5 configuration in menu
+
+# set as you knoe
+
+sudo reboot
 
 ```
 
