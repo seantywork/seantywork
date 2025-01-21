@@ -1,1 +1,1 @@
-# Loony Linux Maniac :zany_face:
+# Lunatic Linux Monkey :zany_face:
