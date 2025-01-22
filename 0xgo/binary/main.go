@@ -29,6 +29,24 @@ func main() {
 
 	testne := binary.NativeEndian.Uint32(ipbytes)
 
+	leP := unsafe.Pointer(&testle)
+
+	beP := unsafe.Pointer(&testbe)
+
+	neP := unsafe.Pointer(&testne)
+
+	fmt.Println("le==========")
+
+	fmt.Printf("%d\n", *(*byte)(leP))
+
+	fmt.Println("be==========")
+
+	fmt.Printf("%d\n", *(*byte)(beP))
+
+	fmt.Println("ne==========")
+
+	fmt.Printf("%d\n", *(*byte)(neP))
+
 	fmt.Printf("le: %d, be: %d, ne: %d\n", testle, testbe, testne)
 
 	lebytes := make([]byte, 4)
