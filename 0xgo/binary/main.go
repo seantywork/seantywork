@@ -1,6 +1,32 @@
 package main
 
+/*
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+
+void print_raw_uint32(uint32 value){
+
+	uint8_t arr[4] = {0};
+
+	memcpy(arr, &value);
+
+	for(int i = 0; i < 4; i++){
+
+		printf("%x ", arr[i]);
+
+	}
+
+	printf("\n");
+
+}
+
+*/
+
 import (
+	"C"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -38,6 +64,8 @@ func main() {
 	fmt.Println("le==========")
 
 	fmt.Printf("%d\n", *(*byte)(leP))
+
+	C.print_raw_bytes()
 
 	fmt.Println("be==========")
 
