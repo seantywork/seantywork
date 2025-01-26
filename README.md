@@ -11501,6 +11501,228 @@ sudo systemctl restart strongswan
 ```
 
 
+
+
+```shell
+
+# swanctl whitelist, attr-sql
+
+
+sudo apt-get update
+
+sudo apt-get -y install build-essential make libgmp-dev libsystemd-dev libcurl4-openssl-dev libldap-dev libtss2-dev libgcrypt20-dev libpam0g-dev libip4tc-dev pkg-config init sqlite3 libsqlite3-dev
+
+
+curl -L https://github.com/strongswan/strongswan/releases/download/6.0.0/strongswan-6.0.0.tar.gz -o strongswan-6.0.0.tar.gz
+
+tar -xzf strongswan-6.0.0.tar.gz
+
+pushd strongswan-6.0.0
+
+
+./configure --prefix=/usr --sysconfdir=/etc --enable-charon --enable-systemd \
+--disable-defaults \
+--enable-static \
+--enable-test-vectors \
+--enable-pki --enable-ikev2 --enable-vici --enable-swanctl \
+--enable-ldap \
+--enable-pkcs11 \
+--enable-tpm \
+--enable-aesni \
+--enable-aes \
+--enable-rc2 \
+--enable-sha2 \
+--enable-sha1 \
+--enable-md5 \
+--enable-mgf1 \
+--enable-rdrand \
+--enable-random \
+--enable-nonce \
+--enable-x509 \
+--enable-revocation \
+--enable-constraints \
+--enable-pubkey \
+--enable-pkcs1 \
+--enable-pkcs7 \
+--enable-pkcs8 \
+--enable-pkcs12 \
+--enable-pgp \
+--enable-dnskey \
+--enable-sshkey \
+--enable-pem \
+--enable-openssl \
+--enable-gcrypt \
+--enable-af-alg \
+--enable-fips-prf  \
+--enable-gmp  \
+--enable-curve25519 \
+--enable-agent \
+--enable-chapoly \
+--enable-xcbc \
+--enable-cmac \
+--enable-hmac \
+--enable-ctr \
+--enable-ccm \
+--enable-gcm \
+--enable-ntru \
+--enable-drbg \
+--enable-curl \
+--enable-attr \
+--enable-kernel-netlink \
+--enable-resolve \
+--enable-socket-default \
+--enable-connmark \
+--enable-forecast \
+--enable-farp \
+--enable-stroke \
+--enable-vici \
+--enable-updown \
+--enable-eap-identity \
+--enable-eap-aka \
+--enable-eap-md5 \
+--enable-eap-gtc \
+--enable-eap-mschapv2 \
+--enable-eap-dynamic \
+--enable-eap-radius \
+--enable-eap-tls \
+--enable-eap-ttls \
+--enable-eap-peap \
+--enable-eap-tnc \
+--enable-xauth-generic \
+--enable-xauth-eap \
+--enable-xauth-pam \
+--enable-tnc-tnccs \
+--enable-dhcp \
+--enable-lookip \
+--enable-error-notify \
+--enable-certexpire \
+--enable-led \
+--enable-addrblock \
+--enable-unity \
+--enable-counters \
+--enable-whitelist \ 
+--enable-sqlite \
+--enable-attr-sql 
+
+make 
+
+make install
+
+popd
+
+sudo pki --gen --size 4096 --type rsa --outform pem > ca.key.pem
+sudo pki --self --in ca.key.pem --type rsa --dn "CN=VPN Server CA" --ca --lifetime 3650 --outform pem > ca.cert.pem
+sudo pki --gen --size 4096 --type rsa --outform pem > server.key.pem
+sudo pki --pub --in server.key.pem --type rsa | pki --issue --lifetime 2750 --cacert ca.cert.pem --cakey ca.key.pem --dn "CN=vpn.example.com" --san "vpn.example.com" --flag serverAuth --flag ikeIntermediate --outform pem > server.cert.pem
+
+sudo /bin/cp -Rf ca.cert.pem /etc/swanctl/x509ca/
+sudo /bin/cp -Rf server.cert.pem /etc/swanctl/x509/
+sudo /bin/cp -Rf server.key.pem /etc/swanctl/private/
+
+# for client
+
+sudo pki --gen --type rsa --size 4096 --outform pem > client.key.pem
+sudo pki --pub --in client.key.pem --type rsa | pki --issue --lifetime 3650 --cacert ca.cert.pem --cakey ca.key.pem --dn "CN=test.client@test.org" --san "test.client@test.org" --outform pem > client.cert.pem
+
+
+sudo /bin/cp -Rf ca.cert.pem /tmp/ca.cert.pem
+sudo /bin/cp -Rf client.cert.pem /tmp/client.cert.pem
+sudo /bin/cp -Rf client.key.pem /tmp/client.key.pem
+
+sudo chmod 777 /tmp/ca.cert.pem
+sudo chmod 777 /tmp/client.cert.pem
+sudo chmod 777 /tmp/client.key.pem
+
+# for client done
+
+
+# /etc/swanctl/swanctl.conf
+
+connections {
+
+   rw {
+      local_addrs  = %any
+      pools = rw_pool
+      version = 2
+      proposals = aes256-sha256-modp2048
+      unique = never
+      encap = yes
+
+      local {
+         auth = pubkey
+         certs = server.cert.pem
+         id = vpn.example.com
+      }
+      remote {
+         auth = pubkey
+      }
+      children {
+         net {
+            local_ts  = 10.168.0.0/24
+            mode = tunnel
+            esp_proposals = aes256-sha256
+            dpd_action = restart
+            rekey_time = 0
+         }
+      }
+   }
+}
+
+pools{
+	rw_pool {
+		addrs = 10.168.0.0/24
+	}
+}
+
+
+sudo systemctl restart strongswan
+
+
+
+# whitelist 
+
+sudo /usr/libexec/ipsec/whitelist enable
+
+sudo /usr/libexec/ipsec/whitelist add test.client@test.org 
+
+sudo /usr/libexec/ipsec/whitelist list
+
+sudo /usr/libexec/ipsec/whitelist disable
+
+
+# attr-sql 
+
+# setup 
+
+pushd strongswan-6.0.0
+
+sqlite3 ${DB_PATH} < scr/pool/sqlite.sql 
+
+sudo vim /etc/strongswan.d/charon/attr-sql.conf
+
+database = sqlite://${DB_PATH}
+
+load = yes 
+
+sudo systemctl restart strongswan 
+
+# cmd
+
+sudo ipsec pool --status 
+
+udo ipsec pool --add rw_pool --addresses ./address.txt
+
+# address.txt example
+
+10.168.100.12=test.client@test.org
+
+udo ipsec pool --del rw_pool
+
+
+
+```
+
+
 ```shell
 
 # swanctl client
