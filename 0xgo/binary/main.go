@@ -1,17 +1,29 @@
 package main
 
+import (
+	"encoding/binary"
+	"fmt"
+	"net"
+	"unsafe"
+)
+
 /*
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
+void print_raw_uint32(int value){
 
-void print_raw_uint32(uint32 value){
+	uint32_t uval = (uint32_t)value;
+
+	printf("uval: %u\n", uval);
 
 	uint8_t arr[4] = {0};
 
-	memcpy(arr, &value);
+	memcpy(arr, &uval, 4);
 
 	for(int i = 0; i < 4; i++){
 
@@ -24,14 +36,7 @@ void print_raw_uint32(uint32 value){
 }
 
 */
-
-import (
-	"C"
-	"encoding/binary"
-	"fmt"
-	"net"
-	"unsafe"
-)
+import "C"
 
 func main() {
 
@@ -55,25 +60,17 @@ func main() {
 
 	testne := binary.NativeEndian.Uint32(ipbytes)
 
-	leP := unsafe.Pointer(&testle)
-
-	beP := unsafe.Pointer(&testbe)
-
-	neP := unsafe.Pointer(&testne)
-
 	fmt.Println("le==========")
 
-	fmt.Printf("%d\n", *(*byte)(leP))
-
-	C.print_raw_bytes()
+	C.print_raw_uint32(C.int(testle))
 
 	fmt.Println("be==========")
 
-	fmt.Printf("%d\n", *(*byte)(beP))
+	C.print_raw_uint32(C.int(testbe))
 
 	fmt.Println("ne==========")
 
-	fmt.Printf("%d\n", *(*byte)(neP))
+	C.print_raw_uint32(C.int(testne))
 
 	fmt.Printf("le: %d, be: %d, ne: %d\n", testle, testbe, testne)
 
@@ -107,6 +104,8 @@ func main() {
 
 	fmt.Printf("in: %d\n", in)
 
+	C.print_raw_uint32(C.int(in))
+
 	tmp := make([]byte, 4)
 
 	binary.BigEndian.PutUint32(tmp, in)
@@ -115,11 +114,15 @@ func main() {
 
 	fmt.Printf("out: %d\n", out)
 
+	C.print_raw_uint32(C.int(out))
+
 	fmt.Println("htonl")
 
 	in = out
 
 	fmt.Printf("in: %d\n", in)
+
+	C.print_raw_uint32(C.int(in))
 
 	tmp = make([]byte, 4)
 
@@ -129,4 +132,5 @@ func main() {
 
 	fmt.Printf("out: %d\n", out)
 
+	C.print_raw_uint32(C.int(out))
 }
