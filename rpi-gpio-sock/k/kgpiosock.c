@@ -46,6 +46,7 @@ static int __init drv_init(void) {
 
 	irq_number = gpio_to_irq(PIN_IN);
 
+
 	if(request_irq(irq_number, gpio_irq_handler, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING, "gpio_sock0", NULL) != 0) {
 		printk("gpio_sock: can't request interrupt %d.\n", irq_number);
 		gpio_free(PIN_IN);
