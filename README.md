@@ -10429,6 +10429,17 @@ allow_anonymous true
 * 🟠 3.3v (Power)
 
 ```
+
+
+```shell
+
+# get real pin number (device tree)
+
+
+cat /sys/kernel/debug/gpio
+
+```
+
 ```shell
 
 # pgpio
