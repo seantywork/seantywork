@@ -1,4 +1,4 @@
-config DUMMETH
-	tristate "dummeth kernel module"
+config DUMMVETH
+	tristate "dummveth kernel module"
 	help
 	  Dumber than dummies.

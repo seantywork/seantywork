@@ -1,5 +1,5 @@
-obj-m += dummeth.o
-dummeth-y += core.o
+obj-m += dummveth.o
+dummveth-y += core.o
 
 all:
 	make -C /lib/modules/`uname -r`/build M=`pwd` modules

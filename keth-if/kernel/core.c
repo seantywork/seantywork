@@ -17,7 +17,7 @@ module_param(timeout, int, 0);
 /*
  * Do we run in NAPI mode?
  */
-int use_napi = 1; 
+int use_napi = 0; 
 module_param(use_napi, int, 0);
 
 int pool_size = 8;

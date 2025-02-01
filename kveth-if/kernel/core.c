@@ -3,39 +3,39 @@
 
 
 
-struct net_device *dummeth_devs[DRV_COUNT];
-struct dummeth_priv *dummeth_privs[DRV_COUNT];
+struct net_device *dummveth_devs[DRV_COUNT];
+struct dummveth_priv *dummveth_privs[DRV_COUNT];
 int setup_ptr= 0;
 
 
 int lockup = 0;
 module_param(lockup, int, 0);
 
-int timeout = DUMMETH_TIMEOUT;
+int timeout = DUMMVETH_TIMEOUT;
 module_param(timeout, int, 0);
 
 /*
  * Do we run in NAPI mode?
  */
-int use_napi = 1; 
+int use_napi = 0; 
 module_param(use_napi, int, 0);
 
 int pool_size = 8;
 module_param(pool_size, int, 0);
 
 
-void (*dummeth_interrupt)(int, void *, struct pt_regs *);
+void (*dummveth_interrupt)(int, void *, struct pt_regs *);
 
 
-void dummeth_setup_pool(struct net_device *dev){
+void dummveth_setup_pool(struct net_device *dev){
 
-	struct dummeth_priv *priv = netdev_priv(dev);
+	struct dummveth_priv *priv = netdev_priv(dev);
 	int i;
-	struct dummeth_packet *pkt;
+	struct dummveth_packet *pkt;
 
 	priv->ppool = NULL;
 	for (i = 0; i < pool_size; i++) {
-		pkt = kmalloc (sizeof (struct dummeth_packet), GFP_KERNEL);
+		pkt = kmalloc (sizeof (struct dummveth_packet), GFP_KERNEL);
 		if (pkt == NULL) {
 			printk (KERN_INFO "out of memory allocating packet pool\n");
 			return;
@@ -49,10 +49,10 @@ void dummeth_setup_pool(struct net_device *dev){
 }
 
 
-void dummeth_teardown_pool(struct net_device *dev){
+void dummveth_teardown_pool(struct net_device *dev){
 
-	struct dummeth_priv *priv = netdev_priv(dev);
-	struct dummeth_packet *pkt;
+	struct dummveth_priv *priv = netdev_priv(dev);
+	struct dummveth_packet *pkt;
 
 	while ((pkt = priv->ppool)) {
 		priv->ppool = pkt->next;
@@ -62,11 +62,11 @@ void dummeth_teardown_pool(struct net_device *dev){
 }    
 
 
-struct dummeth_packet *dummeth_get_tx_buffer(struct net_device *dev){
+struct dummveth_packet *dummveth_get_tx_buffer(struct net_device *dev){
 
-	struct dummeth_priv *priv = netdev_priv(dev);
+	struct dummveth_priv *priv = netdev_priv(dev);
 	unsigned long flags;
-	struct dummeth_packet *pkt;
+	struct dummveth_packet *pkt;
 
 	spin_lock_irqsave(&priv->lock, flags);
 	pkt = priv->ppool;
@@ -86,10 +86,10 @@ struct dummeth_packet *dummeth_get_tx_buffer(struct net_device *dev){
 
 }
 
-void dummeth_release_buffer(struct dummeth_packet *pkt){
+void dummveth_release_buffer(struct dummveth_packet *pkt){
 
 	unsigned long flags;
-	struct dummeth_priv *priv = netdev_priv(pkt->dev);
+	struct dummveth_priv *priv = netdev_priv(pkt->dev);
 
 	spin_lock_irqsave(&priv->lock, flags);
 	pkt->next = priv->ppool;
@@ -103,10 +103,10 @@ void dummeth_release_buffer(struct dummeth_packet *pkt){
 
 }
 
-void dummeth_enqueue_buf(struct net_device *dev, struct dummeth_packet *pkt){
+void dummveth_enqueue_buf(struct net_device *dev, struct dummveth_packet *pkt){
 
 	unsigned long flags;
-	struct dummeth_priv *priv = netdev_priv(dev);
+	struct dummveth_priv *priv = netdev_priv(dev);
 
 	spin_lock_irqsave(&priv->lock, flags);
 	pkt->next = priv->rx_queue;  /* FIXME - misorders packets */
@@ -118,10 +118,10 @@ void dummeth_enqueue_buf(struct net_device *dev, struct dummeth_packet *pkt){
 
 
 
-struct dummeth_packet *dummeth_dequeue_buf(struct net_device *dev){
+struct dummveth_packet *dummveth_dequeue_buf(struct net_device *dev){
 
-	struct dummeth_priv *priv = netdev_priv(dev);
-	struct dummeth_packet *pkt;
+	struct dummveth_priv *priv = netdev_priv(dev);
+	struct dummveth_packet *pkt;
 	unsigned long flags;
 
 	spin_lock_irqsave(&priv->lock, flags);
@@ -134,24 +134,24 @@ struct dummeth_packet *dummeth_dequeue_buf(struct net_device *dev){
 
 }
 
-void dummeth_rx_ints(struct net_device *dev, int enable){
+void dummveth_rx_ints(struct net_device *dev, int enable){
 
-	struct dummeth_priv *priv = netdev_priv(dev);
+	struct dummveth_priv *priv = netdev_priv(dev);
 	priv->rx_int_enabled = enable;
 }
 
 
-void dummeth_rx(struct net_device *dev, struct dummeth_packet *pkt){
+void dummveth_rx(struct net_device *dev, struct dummveth_packet *pkt){
 
-    printk(KERN_INFO "dummeth rx\n");
+    printk(KERN_INFO "dummveth rx\n");
 
     struct sk_buff *skb;
-	struct dummeth_priv *priv = netdev_priv(dev);
+	struct dummveth_priv *priv = netdev_priv(dev);
 
 	skb = dev_alloc_skb(pkt->datalen + 2);
 	if (!skb) {
 		if (printk_ratelimit()){
-            printk(KERN_INFO "dummeth rx: low on mem - packet dropped\n");
+            printk(KERN_INFO "dummveth rx: low on mem - packet dropped\n");
         }
 		priv->stats.rx_dropped++;
 		goto out;
@@ -166,34 +166,34 @@ void dummeth_rx(struct net_device *dev, struct dummeth_packet *pkt){
 	priv->stats.rx_bytes += pkt->datalen;
 	netif_rx(skb);
 
-    printk(KERN_INFO "dummeth rx end\n");
+    printk(KERN_INFO "dummveth rx end\n");
   out:
-    printk(KERN_INFO "dummeth rx out\n");
+    printk(KERN_INFO "dummveth rx out\n");
 	return;
 
 }
 
-int dummeth_poll(struct napi_struct *napi, int budget){
+int dummveth_poll(struct napi_struct *napi, int budget){
 
 
 	int npackets = 0;
 	struct sk_buff *skb;
-	struct dummeth_priv *priv = container_of(napi, struct dummeth_priv, napi);
+	struct dummveth_priv *priv = container_of(napi, struct dummveth_priv, napi);
 	struct net_device *dev = priv->dev;
-	struct dummeth_packet *pkt;
+	struct dummveth_packet *pkt;
 
     printk(KERN_INFO "polling\n");
 
 	while (npackets < budget && priv->rx_queue) {
-		pkt = dummeth_dequeue_buf(dev);
+		pkt = dummveth_dequeue_buf(dev);
 		skb = dev_alloc_skb(pkt->datalen + 2);
 		if (! skb) {
 			if (printk_ratelimit()){
-                printk(KERN_INFO "dummeth: packet dropped\n");
+                printk(KERN_INFO "dummveth: packet dropped\n");
             }
 			priv->stats.rx_dropped++;
 			npackets++;
-			dummeth_release_buffer(pkt);
+			dummveth_release_buffer(pkt);
 			continue;
 		}
 		skb_reserve(skb, 2);  
@@ -206,7 +206,7 @@ int dummeth_poll(struct napi_struct *napi, int budget){
 		npackets++;
 		priv->stats.rx_packets++;
 		priv->stats.rx_bytes += pkt->datalen;
-		dummeth_release_buffer(pkt);
+		dummveth_release_buffer(pkt);
 	}
 
     printk(KERN_INFO "polling done\n");
@@ -217,7 +217,7 @@ int dummeth_poll(struct napi_struct *napi, int budget){
 		spin_lock_irqsave(&priv->lock, flags);
 		if (napi_complete_done(napi, npackets)){
 			printk(KERN_INFO "napi complete\n");
-            dummeth_rx_ints(dev, 1);
+            dummveth_rx_ints(dev, 1);
         }
 		spin_unlock_irqrestore(&priv->lock, flags);
 	}
@@ -228,13 +228,13 @@ int dummeth_poll(struct napi_struct *napi, int budget){
 
 }
 
-void dummeth_regular_interrupt(int irq, void *dev_id, struct pt_regs *regs){
+void dummveth_regular_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 
 	printk(KERN_INFO "regular interrupt\n");
 
 	int statusword;
-	struct dummeth_priv *priv;
-	struct dummeth_packet *pkt = NULL;
+	struct dummveth_priv *priv;
+	struct dummveth_packet *pkt = NULL;
 
 	struct net_device *dev = (struct net_device *)dev_id;
 
@@ -250,15 +250,15 @@ void dummeth_regular_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 	/* retrieve statusword: real netdevices use I/O instructions */
 	statusword = priv->status;
 	priv->status = 0;
-	if (statusword & DUMMETH_RX_INTR) {
+	if (statusword & DUMMVETH_RX_INTR) {
 
 		pkt = priv->rx_queue;
 		if (pkt) {
 			priv->rx_queue = pkt->next;
-			dummeth_rx(dev, pkt);
+			dummveth_rx(dev, pkt);
 		}
 	}
-	if (statusword & DUMMETH_TX_INTR) {
+	if (statusword & DUMMVETH_TX_INTR) {
 
 		priv->stats.tx_packets++;
 		priv->stats.tx_bytes += priv->tx_packetlen;
@@ -267,19 +267,19 @@ void dummeth_regular_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 
 	spin_unlock(&priv->lock);
 	if (pkt) {
-        dummeth_release_buffer(pkt); /* Do this outside the lock! */
+        dummveth_release_buffer(pkt); /* Do this outside the lock! */
     }
 	return;
 
 
 }
 
-void dummeth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
+void dummveth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 
     printk(KERN_INFO "napi interrupt\n");
 
 	int statusword;
-	struct dummeth_priv *priv;
+	struct dummveth_priv *priv;
 
 
 	struct net_device *dev = (struct net_device *)dev_id;
@@ -295,12 +295,12 @@ void dummeth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 	/* retrieve statusword: real netdevices use I/O instructions */
 	statusword = priv->status;
 	priv->status = 0;
-	if (statusword & DUMMETH_RX_INTR) {
+	if (statusword & DUMMVETH_RX_INTR) {
         printk(KERN_INFO "napi receive\n");
-		dummeth_rx_ints(dev, 0);  
+		dummveth_rx_ints(dev, 0);  
 		napi_schedule(&priv->napi);
 	}
-	if (statusword & DUMMETH_TX_INTR) {
+	if (statusword & DUMMVETH_TX_INTR) {
         printk(KERN_INFO "napi transmit\n");
 		priv->stats.tx_packets++;
 		priv->stats.tx_bytes += priv->tx_packetlen;
@@ -316,24 +316,24 @@ void dummeth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 	return;
 }
 
-void dummeth_hw_tx(char *buf, int len, struct net_device *dev){
+void dummveth_hw_tx(char *buf, int len, struct net_device *dev){
 
 
     printk(KERN_INFO "entered hw tx\n");
 	/*
 	 * This function deals with hw details. This interface loops
-	 * back the packet to the other dummeth interface (if any).
-	 * In other words, this function implements the dummeth behaviour,
+	 * back the packet to the other dummveth interface (if any).
+	 * In other words, this function implements the dummveth behaviour,
 	 * while all other procedures are rather device-independent
 	 */
 	struct iphdr *ih;
 	struct net_device *dest;
-	struct dummeth_priv *priv;
+	struct dummveth_priv *priv;
 	u32 *saddr, *daddr;
-	struct dummeth_packet *tx_buffer;
+	struct dummveth_packet *tx_buffer;
 
 	if (len < sizeof(struct ethhdr) + sizeof(struct iphdr)) {
-		printk("dummeth: packet too short (%i octets)\n",
+		printk("dummveth: packet too short (%i octets)\n",
 				len);
 		return;
 	}
@@ -353,6 +353,7 @@ void dummeth_hw_tx(char *buf, int len, struct net_device *dev){
 	 * Ethhdr is 14 bytes, but the kernel arranges for iphdr
 	 * to be aligned (i.e., ethhdr is unaligned)
 	 */
+	/*
 	ih = (struct iphdr *)(buf+sizeof(struct ethhdr));
 	saddr = &ih->saddr;
 	daddr = &ih->daddr;
@@ -360,11 +361,11 @@ void dummeth_hw_tx(char *buf, int len, struct net_device *dev){
 	((u8 *)saddr)[2] ^= 1; 
 	((u8 *)daddr)[2] ^= 1;
 
-	ih->check = 0;         /* and rebuild the checksum (ip needs it) */
+	ih->check = 0;         
 	ih->check = ip_fast_csum((unsigned char *)ih,ih->ihl);
 
 
-	if (dev == dummeth_devs[0])
+	if (dev == dummveth_devs[0])
 		printk(KERN_INFO "%08x:%05i --> %08x:%05i\n",
 				ntohl(ih->saddr),ntohs(((struct tcphdr *)(ih+1))->source),
 				ntohl(ih->daddr),ntohs(((struct tcphdr *)(ih+1))->dest));
@@ -373,22 +374,22 @@ void dummeth_hw_tx(char *buf, int len, struct net_device *dev){
 				ntohl(ih->daddr),ntohs(((struct tcphdr *)(ih+1))->dest),
 				ntohl(ih->saddr),ntohs(((struct tcphdr *)(ih+1))->source));
 
-
+	*/
 
 	/*
 	 * Ok, now the packet is ready for transmission: first simulate a
 	 * receive interrupt on the twin device, then  a
 	 * transmission-done on the transmitting device
 	 */
-	dest = dummeth_devs[dev == dummeth_devs[0] ? 1 : 0];
+	dest = dummveth_devs[dev == dummveth_devs[0] ? 1 : 0];
 	priv = netdev_priv(dest);
 	
-	struct dummeth_priv *spriv = netdev_priv(dev);
+	struct dummveth_priv *spriv = netdev_priv(dev);
 
 	printk(KERN_INFO "src: rx_int_enabled: %d\n", spriv->rx_int_enabled);
 	printk(KERN_INFO "dst: rx_int_enabled: %d\n", priv->rx_int_enabled);
 	
-	tx_buffer = dummeth_get_tx_buffer(dev);
+	tx_buffer = dummveth_get_tx_buffer(dev);
 
 	if(!tx_buffer) {
 		printk(KERN_INFO "out of tx buffer, len is %i\n",len);
@@ -397,17 +398,17 @@ void dummeth_hw_tx(char *buf, int len, struct net_device *dev){
 
 	tx_buffer->datalen = len;
 	memcpy(tx_buffer->data, buf, len);
-	dummeth_enqueue_buf(dest, tx_buffer);
+	dummveth_enqueue_buf(dest, tx_buffer);
 	if (priv->rx_int_enabled) {
 
-		priv->status |= DUMMETH_RX_INTR;
-		dummeth_interrupt(0, dest, NULL);
+		priv->status |= DUMMVETH_RX_INTR;
+		dummveth_interrupt(0, dest, NULL);
 	}
 
 	priv = netdev_priv(dev);
 	priv->tx_packetlen = len;
 	priv->tx_packetdata = buf;
-	priv->status |= DUMMETH_TX_INTR;
+	priv->status |= DUMMVETH_TX_INTR;
 	if (lockup && ((priv->stats.tx_packets + 1) % lockup) == 0) {
         	/* Simulate a dropped transmit interrupt */
 		netif_stop_queue(dev);
@@ -415,7 +416,7 @@ void dummeth_hw_tx(char *buf, int len, struct net_device *dev){
 	}
 	else{
 
-        dummeth_interrupt(0, dev, NULL);
+        dummveth_interrupt(0, dev, NULL);
     }
 
 
@@ -424,7 +425,7 @@ void dummeth_hw_tx(char *buf, int len, struct net_device *dev){
 
 
 
-int dummeth_rebuild_header(struct sk_buff *skb){
+int dummveth_rebuild_header(struct sk_buff *skb){
 
 	struct ethhdr *eth = (struct ethhdr *) skb->data;
 	struct net_device *dev = skb->dev;
@@ -439,7 +440,7 @@ int dummeth_rebuild_header(struct sk_buff *skb){
 
 
 
-int dummeth_header(struct sk_buff *skb, struct net_device *dev,
+int dummveth_header(struct sk_buff *skb, struct net_device *dev,
                 unsigned short type, const void *daddr, const void *saddr,
                 unsigned len){
 
@@ -454,10 +455,10 @@ int dummeth_header(struct sk_buff *skb, struct net_device *dev,
 }
 
 
-int dummeth_change_mtu(struct net_device *dev, int new_mtu){
+int dummveth_change_mtu(struct net_device *dev, int new_mtu){
 
 	unsigned long flags;
-	struct dummeth_priv *priv = netdev_priv(dev);
+	struct dummveth_priv *priv = netdev_priv(dev);
 	spinlock_t *lock = &priv->lock;
 
 	if ((new_mtu < 68) || (new_mtu > 1500)){
@@ -472,50 +473,50 @@ int dummeth_change_mtu(struct net_device *dev, int new_mtu){
 
 }
 
-int dummeth_open(struct net_device *dev){
+int dummveth_open(struct net_device *dev){
 
-	if (dev == dummeth_devs[1]){
+	if (dev == dummveth_devs[1]){
 
-        memcpy(dev->dev_addr, "\0DETH1", ETH_ALEN);
+        memcpy(dev->dev_addr, "VDETH1", ETH_ALEN);
 
 
     } else {
 
-		memcpy(dev->dev_addr, "\0DETH0", ETH_ALEN);
+		memcpy(dev->dev_addr, "VDETH0", ETH_ALEN);
 	}
 
 	if (use_napi) {
-		struct dummeth_priv *priv = netdev_priv(dev);
+		struct dummveth_priv *priv = netdev_priv(dev);
 		napi_enable(&priv->napi);
 	}
 	netif_start_queue(dev);
 
-    printk(KERN_INFO "started dummeth\n");
+    printk(KERN_INFO "started dummveth\n");
 
 	return 0;
 }
 
-int dummeth_stop(struct net_device *dev){
+int dummveth_stop(struct net_device *dev){
 
 	netif_stop_queue(dev);
     if (use_napi) {
-        struct dummeth_priv *priv = netdev_priv(dev);
+        struct dummveth_priv *priv = netdev_priv(dev);
         napi_disable(&priv->napi);
     }
 	return 0;
 
-    printk(KERN_INFO "stopped dummeth\n");
+    printk(KERN_INFO "stopped dummveth\n");
 }
 
 
-int dummeth_set_config(struct net_device *dev, struct ifmap *map){
+int dummveth_set_config(struct net_device *dev, struct ifmap *map){
 
 	if (dev->flags & IFF_UP){
         return -EBUSY;
     }
 
 	if (map->base_addr != dev->base_addr) {
-		printk(KERN_INFO "dummeth: can't change I/O address\n");
+		printk(KERN_INFO "dummveth: can't change I/O address\n");
 		return -EOPNOTSUPP;
 	}
 
@@ -528,13 +529,13 @@ int dummeth_set_config(struct net_device *dev, struct ifmap *map){
 	return 0;
 }
 
-netdev_tx_t dummeth_xmit(struct sk_buff *skb, struct net_device *dev){
+netdev_tx_t dummveth_xmit(struct sk_buff *skb, struct net_device *dev){
 
     printk("entered xmit\n");
 
 	int len;
 	char *data, shortpkt[ETH_ZLEN];
-	struct dummeth_priv *priv = netdev_priv(dev);
+	struct dummveth_priv *priv = netdev_priv(dev);
 
 	data = skb->data;
 	len = skb->len;
@@ -548,7 +549,7 @@ netdev_tx_t dummeth_xmit(struct sk_buff *skb, struct net_device *dev){
 
 	priv->skb = skb;
 
-	dummeth_hw_tx(data, len, dev);
+	dummveth_hw_tx(data, len, dev);
 
 
     printk("exiting xmit\n");
@@ -559,16 +560,16 @@ netdev_tx_t dummeth_xmit(struct sk_buff *skb, struct net_device *dev){
 
 }
 
-int dummeth_do_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd){
+int dummveth_do_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd){
 
 
-    printk(KERN_INFO "dummeth ioctl\n");
+    printk(KERN_INFO "dummveth ioctl\n");
 	return 0;
 }
 
-struct net_device_stats* dummeth_get_stats(struct net_device *dev){
+struct net_device_stats* dummveth_get_stats(struct net_device *dev){
 
-	struct dummeth_priv *priv = netdev_priv(dev);
+	struct dummveth_priv *priv = netdev_priv(dev);
 	return &priv->stats;
 
 }
@@ -576,111 +577,111 @@ struct net_device_stats* dummeth_get_stats(struct net_device *dev){
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
 
-void dummeth_tx_timeout(struct net_device *dev)
+void dummveth_tx_timeout(struct net_device *dev)
 
 #else 
 
-void dummeth_tx_timeout(struct net_device *dev, unsigned int txqueue)
+void dummveth_tx_timeout(struct net_device *dev, unsigned int txqueue)
 
 #endif 
 
 {
-	struct dummeth_priv *priv = netdev_priv(dev);
+	struct dummveth_priv *priv = netdev_priv(dev);
     struct netdev_queue *txq = netdev_get_tx_queue(dev, 0);
 
 	printk(KERN_INFO "transmit timeout at %ld, latency %ld\n", jiffies,
 			jiffies - txq->trans_start);
 
-	priv->status |= DUMMETH_TX_INTR;
-	dummeth_interrupt(0, dev, NULL);
+	priv->status |= DUMMVETH_TX_INTR;
+	dummveth_interrupt(0, dev, NULL);
 	priv->stats.tx_errors++;
 
 	spin_lock(&priv->lock);
-	dummeth_teardown_pool(dev);
-	dummeth_setup_pool(dev);
+	dummveth_teardown_pool(dev);
+	dummveth_setup_pool(dev);
 	spin_unlock(&priv->lock);
 
 	netif_wake_queue(dev);
 	return;
 }
 
-const struct header_ops dummeth_header_ops = {
-    .create = dummeth_header
+const struct header_ops dummveth_header_ops = {
+    .create = dummveth_header
 };
 
 
 
-const struct net_device_ops dummeth_netdev_ops = {
-	.ndo_open            = dummeth_open,
-	.ndo_stop            = dummeth_stop,
-	.ndo_start_xmit      = dummeth_xmit,
-	.ndo_do_ioctl        = dummeth_do_ioctl,
-	.ndo_set_config      = dummeth_set_config,
-	.ndo_get_stats       = dummeth_get_stats,
-	.ndo_change_mtu      = dummeth_change_mtu,
-	.ndo_tx_timeout      = dummeth_tx_timeout,
+const struct net_device_ops dummveth_netdev_ops = {
+	.ndo_open            = dummveth_open,
+	.ndo_stop            = dummveth_stop,
+	.ndo_start_xmit      = dummveth_xmit,
+	.ndo_do_ioctl        = dummveth_do_ioctl,
+	.ndo_set_config      = dummveth_set_config,
+	.ndo_get_stats       = dummveth_get_stats,
+	.ndo_change_mtu      = dummveth_change_mtu,
+	.ndo_tx_timeout      = dummveth_tx_timeout,
 };
 
 
 
 
-void dummeth_setup(struct net_device *dev){
+void dummveth_setup(struct net_device *dev){
 
 
 
 	ether_setup(dev); 
 	dev->watchdog_timeo = timeout;
-	dev->netdev_ops = &dummeth_netdev_ops;
-	dev->header_ops = &dummeth_header_ops;
+	dev->netdev_ops = &dummveth_netdev_ops;
+	dev->header_ops = &dummveth_header_ops;
 	dev->flags           |= IFF_NOARP;
 	dev->features        |= NETIF_F_HW_CSUM;
 
-	dummeth_privs[setup_ptr] = netdev_priv(dev);
+	dummveth_privs[setup_ptr] = netdev_priv(dev);
 
-	memset(dummeth_privs[setup_ptr], 0, sizeof(struct dummeth_priv));
+	memset(dummveth_privs[setup_ptr], 0, sizeof(struct dummveth_priv));
 	if (use_napi) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
-		netif_napi_add(dev, &(dummeth_privs[setup_ptr])->napi, dummeth_poll,2);
+		netif_napi_add(dev, &(dummveth_privs[setup_ptr])->napi, dummveth_poll,2);
 #else 
-        netif_napi_add_weight(dev, &(dummeth_privs[setup_ptr])->napi, dummeth_poll,2);
+        netif_napi_add_weight(dev, &(dummveth_privs[setup_ptr])->napi, dummveth_poll,2);
 #endif
 	}
-	spin_lock_init(&(dummeth_privs[setup_ptr])->lock);
-	dummeth_privs[setup_ptr]->dev = dev;
+	spin_lock_init(&(dummveth_privs[setup_ptr])->lock);
+	dummveth_privs[setup_ptr]->dev = dev;
 
-	dummeth_rx_ints(dev, 1);	
-	dummeth_setup_pool(dev);
+	dummveth_rx_ints(dev, 1);	
+	dummveth_setup_pool(dev);
 
 	setup_ptr += 1;
 
-	printk(KERN_INFO "dummeth: setup success: %d\n", setup_ptr);
+	printk(KERN_INFO "dummveth: setup success: %d\n", setup_ptr);
 }
 
 
 
-static int __init dummeth_init_module(void){
+static int __init dummveth_init_module(void){
 
 	int err;
 
-    dummeth_interrupt = use_napi ? dummeth_napi_interrupt : dummeth_regular_interrupt;
+    dummveth_interrupt = use_napi ? dummveth_napi_interrupt : dummveth_regular_interrupt;
 
-	dummeth_devs[0] = alloc_netdev(sizeof(struct dummeth_priv), "dummeth%d", NET_NAME_UNKNOWN, dummeth_setup);
-	if (!dummeth_devs[0]){
+	dummveth_devs[0] = alloc_netdev(sizeof(struct dummveth_priv), "dummveth%d", NET_NAME_UNKNOWN, dummveth_setup);
+	if (!dummveth_devs[0]){
         return -ENOMEM;
     }
 
-	dummeth_devs[1] = alloc_netdev(sizeof(struct dummeth_priv), "dummeth%d", NET_NAME_UNKNOWN, dummeth_setup);
+	dummveth_devs[1] = alloc_netdev(sizeof(struct dummveth_priv), "dummveth%d", NET_NAME_UNKNOWN, dummveth_setup);
 
-	if (!dummeth_devs[1]){
+	if (!dummveth_devs[1]){
         return -ENOMEM;
     }
 
-	err = register_netdevice(dummeth_devs[0]);
+	err = register_netdevice(dummveth_devs[0]);
 	if (err < 0) {
         goto err1;
     }
 
-    err = register_netdevice(dummeth_devs[1]);
+    err = register_netdevice(dummveth_devs[1]);
 
     if(err < 0) {
 
@@ -692,27 +693,27 @@ static int __init dummeth_init_module(void){
 
 err1:
 
-	free_netdev(dummeth_devs[0]);
+	free_netdev(dummveth_devs[0]);
 	return err;
 
 err2:
-	free_netdev(dummeth_devs[0]);
-    free_netdev(dummeth_devs[1]);
+	free_netdev(dummveth_devs[0]);
+    free_netdev(dummveth_devs[1]);
 	return err; 
 
 }
 
 
 
-static void __exit dummeth_cleanup_module(void)
+static void __exit dummveth_cleanup_module(void)
 {
 	int i;
 
 	for (i = 0; i < DRV_COUNT; i++) {
-		if (dummeth_devs[i]) {
-			unregister_netdev(dummeth_devs[i]);
-			dummeth_teardown_pool(dummeth_devs[i]);
-			free_netdev(dummeth_devs[i]);
+		if (dummveth_devs[i]) {
+			unregister_netdev(dummveth_devs[i]);
+			dummveth_teardown_pool(dummveth_devs[i]);
+			free_netdev(dummveth_devs[i]);
 		}
 	}
 	return;
@@ -721,6 +722,6 @@ static void __exit dummeth_cleanup_module(void)
 
 
 
-module_init(dummeth_init_module);
-module_exit(dummeth_cleanup_module);
+module_init(dummveth_init_module);
+module_exit(dummveth_cleanup_module);
 MODULE_LICENSE("GPL");
