@@ -1,4 +1,3 @@
-.vscode
 *.o
 *.out
 *.so
@@ -6,3 +5,10 @@
 *.run
 grpc/grpc-go
 VENV
+*.cmd
+*.ko
+*.mod
+*.symvers
+*.order
+*.mod.c
+.vscode
