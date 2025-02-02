@@ -3183,6 +3183,21 @@ sudo mkfs.vfat /dev/sdb1
 sudo eject /dev/sdb
 ```
 
+# APT
+
+```shell
+
+# hash sum mismatch
+
+sudo rm -rf /var/lib/apt/lists/*
+
+sudo apt clean
+
+sudo apt update
+
+
+```
+
 # APT KEY
 
 ```shell
