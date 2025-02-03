@@ -242,3 +242,33 @@ func (conn *ShellConnection) SendCommandsBackground(cmds string) ([]byte, error)
 	}
 	return stdoutB.Bytes(), nil
 }
+
+func SanitizeUnnecessary(line string) string {
+
+	ret := ""
+
+	line = strings.ReplaceAll(line, " ", "")
+	line = strings.ReplaceAll(line, "\n", "")
+
+	llen := len(line)
+
+	for i := 0; i < llen; i++ {
+
+		if line[i] == '[' || line[i] == ']' {
+
+			continue
+
+		} else if line[i] == ',' {
+
+			ret += " "
+
+		} else {
+
+			ret += string(line[i])
+
+		}
+
+	}
+
+	return ret
+}
