@@ -3636,13 +3636,30 @@ openssl genrsa -out ca_priv.pem 2048
 
 openssl rsa -in ca_priv.pem -outform PEM -pubout -out ca_pub.pem
 
+# ec 
+
+openssl genpkey -algorithm ed25519 -out ./certs/ca_priv.pem 
+
+openssl pkey -in ./certs/ca_priv.pem -outform PEM -pubout -out ./certs/ca_pub.pem
+
+# gencert
+
 openssl req -x509 -new -key ca_priv.pem -days 365 -out ca.crt -subj "/CN=issuerforseantywork.com"
+
 
 # subject(issuer) keygen
 
 openssl genrsa -out sub_priv.pem 2048
 
 openssl rsa -in sub_priv.pem -outform PEM -pubout -out sub_pub.pem
+
+# ec
+
+openssl genpkey -algorithm ed25519 -out ./certs/server.key 
+
+openssl pkey -in ./certs/server.key -outform PEM -pubout -out ./certs/server.pub
+
+
 
 # subject csr
 
