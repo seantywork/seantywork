@@ -235,9 +235,11 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
                     rsa_pub_key,
                     RSA_PKCS1_OAEP_PADDING);
 
-    printf("%d\n", enc_len);
+
 
     unsigned char* enc_hex = char2hex(enc_len, (unsigned char*)enc_msg);
+
+    printf("enclen: %d\n", enc_len);
 
     fp = fopen(enc_msg_path, "w");
 
@@ -312,6 +314,8 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
 
 
     strcpy(plain_msg, dec_msg);
+
+    printf("declen: %d\n", dec_len);
 
     RSA_free(rsa_priv_key);
     EVP_PKEY_free(priv_key);
