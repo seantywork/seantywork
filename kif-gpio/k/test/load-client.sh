@@ -2,10 +2,10 @@
 
 SERVER=0
 
-LINE_18=$(cat /sys/kernel/debug/gpio | grep GPIO18)
+LINE_24=$(cat /sys/kernel/debug/gpio | grep GPIO24)
 
 
-PIN_OUT=$(echo $LINE_18 | awk -F "-" '{print $2}' | awk -F "(" '{print $1}')
+PIN_OUT=$(echo $LINE_24 | awk -F "-" '{print $2}' | awk -F "(" '{print $1}')
 
 
 echo $PIN_OUT
