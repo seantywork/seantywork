@@ -28,7 +28,7 @@ module_param(pin_c0, int, 0644);
 static unsigned int irq_number;
 
 static irqreturn_t gpio_irq_handler(int irq, void *dev_id) {
-	printk("gpio_sock: interrupt was triggered and ISR was called.\n");
+	//printk("gpio_sock: interrupt was triggered and ISR was called.\n");
 	return IRQ_HANDLED;
 }
 
