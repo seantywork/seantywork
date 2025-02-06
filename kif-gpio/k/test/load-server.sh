@@ -1,7 +1,8 @@
 #!/bin/bash
 
 
-$SERVER=1
+
+SERVER=1
 
 LINE_27=$(cat /sys/kernel/debug/gpio | grep GPIO27)
 

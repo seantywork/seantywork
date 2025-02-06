@@ -1,6 +1,6 @@
 #!/bin/bash
 
-$SERVER=0
+SERVER=0
 
 LINE_18=$(cat /sys/kernel/debug/gpio | grep GPIO18)
 
