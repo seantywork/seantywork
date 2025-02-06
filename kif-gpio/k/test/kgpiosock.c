@@ -79,7 +79,7 @@ static int __init drv_init(void) {
 			return -1;
 		}
 
-		gpio_set_value(pin_c0, 0);
+		gpio_set_value(pin_s0, 0);
 
 		irq_number = gpio_to_irq(pin_s0);
 
