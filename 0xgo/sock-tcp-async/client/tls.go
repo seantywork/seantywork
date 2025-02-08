@@ -40,10 +40,10 @@ func TlsConnection() {
 	}
 	log.Println("client: handshake: ", state.HandshakeComplete)
 	log.Println("client: mutual: ", state.NegotiatedProtocolIsMutual)
+	wbuf := make([]byte, 1024)
 
-	message := make([]byte, 1024)
-	copy(message, "hello tls server")
-	n, err := conn.Write(message)
+	copy(wbuf, "Hello, tls server!")
+	n, err := conn.Write(wbuf)
 	if err != nil {
 		log.Fatalf("client: write: %s", err)
 	}
@@ -62,6 +62,7 @@ func TlsConnection() {
 
 		readlen += n
 	}
+
 	log.Printf("client: read :%s (%d bytes)", string(reply[:readlen]), readlen)
 	time.Sleep(time.Millisecond * 1000)
 	log.Print("client: exiting")

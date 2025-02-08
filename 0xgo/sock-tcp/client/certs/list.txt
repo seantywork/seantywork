@@ -1,3 +1,0 @@
-ca_priv.pem 
-ca_pub.pem 
-ca.pem 

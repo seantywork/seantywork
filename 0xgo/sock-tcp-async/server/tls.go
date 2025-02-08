@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"log"
-	"net"
 )
 
 func TlsListen() {
@@ -37,42 +36,16 @@ func TlsListen() {
 				log.Print(x509.MarshalPKIXPublicKey(v.PublicKey))
 			}
 		}
-		go handleClient(conn)
+
+		rc := make(chan []byte, 1024)
+
+		wc := make(chan []byte, 1024)
+
+		go readHandler(conn, rc)
+
+		go worker(rc, wc)
+
+		go writeHandler(conn, wc)
+
 	}
-}
-
-func handleClient(conn net.Conn) {
-	defer conn.Close()
-	buf := make([]byte, 1024)
-	var reterr error = nil
-	for {
-		readlen := 0
-		log.Print("server: conn: waiting")
-
-		for readlen != 1024 {
-
-			n, err := conn.Read(buf[readlen:])
-			if err != nil {
-
-				reterr = err
-				break
-			}
-
-			readlen += n
-		}
-
-		if reterr != nil {
-			log.Printf("server: conn: read: %s", reterr)
-			return
-		}
-
-		log.Printf("server: conn: echo %s\n", string(buf))
-		_, err := conn.Write(buf)
-
-		if err != nil {
-			log.Printf("server: write: %s", err)
-			break
-		}
-	}
-	log.Println("server: conn: closed")
 }
