@@ -26,7 +26,9 @@ struct spinlock {
     int locked;
 };
 
-
+void spinlock_init(struct spinlock* spinlock) {
+    atomic_store(&spinlock->locked, 0);
+}
 
 void spinlock_lock(struct spinlock* spinlock) {
     while (!atomic_compare_exchange(&spinlock->locked, 0, 1)) {
@@ -39,7 +41,7 @@ void spinlock_unlock(struct spinlock* spinlock) {
 
 pthread_t tid[2]; 
 
-struct spinlock lock = SPINLOCK_INIT;
+struct spinlock lock;
 
 int counter = 0;
 
@@ -66,6 +68,7 @@ int main(void)
     int i = 0; 
     int error; 
   
+    spinlock_init(&lock);
   
     while (i < 2) { 
         error = pthread_create(&(tid[i]), 

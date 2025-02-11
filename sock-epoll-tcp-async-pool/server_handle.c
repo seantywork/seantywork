@@ -107,7 +107,11 @@ void handle_client(int i){
         return;
     }
 
-    to_worker(i, CLIENT_SOCKET[i].data.fd, (uint8_t*)buff);
+    uint8_t* newbuff = malloc(MAX_BUFF * sizeof(uint8_t));
+
+    memcpy(newbuff, buff, MAX_BUFF * sizeof(uint8_t));
+
+    to_worker(i, CLIENT_SOCKET[i].data.fd, newbuff);
 
 
 }
@@ -115,11 +119,35 @@ void handle_client(int i){
 
 void to_worker(int id, int fd, uint8_t* data){
 
-    pthread_mutex_lock(&APOOL[id].lock);
+    int idx = 0;
+    
+    while(1){
 
+        pthread_mutex_lock(&APOOL[id].lock);
 
-    APOOL[id].fd = fd;
-    APOOL[id].data = data;
+        spinlock_lock(&APOOL[id].data_idx_lock);
+
+        if(APOOL[id].data_idx == MAX_BUFF){
+
+            spinlock_unlock(&APOOL[id].data_idx_lock);
+
+            pthread_mutex_unlock(&APOOL[id].lock);
+
+            continue;
+        }
+
+        APOOL[id].data_idx += 1;
+
+        idx = APOOL[id].data_idx;
+
+        APOOL[id].fd = fd;
+        APOOL[id].data[idx] = data;
+
+        spinlock_unlock(&APOOL[id].data_idx_lock);
+
+        break;
+    }
+
 
     pthread_cond_signal(&APOOL[id].cond);
 
@@ -132,6 +160,8 @@ void* worker(void *varg){
 
     int wfd;
 
+    int idx;
+
     uint8_t *wdata;
 
     while(1){
@@ -140,21 +170,38 @@ void* worker(void *varg){
 
         pthread_cond_wait(&APOOL[id].cond, &APOOL[id].lock);
 
+        spinlock_lock(&APOOL[id].data_idx_lock);
+
+        if (APOOL[id].data_idx < 0){
+
+            spinlock_unlock(&APOOL[id].data_idx_lock);
+
+            pthread_mutex_unlock(&APOOL[id].lock);
+
+            continue;
+        }
+
+        idx = APOOL[id].data_idx;
+        
+        APOOL[id].data_idx -= 1;
+        
         wfd = APOOL[id].fd;
 
         wdata = (uint8_t*)malloc(MAX_BUFF * sizeof(uint8_t));
 
-        memset(wdata, APOOL[id].data, MAX_BUFF * sizeof(uint8_t));
+        memset(wdata, 0, MAX_BUFF * sizeof(uint8_t));
 
-        memcpy(wdata, APOOL[id].data, MAX_BUFF * sizeof(uint8_t));
+        memcpy(wdata, APOOL[id].data[idx], MAX_BUFF * sizeof(uint8_t));
 
-        pthread_mutex_unlock(&APOOL[id].lock);
-        
+        free(APOOL[id].data[idx]);
+
+        spinlock_unlock(&APOOL[id].data_idx_lock);
+
+        pthread_mutex_unlock(&APOOL[id].lock);        
 
         printf("worker: %d: received: %s\n", id, wdata);
 
         to_writer(id, wfd, wdata);
-
 
     }
 
@@ -162,12 +209,35 @@ void* worker(void *varg){
 
 void to_writer(int id, int fd, uint8_t* data){
 
+    int idx = 0;
 
-    pthread_mutex_lock(&AWPOOL[id].lock);
+    while(1){
 
-    AWPOOL[id].fd = fd; 
+        pthread_mutex_lock(&AWPOOL[id].lock);
 
-    AWPOOL[id].data = data;
+        spinlock_lock(&AWPOOL[id].data_idx_lock);
+
+        if(AWPOOL[id].data_idx == MAX_BUFF){
+
+            spinlock_unlock(&AWPOOL[id].data_idx_lock);
+
+            pthread_mutex_unlock(&AWPOOL[id].lock);
+
+            continue;
+        }
+
+        AWPOOL[id].data_idx += 1;
+
+        idx = AWPOOL[id].data_idx;
+
+        AWPOOL[id].fd = fd;
+        AWPOOL[id].data[idx] = data;
+
+        spinlock_unlock(&AWPOOL[id].data_idx_lock);
+
+        break;
+    }
+
 
     pthread_cond_signal(&AWPOOL[id].cond);
 
@@ -181,6 +251,8 @@ void* writer(void *varg){
 
     int wfd;
 
+    int idx;
+
     uint8_t *wdata;
 
     for (;;){
@@ -189,15 +261,32 @@ void* writer(void *varg){
 
         pthread_cond_wait(&AWPOOL[id].cond, &AWPOOL[id].lock);
 
+        spinlock_lock(&AWPOOL[id].data_idx_lock);
+
+        if (AWPOOL[id].data_idx < 0){
+
+            spinlock_unlock(&AWPOOL[id].data_idx_lock);
+
+            pthread_mutex_unlock(&AWPOOL[id].lock);
+
+            continue;
+        }
+
+        idx = AWPOOL[id].data_idx;
+        
+        AWPOOL[id].data_idx -= 1;
+        
         wfd = AWPOOL[id].fd;
 
         wdata = (uint8_t*)malloc(MAX_BUFF * sizeof(uint8_t));
 
-        memset(wdata, AWPOOL[id].data, MAX_BUFF * sizeof(uint8_t));
+        memset(wdata, 0, MAX_BUFF * sizeof(uint8_t));
 
-        memcpy(wdata, AWPOOL[id].data, MAX_BUFF * sizeof(uint8_t));
+        memcpy(wdata, AWPOOL[id].data[idx], MAX_BUFF * sizeof(uint8_t));
 
         free(AWPOOL[id].data);
+
+        spinlock_unlock(&AWPOOL[id].data_idx_lock);
 
         pthread_mutex_unlock(&AWPOOL[id].lock);
 

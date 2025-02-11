@@ -102,6 +102,8 @@ int main()
 
         APOOL_ID[i] = i;
 
+        spinlock_init(&APOOL[i].data_idx_lock);
+        spinlock_init(&AWPOOL[i].data_idx_lock);
 
         pthread_mutex_init(&APOOL[i].lock, NULL);
         pthread_mutex_init(&AWPOOL[i].lock, NULL);
@@ -109,10 +111,13 @@ int main()
         pthread_cond_init(&APOOL[i].cond, NULL);
         pthread_cond_init(&AWPOOL[i].cond, NULL);
 
+        APOOL[i].data = (uint8_t**)malloc(MAX_BUFF * sizeof(uint8_t*));
+        AWPOOL[i].data = (uint8_t**)malloc(MAX_BUFF * sizeof(uint8_t*));
 
         pthread_create(&WORK_PID[i], NULL, worker, (void*)&APOOL_ID[i]);
-
         pthread_create(&WRITE_PID[i], NULL, writer, (void*)&APOOL_ID[i]);
+
+
 
     }
 
@@ -178,3 +183,6 @@ int main()
 
     return EXIT_SUCCESS;
 }
+
+
+

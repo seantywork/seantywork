@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project (cc_http_server)
+project (cc_asio_server)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
