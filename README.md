@@ -514,6 +514,7 @@ ar rcs # for .a
 
 -D  # define variable
 
+-fanalyzer # on static analysis
 
 ```
 
