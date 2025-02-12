@@ -17,7 +17,7 @@ module_param(timeout, int, 0);
 /*
  * Do we run in NAPI mode?
  */
-int use_napi = 0; 
+int use_napi = 1; 
 module_param(use_napi, int, 0);
 
 int pool_size = 8;
@@ -217,7 +217,7 @@ int dummveth_poll(struct napi_struct *napi, int budget){
 		spin_lock_irqsave(&priv->lock, flags);
 		if (napi_complete_done(napi, npackets)){
 			printk(KERN_INFO "napi complete\n");
-            dummveth_rx_ints(dev, 1);
+            //dummveth_rx_ints(dev, 1);
         }
 		spin_unlock_irqrestore(&priv->lock, flags);
 	}
@@ -297,7 +297,7 @@ void dummveth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 	priv->status = 0;
 	if (statusword & DUMMVETH_RX_INTR) {
         printk(KERN_INFO "napi receive\n");
-		dummveth_rx_ints(dev, 0);  
+		//dummveth_rx_ints(dev, 0);  
 		napi_schedule(&priv->napi);
 	}
 	if (statusword & DUMMVETH_TX_INTR) {
