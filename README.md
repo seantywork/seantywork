@@ -3610,11 +3610,11 @@ export GOPRIVATE=private.git.com
 
 # subgroup
 
-git config --global url."https://${ID}:${PW}@private.git.com/sub/".insteadOf "https://private.git.com/sub/"
+git config --global url."https://${ID}:${PW}@private.git.com/sub".insteadOf "https://private.git.com/sub"
 
-export GONOPROXY=private.git.com/sub/
-export GONOSUMDB=private.git.com/sub/
-export GOPRIVATE=private.git.com/sub/
+export GONOPROXY=private.git.com/sub
+export GONOSUMDB=private.git.com/sub
+export GOPRIVATE=private.git.com/sub
 
 ```
 
