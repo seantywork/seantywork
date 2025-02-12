@@ -138,15 +138,16 @@ static uint8_t* make_ip_packet(int* newlen, int msglen, char* msg){
 
 
     ip_header->ihl = 5;
-    ip_header->version = 4;
+    ip_header->version = IPVERSION;
     ip_header->tos = 0;
     ip_header->tot_len = htons(sizeof(struct iphdr) + msglen);
-    ip_header->id = htons(54321);
-    ip_header->frag_off = 0;
-    ip_header->ttl = 64;
+    ip_header->id = 0;
+    ip_header->frag_off = htons(0x4000);
+    ip_header->ttl = IPDEFTTL;
     ip_header->saddr = inet_addr("192.168.10.1");
     ip_header->daddr = inet_addr("192.168.10.2");
     ip_header->protocol = 0xFD; // experiment
+    ip_header->check = 0;
 
     ip_header->check = ipcsum((unsigned short *)ip_header, sizeof(struct iphdr) + msglen);
 
@@ -160,6 +161,8 @@ static void view_ip_packet(void* packet){
     struct ethhdr *eth_header;
     struct iphdr *ip_header;
     uint8_t* data;
+    struct in_addr ip_addr;
+
 
     eth_header = packet;
 
@@ -176,7 +179,9 @@ static void view_ip_packet(void* packet){
                 eth_header->h_dest[5]
                 );
 
-    printf("dst address: %d\n", ip_header->daddr);
+    ip_addr.s_addr = ntohl(ip_header->daddr);
+
+    printf("dst address: %s\n", inet_ntoa(ip_addr));
 
     printf("data: %s\n", data);
 
@@ -304,7 +309,7 @@ static int exit_packetsock(int fd, char* ring, int tx_mmap)
 
 static void* process_rx(const int fd, char* rx_ring, int* len)
 {
-    volatile struct tpacket2_hdr* header;
+    struct tpacket2_hdr* header;
     struct pollfd				  pollset;
     int							  ret;
     char*				 off;
@@ -347,7 +352,7 @@ static void* process_rx(const int fd, char* rx_ring, int* len)
 // Release the slot back to the kernel
 static void process_rx_release(char* packet)
 {
-    volatile struct tpacket2_hdr* header = (struct tpacket2_hdr*)packet;
+    struct tpacket2_hdr* header = (struct tpacket2_hdr*)packet;
     header->tp_status					 = TP_STATUS_KERNEL;
 }
 
@@ -355,7 +360,7 @@ static void rx_flush(void* ring)
 {
     for (int i = 0; i < CONF_RING_FRAMES; i++)
     {
-        volatile struct tpacket2_hdr* hdr = ring + (i * FRAME_SIZE);
+        struct tpacket2_hdr* hdr = ring + (i * FRAME_SIZE);
         hdr->tp_status					  = TP_STATUS_KERNEL;
     }
 }

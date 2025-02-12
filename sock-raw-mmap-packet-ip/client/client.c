@@ -144,15 +144,16 @@ static uint8_t* make_ip_packet(int* newlen, int msglen, char* msg){
     eth_header->h_proto = htons(0x0800);
 
     ip_header->ihl = 5;
-    ip_header->version = 4;
-    ip_header->tos = 16;
+    ip_header->version = IPVERSION;
+    ip_header->tos = 0;
     ip_header->tot_len = htons(sizeof(struct iphdr) + msglen);
-    ip_header->id = htons(54321);
-    ip_header->frag_off = 0;
-    ip_header->ttl = 64;
-    ip_header->saddr = inet_addr("192.168.10.2");
-    ip_header->daddr = inet_addr("192.168.10.1");
+    ip_header->id = 0;
+    ip_header->frag_off = htons(0x4000);
+    ip_header->ttl = IPDEFTTL;
+    ip_header->saddr = htonl(inet_addr("192.168.10.2"));
+    ip_header->daddr = htonl(inet_addr("192.168.10.1"));
     ip_header->protocol = 0xFD; // experiment
+    ip_header->check = 0;
 
     ip_header->check = ipcsum((unsigned short *)ip_header, sizeof(struct iphdr) + msglen);
 
