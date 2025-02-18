@@ -3672,7 +3672,7 @@ openssl pkey -in ./certs/server.key -outform PEM -pubout -out ./certs/server.pub
 
 # subject csr
 
-openssl req -key sub_priv.pem -new -sha256 -out sub.csr
+openssl req -key sub_priv.pem -new -sha256 -out sub.csr -subj "/CN=subjectforseantywork.com"
 
 # issuer signing
 
