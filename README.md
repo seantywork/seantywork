@@ -1883,7 +1883,7 @@ ethtool -N eth0 flow-type udp4 src-port 4242 dst-port 4242 action 16
 
 ```shell
 
-# dummy
+# link, addr
 
 sudo modprobe dummy
 
@@ -1902,6 +1902,43 @@ sudo ip addr del 192.168.1.100/24 brd + dev deth0 # label deth0:0
 sudo ip link delete deth0 type dummy
 
 sudo modprobe -r dummy
+
+# route
+
+# to NAT
+
+ip addr add 192.168.10.2/24 dev enp3s0
+
+ip link set dev enp3s0 up
+
+# enp3s0 being the interface the router is connected to
+# router WAN IP being 192.168.10.2/24 or something
+# router default gateway 192.168.10.1
+# router LAN IP being 192.168.100.1/24 or something
+
+# from NAT
+
+ip route add 192.168.10.0/24 via 192.168.100.1 dev eth0
+
+# eth0 being an interface with a connection to the router
+# using eth0 gateway router (192.168.100.1) to route to 192.168.10.0/24 network
+
+# route with table 
+# ex) add rule as table number 5
+
+ip route add 192.168.10.0/24 dev enp3s0 table 5
+
+# flush to apply 
+
+ip route flush cache
+
+# rule 
+
+# fwmark
+# ex) lookup table 5 if marked 5 
+
+ip rule add preference 100 fwmark 5 table 5
+
 
 ```
 
@@ -1928,10 +1965,28 @@ sudo sysctl -p
 
 sudo sysctl --system
 
-# init rule
+
+# incoming mangle prerouting 
+
+sudo iptables -t mangle -A PREROUTING -p udp -s 192.168.10.5 -j MARK --set-mark 5
+
+# incoming prerouting
+
+sudo iptables -t nat -A PREROUTING -i wlo1 -p tcp --dport 8888 -j DNAT --to-destination 192.168.1.100:8000
+
+# route decision incoming
+
+# incoming input 
+
+sudo iptables -t nat -A INPUT -i enp3s0 -p udp -s 192.168.10.5 -j SNAT --to-source 192.168.10.50
+
+
+# route forward if no local 
+
+# forward init rule
 sudo iptables -A FORWARD -i wlo1 -o deth0 -p tcp --syn --dport 8888 -m conntrack --ctstate NEW -j ACCEPT
 
-# allow all tcp init rule
+# forward allow all tcp init rule
 
 sudo iptables -A FORWARD -i wlo1 -o deth0 -p tcp -m conntrack --ctstate NEW -j ACCEPT
 
@@ -1940,15 +1995,31 @@ sudo iptables -A FORWARD -i wlo1 -o deth0 -m conntrack --ctstate ESTABLISHED,REL
 
 sudo iptables -A FORWARD -i deth0 -o wlo1 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-# default DROP
+# forward default DROP
 
 sudo iptables -P FORWARD DROP
 
-# routing rules
 
-sudo iptables -t nat -A PREROUTING -i wlo1 -p tcp --dport 8888 -j DNAT --to-destination 192.168.1.100:8000
+# outgoing mangle output 
 
-sudo iptables -t nat -A POSTROUTING -o deth0 -p tcp --dport 8000 -d 192.168.1.100 -j SNAT --to-source 192.168.50.24:8888
+sudo iptables -t mangle -A OUTPUT -p udp -d 192.168.10.5 -j MARK --set-mark 5
+
+# outgoing output 
+
+sudo iptables -t nat -A OUTPUT -p udp -d 192.168.10.50 -j DNAT --to-destination 192.168.10.5
+
+# route decision out
+
+# outbound including forward
+
+# outgoing postrouting
+
+sudo iptables -t nat -A POSTROUTING -o wlo1 -p tcp -j MASQUERADE
+
+# outgoing postrouting
+
+sudo iptables -t nat -A POSTROUTING -o wlo1 -p tcp -s 192.168.10.50 -j SNAT 192.168.10.5
+
 
 # permanent rule
 
@@ -1976,30 +2047,6 @@ sudo iptables -I FORWARD -p tcp -j NFQUEUE --queue-num 100
 # netfilter queue dev
 
 sudo apt install libnetfilter-queue-dev
-
-```
-```shell
-
-# route
-
-# to NAT
-
-ip addr add 192.168.10.2/24 dev enp3s0
-
-ip link set dev enp3s0 up
-
-# enp3s0 being the interface the router is connected to
-# router WAN IP being 192.168.10.2/24 or something
-# router default gateway 192.168.10.1
-# router LAN IP being 192.168.100.1/24 or something
-
-# from NAT
-
-ip route add 192.168.10.0/24 via 192.168.100.1 dev eth0
-
-# eth0 being an interface with a connection to the router
-# using eth0 gateway router (192.168.100.1) to route to 192.168.10.0/24 network
-
 
 ```
 
