@@ -677,6 +677,15 @@ Miscellaneous
 *(gdb) quit        		quit gdb
 
 ```
+
+# CPPCHECK
+
+```shell
+
+cppchcek --enable=all -Iinclude ./src
+
+```
+
 # VALGRIND
 
 ```shell
