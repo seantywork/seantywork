@@ -521,7 +521,7 @@ ar rcs # for .a
 
 clang-tidy # clang static analysis
 
-clang-tidy -I. src/main.c
+clang-tidy src/main.c -- -I.
 
 cppcheck # yet another static analysis
 
