@@ -477,6 +477,9 @@ efibootmgr
 
 ```shell
 
+# install 
+
+sudo apt install build-essential clang llvm clang-tidy cppcheck
 
 --std=c99 
 
@@ -515,6 +518,14 @@ ar rcs # for .a
 -D  # define variable
 
 -fanalyzer # on static analysis
+
+clang-tidy # clang static analysis
+
+clang-tidy -I. src/main.c
+
+cppcheck # yet another static analysis
+
+cppcheck --enable=all -I. src/main.c
 
 ```
 
@@ -678,15 +689,8 @@ Miscellaneous
 
 ```
 
-# CPPCHECK
 
-```shell
-
-cppchcek --enable=all -Iinclude ./src
-
-```
-
-# VALGRIND
+# VALGRIND DYNAMIC ANALYSIS
 
 ```shell
 
