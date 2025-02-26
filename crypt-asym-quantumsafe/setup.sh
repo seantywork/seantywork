@@ -26,6 +26,6 @@ popd
 
 pushd oqs-provider 
 
-cmake -S . -B _build && cmake --build _build && ctest --test-dir _build && cmake --install _build
+cmake -S . -B _build && cmake --build _build && ctest --test-dir _build && sudo cmake --install _build
 
 popd
