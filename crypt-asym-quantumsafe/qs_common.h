@@ -1,3 +1,6 @@
+#ifndef _QS_COMMON_H_
+#define _QS_COMMON_H_
+
 
 #include <string.h>
 #include <stdio.h>
@@ -11,6 +14,11 @@
 #include <openssl/core_names.h>
 #include <openssl/decoder.h>
 #include <openssl/encoder.h>
+#include <errno.h>
+#include <openssl/ssl.h>
+#include <openssl/trace.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "oqs/oqs.h"
 
@@ -95,3 +103,7 @@ int get_param_octet_string(const EVP_PKEY *key, const char *param_name,
 #define PEM_BUFF_LEN 8192
 
 int read_file_to_buffer(uint8_t* buff, int max_buff_len, char* file_path);
+
+#define MAXLOOPS 1000000
+
+#endif
