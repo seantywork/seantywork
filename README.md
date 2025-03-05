@@ -9395,6 +9395,7 @@ cd devstack
 
 # local.conf
 
+[[local|localrc]]
 ADMIN_PASSWORD=openstack
 DATABASE_PASSWORD=openstack
 RABBIT_PASSWORD=openstack
