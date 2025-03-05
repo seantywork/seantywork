@@ -9379,6 +9379,39 @@ EXPOSE 27017
 
 ```
 
+# OPENSTACK
+
+
+```shell
+
+# devstack
+
+sudo useradd -s /bin/bash -d /opt/stack -m stack
+echo "stack ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/stack
+sudo -u stack -i
+
+git clone https://opendev.org/openstack/devstack
+cd devstack
+
+# local.conf
+
+ADMIN_PASSWORD=openstack
+DATABASE_PASSWORD=openstack
+RABBIT_PASSWORD=openstack
+SERVICE_PASSWORD=openstack
+HOST_IP=$IP_ADDR_OF_VM
+
+./stack.sh
+
+user: admin
+password: openstack
+
+```
+
+
+
+
+
 # NFS
 
 ```shell

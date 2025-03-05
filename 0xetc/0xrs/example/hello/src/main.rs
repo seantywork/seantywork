@@ -1,4 +1,4 @@
-
+use std::collections::HashMap;
 
 // basic var
 
@@ -217,21 +217,20 @@ fn basic_string(){
 // basic struct
 
 
-struct Whatever<'a> {
+struct Whatever {
 
     name: String,
-    numbers: &'a mut Vec<i64>
+    numbers: Vec<i64>
 
 }
 
-impl Whatever<'_> {
+impl Whatever {
 
-
-    fn make<'a>(name: &'a String, numbers: &'a mut [i64]) -> Whatever<'a> {
+    fn make(name: &String, numbers: &mut [i64]) -> Whatever {
 
         let mut w = Whatever{
             name: "".to_string(),
-            numbers:  &mut Vec::<i64>::new()
+            numbers: Vec::<i64>::new()
         };
 
         let numlen = numbers.len();
@@ -252,6 +251,7 @@ impl Whatever<'_> {
 
 fn edit_whatever(x: &mut Whatever){
 
+    x.name = "amazing".to_string() + &x.name;
 
     x.numbers.push(1);
 
@@ -277,11 +277,70 @@ fn basic_struct(){
 
     let mut w = Whatever::make(&"idiot".to_string(), &mut [10,20,30,40]);
 
-    edit_whatever(&w);
+    edit_whatever(&mut w);
 
-    show_whatever(&w);
+    show_whatever(&mut w);
 
 }
+
+
+fn show_map(themap: &mut HashMap<String, i32>){
+
+    for (k, v) in themap {
+
+        println!("{k}: {v}");
+    }
+
+}
+
+fn find_in_map(themap: &mut HashMap<String, i32>, key: &String){
+
+    let target = themap.get(key).copied().unwrap_or(-1);
+
+    if (target == -1){
+
+        println!("key: {key} not found");
+
+    } else {
+
+        println!("key: {key}, val: {target}");
+
+    }
+}
+
+
+fn edit_map(themap: &mut HashMap<String, i32>, key: &String, val: i32){
+
+    themap.insert(key.to_string(), val);
+
+}
+
+
+
+fn basic_map(){
+
+    let mut themap = HashMap::new();
+
+    themap.insert(String::from("Blue"), 10);
+    themap.insert(String::from("Yellow"), 50);
+
+    let rightkey = String::from("Blue");
+
+    let wrongkey = String::from("blue");
+
+    show_map(&mut themap);
+
+    find_in_map(&mut themap, &rightkey);
+
+    find_in_map(&mut themap, &wrongkey);
+
+    edit_map(&mut themap, &rightkey, 100);
+
+    show_map(&mut themap);
+
+
+}
+
 
 
 fn main(){
@@ -292,5 +351,7 @@ fn main(){
 
     // basic_string();
 
-    basic_struct();
+    // basic_struct();
+
+    basic_map();
 }
