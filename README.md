@@ -585,6 +585,14 @@ Running the program
 *(gdb) finish        finish current function's execution
 (gdb) kill           kill current executing program 
 
+Core 
+(gdb) generate-core-file  generate core dump file
+
+Thread
+(gdb) info threads             get threads 
+(gdb) thread id                switch to thread with id
+(gdb) thread apply id action   apply action to thread id
+
 Stack backtrace
 *(gdb) bt        	print stack backtrace
 (gdb) frame        	show current execution position
