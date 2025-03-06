@@ -42,8 +42,22 @@ void session::wait_for_request() {
             };
             // we just print the data, you can here call other api's 
             // or whatever the server needs to do with the received data
-            std::cout << data << std::endl;
-            wait_for_request();
+
+            int n = data.size();
+
+            boost::asio::async_write(m_socket, boost::asio::buffer(data, n),
+                [this, self](std::error_code ec, std::size_t /*length*/){
+
+                    if(!ec){
+
+                        wait_for_request();
+                    } else {
+
+                        std::cout << "write error: " << ec << std::endl;
+                    }
+
+                });
+
         } else {
             std::cout << "error: " << ec << std::endl;;
         }
