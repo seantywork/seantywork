@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-
+use std::env;
+use std::fs;
 // basic var
 
 fn multiply_by_two(x: i64) -> i64{
@@ -342,6 +343,19 @@ fn basic_map(){
 }
 
 
+fn basic_file(){
+    
+
+    let file_path = "test.txt".to_string();
+
+    let contents = fs::read_to_string(file_path).expect("no file");
+
+    println!("contents: \n{contents}");
+
+
+}
+
+
 
 fn main(){
 
@@ -353,5 +367,7 @@ fn main(){
 
     // basic_struct();
 
-    basic_map();
+    // basic_map();
+
+    basic_file();
 }
