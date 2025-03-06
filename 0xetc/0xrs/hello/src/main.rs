@@ -363,9 +363,56 @@ fn basic_file(){
 }
 
 
+fn handle_connection(mut stream: TcpStream) {
+
+    println!("new client {}", stream.peer_addr().unwrap());
+
+    let mut buf = [0; 4096];
+
+    loop {
+
+        let rval = stream.read(&mut buf);
+
+        match rval {
+            Ok(n) => {
+
+                let mut response = "response okay: ".to_string();
+                
+                let mut data = String::from_utf8_lossy(&buf[0..n]).to_string();
+
+                response = response + data.as_mut_str();
+
+                stream.write_all(response.as_bytes()).unwrap();
+            }
+            Err(e)=>{
+
+                println!("read error: {}", e)
+            }
+        }
+
+    }
+
+}
+
 fn basic_tcp(){
 
+    let listener = TcpListener::bind("0.0.0.0:8080").unwrap();
 
+    for stream in listener.incoming() {
+
+        match stream {
+            Ok(stream) =>{
+                thread::spawn(|| {
+                    handle_connection(stream);
+                });
+            }
+            Err(e) => {
+                println!("accept error: {}", e);
+            }
+
+        }
+
+    }
 }
 
 
