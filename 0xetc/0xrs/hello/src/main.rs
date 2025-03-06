@@ -1,6 +1,13 @@
-use std::collections::HashMap;
-use std::env;
-use std::fs;
+
+use std::{
+    collections::HashMap,
+    fs,
+    env,
+    io::{prelude::*, BufReader},
+    net::{TcpListener, TcpStream},
+    thread,
+    time::Duration,
+};
 // basic var
 
 fn multiply_by_two(x: i64) -> i64{
@@ -356,6 +363,12 @@ fn basic_file(){
 }
 
 
+fn basic_tcp(){
+
+
+}
+
+
 
 fn main(){
 
@@ -369,5 +382,7 @@ fn main(){
 
     // basic_map();
 
-    basic_file();
+    // basic_file();
+
+    basic_tcp();
 }
