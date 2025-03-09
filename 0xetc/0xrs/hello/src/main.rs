@@ -1,3 +1,4 @@
+mod world;
 
 use std::{
     collections::HashMap,
@@ -416,6 +417,27 @@ fn basic_tcp(){
 }
 
 
+fn basic_module(){
+
+    let retwords= world::speak(&"what the hell do you want?");
+
+    println!("{}",retwords);
+
+    let mut spoken = world::Spoken{
+        raw: &"",
+    };
+
+    spoken.insert("goddamn idiots");
+
+
+    let out = spoken.heart_out();
+
+    let outstr = out.to_string();
+
+    println!("spoken: {}", outstr);
+
+}
+
 
 fn main(){
 
@@ -431,5 +453,7 @@ fn main(){
 
     // basic_file();
 
-    basic_tcp();
+    // basic_tcp();
+
+    basic_module();
 }
