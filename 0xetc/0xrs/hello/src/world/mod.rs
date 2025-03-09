@@ -34,7 +34,7 @@ impl<'world> Spoken<'world> {
 
     } 
 
-    pub fn heart_out(self) -> &'world str{
+    pub fn heart_out(&self) -> &'world str{
  
         return self.raw;
     

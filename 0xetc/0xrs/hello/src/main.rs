@@ -427,14 +427,27 @@ fn basic_module(){
         raw: &"",
     };
 
-    spoken.insert("goddamn idiots");
+    let mut inner = "goddamn idiots";
+
+    spoken.insert(inner);
 
 
-    let out = spoken.heart_out();
+    let mut out = spoken.heart_out();
 
-    let outstr = out.to_string();
+    let mut outstr = out.to_string();
 
     println!("spoken: {}", outstr);
+
+    inner = "super idiots";
+
+    spoken.insert(inner);
+
+    out = spoken.heart_out();
+
+    outstr = out.to_string();
+
+    println!("spoken: {}", outstr);
+
 
 }
 
