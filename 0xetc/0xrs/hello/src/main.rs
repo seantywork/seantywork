@@ -4,11 +4,15 @@ use std::{
     collections::HashMap,
     fs,
     env,
-    io::{prelude::*, BufReader},
+    io::{self, Read, Write, Error, BufReader},
     net::{TcpListener, TcpStream},
     thread,
     time::Duration,
 };
+
+
+
+
 // basic var
 
 fn multiply_by_two(x: i64) -> i64{
@@ -395,7 +399,7 @@ fn handle_connection(mut stream: TcpStream) {
 
 }
 
-fn basic_tcp(){
+fn run_server(){
 
     let listener = TcpListener::bind("0.0.0.0:8080").unwrap();
 
@@ -414,6 +418,55 @@ fn basic_tcp(){
         }
 
     }
+}
+
+fn basic_tcp(){
+
+    thread::spawn(||{
+        run_server();
+    });
+
+    type Port = u16;
+
+    let host = "localhost".to_string();
+
+    let port = "8080".to_string().parse::<Port>().unwrap();
+
+    let mut stream = TcpStream::connect((host.as_str(), port)).unwrap();
+
+    let mut input_stream = stream.try_clone().unwrap();
+
+    let handler = thread::spawn(move || {
+        let mut client_buffer = [0u8; 1024];
+
+        loop {
+            match input_stream.read(&mut client_buffer) {
+                Ok(n) => {
+                    if n == 0 {
+                        println!("n == 0");
+                        return;
+                    }
+                    else
+                    {
+                        io::stdout().write(&client_buffer).unwrap();
+                        io::stdout().flush().unwrap();
+                    }
+                },
+                Err(error) => println!("{}", error.to_string()),
+            }
+        }
+    });
+
+    let output_stream = &mut stream;
+    let mut user_buffer = String::new();
+
+    loop {
+        io::stdin().read_line(&mut user_buffer).unwrap();
+
+        output_stream.write(user_buffer.as_bytes()).unwrap();
+        output_stream.flush().unwrap();
+    }
+
 }
 
 
@@ -466,7 +519,7 @@ fn main(){
 
     // basic_file();
 
-    // basic_tcp();
+    //basic_tcp();
 
     basic_module();
 }
