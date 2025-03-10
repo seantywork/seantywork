@@ -4,9 +4,13 @@ use std::{
     collections::HashMap,
     fs,
     env,
+    mem,
+    rc::Rc,
     io::{self, Read, Write, Error, BufReader},
     net::{TcpListener, TcpStream},
     thread,
+    sync::mpsc,
+    sync::{Arc, Mutex},
     time::Duration,
 };
 
@@ -355,6 +359,140 @@ fn basic_map(){
 }
 
 
+fn get_box(a: &str) -> Box<String>{
+
+
+    let retbox = Box::new(a.to_string());
+
+    return retbox;
+}
+
+
+fn get_rc(a: &str) -> Rc<String>{
+
+
+    let retrc = Rc::new(a.to_string());
+
+    return retrc;
+}
+
+
+fn get_arc(a: &str) -> Arc<String>{
+
+    let retarc = Arc::new(a.to_string());
+
+    return retarc;
+}
+
+
+fn print_string(a: String){
+    println!("{}", a);
+}
+
+fn print_string_rc(a: Rc<String>){
+
+    println!("{}", a);
+}
+
+fn print_string_arc(a: Arc<String>){
+
+    println!("{}", a);
+}
+
+fn basic_pointer(){
+
+    let word = String::from("hello");
+
+    print_string(word);
+
+    // print_string(word);
+
+    let wordbox = get_box("box");
+
+    let wordboxout = wordbox.to_string();
+
+    print_string(wordboxout);
+
+    // print_string(wordboxout);
+
+    let wordrc = get_rc("rc");
+
+    let wordrc2 = wordrc.clone();
+
+    print_string_rc(wordrc);
+
+    print_string_rc(wordrc2);
+
+    let wordarc = get_arc("arc");
+
+    let wordarc2 = wordarc.clone();
+
+    print_string_arc(wordarc);
+
+    print_string_arc(wordarc2);
+
+
+
+}
+
+
+fn basic_lock(){
+
+    let locker = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
+
+
+    for _ in 0..10 {
+
+        let locker = Arc::clone(&locker);
+        
+        let handle = thread::spawn(move || {
+            
+            let mut locked = locker.lock().unwrap();
+
+            let mut countnow = *locked;
+
+            *locked = countnow + 1;
+            
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    println!("Result: {}", locker.lock().unwrap());
+
+}
+
+
+
+fn basic_channel(){
+
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        let vals = vec![
+            String::from("hi"),
+            String::from("from"),
+            String::from("the"),
+            String::from("thread"),
+        ];
+
+        for val in vals {
+            tx.send(val).unwrap();
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+
+    for received in rx {
+        println!("Got: {received}");
+    }
+
+}
+
+
 fn basic_file(){
     
 
@@ -480,10 +618,22 @@ fn basic_module(){
         raw: &"",
     };
 
-    let mut inner = "goddamn idiots";
+    let mut inner = "damn";
 
-    spoken.insert(inner);
+    let mut result = spoken.insert(inner);
 
+    match  result {
+        Ok(done) => {
+
+            println!("insert success");
+
+        },
+        Err(err) => {
+
+            println!("insert errer: {}", err);
+        }
+
+    }
 
     let mut out = spoken.heart_out();
 
@@ -517,9 +667,15 @@ fn main(){
 
     // basic_map();
 
+    // basic_pointer();
+
+    // basic_lock();
+
+    // basic_channel();
+
     // basic_file();
 
-    //basic_tcp();
+    // basic_tcp();
 
     basic_module();
 }

@@ -27,11 +27,18 @@ pub fn speak(word: &str) -> Box<String>{
 
 impl<'world> Spoken<'world> {
 
-    pub fn insert(&mut self, word: &'world str){
+    pub fn insert(&mut self, word: &'world str) -> Result<i32, String>{
 
+        if word.eq("damn") {
+
+            return Err(String::from("failed: damn"));
+
+        }
 
         self.raw = word;
 
+        Ok(0i32)
+        
     } 
 
     pub fn heart_out(&self) -> &'world str{
