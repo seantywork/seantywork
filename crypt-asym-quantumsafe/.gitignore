@@ -1,3 +1,6 @@
-oqs-provider
-liboqs
+oqs-provider*
+liboqs*
+openssl*
 *.pem
+*.tar.gz
+certs

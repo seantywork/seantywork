@@ -3,7 +3,7 @@
 
 #include "qs_common.h"
 
-#define OSSL_CAPABILITY_TLS_SIGALG_NAME "TLS-SIGALG"
+
 
 int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename,
     char *privkeyfilename);

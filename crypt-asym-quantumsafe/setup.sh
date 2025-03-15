@@ -1,14 +1,29 @@
 #!/bin/bash 
 
+LIBOQSV="0.12.0"
+OQSPROVV="0.8.0"
+
+rm -rf liboqs* oqs-provider* *.tar.gz
+
 sudo apt update 
 
-sudo apt install astyle cmake gcc ninja-build libssl-dev python3-pytest python3-pytest-xdist unzip xsltproc doxygen graphviz python3-yaml valgrind
+sudo apt install astyle cmake gcc ninja-build python3-pytest python3-pytest-xdist unzip xsltproc doxygen graphviz python3-yaml valgrind
 
-git clone https://github.com/seantywork/oqs-provider.git
+wget https://github.com/open-quantum-safe/liboqs/archive/refs/tags/$LIBOQSV.tar.gz
 
-git clone https://github.com/seantywork/liboqs.git
 
-pushd liboqs 
+wget https://github.com/open-quantum-safe/oqs-provider/archive/refs/tags/$OQSPROVV.tar.gz
+
+
+tar xzf $LIBOQSV.tar.gz
+
+tar xzf $OQSPROVV.tar.gz
+
+mv "liboqs-$LIBOQSV" liboqs
+
+mv "oqs-provider-$OQSPROVV" oqs-provider
+
+pushd liboqs
 
 mkdir build 
 
@@ -24,7 +39,7 @@ popd
 
 popd 
 
-pushd oqs-provider 
+pushd oqs-provider
 
 cmake -S . -B _build && cmake --build _build && ctest --test-dir _build && sudo cmake --install _build
 

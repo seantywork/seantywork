@@ -39,7 +39,7 @@ static ENDECODE_PARAMS plist[] = {
      OSSL_KEYMGMT_SELECT_PUBLIC_KEY | OSSL_KEYMGMT_SELECT_ALL_PARAMETERS},
 };
 
-static int encodedecode(const EVP_PKEY *pkey, EVP_PKEY **object){
+static EVP_PKEY * encodedecode(const EVP_PKEY *pkey){
 
     OSSL_ENCODER_CTX *ectx_priv = NULL;
     OSSL_ENCODER_CTX *ectx_pub = NULL;
@@ -50,12 +50,12 @@ static int encodedecode(const EVP_PKEY *pkey, EVP_PKEY **object){
     const char *cipher = "AES-256-CBC";
     int ok = 0;
 
-    EVP_PKEY *newpkey = NULL;
     OSSL_DECODER_CTX *dctx_priv = NULL;
     OSSL_DECODER_CTX *dctx_pub = NULL;
     BIO *priv_bio = NULL;
     BIO *pub_bio = NULL;
 
+    EVP_PKEY *newpkey = EVP_PKEY_new();
 
     ectx_priv = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[0].selection, plist[0].format, plist[0].structure, NULL);
 
@@ -66,7 +66,7 @@ static int encodedecode(const EVP_PKEY *pkey, EVP_PKEY **object){
 
     ectx_pub = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[2].selection, plist[2].format, plist[2].structure, NULL);
 
-    if (ectx_priv == NULL) {
+    if (ectx_pub == NULL) {
         printf("No suitable pub encoder found\n");
         goto edend;
     }
@@ -133,7 +133,7 @@ static int encodedecode(const EVP_PKEY *pkey, EVP_PKEY **object){
 
     
     dctx_pub = OSSL_DECODER_CTX_new_for_pkey(&newpkey, plist[2].format, plist[2].structure, plist[2].keytype, plist[2].selection, libctx, NULL);
-    if (dctx_priv == NULL){
+    if (dctx_pub == NULL){
         printf("failed to get decode priv ctx\n");
         goto edend;
     }
@@ -152,8 +152,8 @@ static int encodedecode(const EVP_PKEY *pkey, EVP_PKEY **object){
     }
     
 
-    *object = newpkey;
-    newpkey = NULL;
+    //*object = newpkey;
+    //newpkey = NULL;
     ok = 1;
 
 edend:
@@ -185,7 +185,12 @@ edend:
     //    EVP_PKEY_free(newpkey);
     //}
 
-    return ok;
+    if(ok != 1){
+
+        return NULL;
+    }
+
+    return newpkey;
 
 }
 
@@ -611,23 +616,23 @@ static int qs_signatures(const char *sigalg_name) {
             goto err;
         }
 
-        /*
-        result = encodedecode(key, &decoded_key);
+        
+        decoded_key = encodedecode(key);
 
-        if(result != 1){
+        if(decoded_key == NULL){
             printf("encodedecode failed\n");
             result = -1;
             goto err;
         }
-        */
+        
 
-        /*
+        
         if (EVP_PKEY_eq(key, decoded_key) != 1) {
-            printf("Key equality failed for %s", sigalg_name);
+            printf("Key equality failed for %s\n", sigalg_name);
             result = -1;
             goto err;
         }
-        */
+        
 
         mdctx = EVP_MD_CTX_new();
 
@@ -640,12 +645,17 @@ static int qs_signatures(const char *sigalg_name) {
 
         result = EVP_DigestSignInit_ex(mdctx, NULL, "SHA512", libctx, NULL, key, NULL);
 
+        char errstr[1024] = {0};
+
         if(result != 1){
 
-            printf("sign init failed\n");
+            ERR_error_string(result, errstr);
+
+            printf("sign init failed: %s\n", errstr);
             result = -1;
             goto err;
         }
+
 
         result = EVP_DigestSignUpdate(mdctx, message, sizeof(message));
 
@@ -681,7 +691,7 @@ static int qs_signatures(const char *sigalg_name) {
             goto err;
         }
 
-        result = EVP_DigestVerifyInit_ex(mdctx, NULL, "SHA512", libctx, NULL, key, NULL);
+        result = EVP_DigestVerifyInit_ex(mdctx, NULL, "SHA512", libctx, NULL, decoded_key, NULL);
 
         if(result != 1){
             printf("verify init failed\n");
