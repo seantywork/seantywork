@@ -9,6 +9,8 @@ static OSSL_PROVIDER *oqsprov = NULL;
 //static OSSL_PROVIDER *encodingprov = NULL;
 static char *modulename = NULL;
 static char *configfile = NULL;
+const OSSL_ALGORITHM *kemalgs;
+const OSSL_ALGORITHM *sigalgs;
 
 static char *message = "cryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinc";
 static int messagelen = 0;
@@ -145,6 +147,167 @@ static EVP_PKEY * encodedecode(const EVP_PKEY *pkey){
         goto edend;
     }
 
+    
+    if (!OSSL_DECODER_from_bio(dctx_pub, pub_bio)){
+        printf("failed to decode pub\n");
+        goto edend;
+    }
+    
+
+    //*object = newpkey;
+    //newpkey = NULL;
+    ok = 1;
+
+edend:
+    if(mem_ser_priv != NULL){
+        BIO_free_all(mem_ser_priv);
+    }
+    if(mem_ser_pub != NULL){
+        BIO_free_all(mem_ser_pub);
+    }
+    if(ectx_priv != NULL){
+        OSSL_ENCODER_CTX_free(ectx_priv);
+    }
+    if(ectx_pub != NULL){
+        OSSL_ENCODER_CTX_free(ectx_pub);
+    }
+    if(priv_bio != NULL){
+        BIO_free(priv_bio);
+    }
+    if(pub_bio != NULL){
+        BIO_free(pub_bio);
+    }
+    if(dctx_priv != NULL){
+        OSSL_DECODER_CTX_free(dctx_priv);
+    }
+    if(dctx_pub != NULL){
+        OSSL_DECODER_CTX_free(dctx_pub);
+    }
+    //if(newpkey != NULL){
+    //    EVP_PKEY_free(newpkey);
+    //}
+
+    if(ok != 1){
+
+        return NULL;
+    }
+
+    return newpkey;
+
+}
+
+
+
+static EVP_PKEY * encodedecodepub(const EVP_PKEY *pkey){
+
+    OSSL_ENCODER_CTX *ectx_priv = NULL;
+    OSSL_ENCODER_CTX *ectx_pub = NULL;
+    BIO *mem_ser_priv = NULL;
+    BIO *mem_ser_pub = NULL;
+    BUF_MEM *mem_buf_priv = NULL;
+    BUF_MEM *mem_buf_pub = NULL;
+    const char *cipher = "AES-256-CBC";
+    int ok = 0;
+
+    OSSL_DECODER_CTX *dctx_priv = NULL;
+    OSSL_DECODER_CTX *dctx_pub = NULL;
+    BIO *priv_bio = NULL;
+    BIO *pub_bio = NULL;
+
+    EVP_PKEY *newpkey = EVP_PKEY_new();
+
+    ectx_priv = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[0].selection, plist[0].format, plist[0].structure, NULL);
+
+    if (ectx_priv == NULL) {
+        printf("No suitable priv encoder found\n");
+        goto edend;
+    }
+
+    ectx_pub = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[2].selection, plist[2].format, plist[2].structure, NULL);
+
+    if (ectx_pub == NULL) {
+        printf("No suitable pub encoder found\n");
+        goto edend;
+    }
+
+
+    /*
+    if (pass != NULL) {
+        OSSL_ENCODER_CTX_set_passphrase(ectx, (const unsigned char *)pass, strlen(pass));
+        OSSL_ENCODER_CTX_set_cipher(ectx, cipher, NULL);
+    }
+    */
+
+    mem_ser_priv = BIO_new(BIO_s_mem());
+    //mem_ser = BIO_new_file("priv.pem", "w");
+    if (!OSSL_ENCODER_to_bio(ectx_priv, mem_ser_priv)) {
+        printf("encoding priv failed\n");
+        goto edend;
+    }
+
+    
+    BIO_get_mem_ptr(mem_ser_priv, &mem_buf_priv);
+    if (mem_buf_priv == NULL){
+        printf("get priv membuf failed\n");
+        goto edend;
+    }
+
+    mem_ser_pub = BIO_new(BIO_s_mem());
+    //mem_ser = BIO_new_file("pub.pem", "w");
+    if (!OSSL_ENCODER_to_bio(ectx_pub, mem_ser_pub)) {
+        printf("encoding pub failed\n");
+        goto edend;
+    }
+
+    
+    BIO_get_mem_ptr(mem_ser_pub, &mem_buf_pub);
+    if (mem_buf_pub == NULL){
+        printf("get pub membuf failed\n");
+        goto edend;
+    }
+    /*
+    priv_bio = BIO_new_mem_buf(mem_buf_priv->data, mem_buf_priv->length);
+
+    if (priv_bio == NULL){
+
+        printf("get encoded priv bio\n");
+
+        goto edend;
+    }
+
+    */
+    pub_bio = BIO_new_mem_buf(mem_buf_pub->data, mem_buf_pub->length);
+
+    if (pub_bio == NULL){
+
+        printf("get encoded pub bio\n");
+
+        goto edend;
+    }
+
+    /*
+    dctx_priv = OSSL_DECODER_CTX_new_for_pkey(&newpkey, plist[0].format, plist[0].structure, plist[0].keytype, plist[0].selection, libctx, NULL);
+    if (dctx_priv == NULL){
+        printf("failed to get decode priv ctx\n");
+        goto edend;
+    }
+
+    */
+    
+    dctx_pub = OSSL_DECODER_CTX_new_for_pkey(&newpkey, plist[2].format, plist[2].structure, plist[2].keytype, plist[2].selection, libctx, NULL);
+    if (dctx_pub == NULL){
+        printf("failed to get decode priv ctx\n");
+        goto edend;
+    }
+
+    /*
+
+    if (!OSSL_DECODER_from_bio(dctx_priv, priv_bio)){
+        printf("failed to decode priv\n");
+        goto edend;
+    }
+
+    */
     
     if (!OSSL_DECODER_from_bio(dctx_pub, pub_bio)){
         printf("failed to decode pub\n");
@@ -564,6 +727,7 @@ static int qs_signatures(const char *sigalg_name) {
     EVP_PKEY_CTX *ctx = NULL;
     EVP_PKEY *key = NULL;
     EVP_PKEY *decoded_key = NULL;
+    EVP_PKEY *decoded_key_pub = NULL;
 
     unsigned char *sig;
     size_t siglen = 0;
@@ -634,6 +798,15 @@ static int qs_signatures(const char *sigalg_name) {
         }
         
 
+        decoded_key_pub = encodedecodepub(key);
+
+        if(decoded_key_pub == NULL){
+            printf("encodedecodepub failed\n");
+            result = -1;
+            goto err;
+        }
+        
+
         mdctx = EVP_MD_CTX_new();
 
         if(mdctx == NULL){
@@ -691,7 +864,7 @@ static int qs_signatures(const char *sigalg_name) {
             goto err;
         }
 
-        result = EVP_DigestVerifyInit_ex(mdctx, NULL, "SHA512", libctx, NULL, decoded_key, NULL);
+        result = EVP_DigestVerifyInit_ex(mdctx, NULL, "SHA512", libctx, NULL, decoded_key_pub, NULL);
 
         if(result != 1){
             printf("verify init failed\n");
@@ -734,10 +907,12 @@ err:
 
 
 #ifdef OSSL_CAPABILITY_TLS_SIGALG_NAME
-static int qs_tlssig(const char *sig_name, int dtls_flag) {
+static int qs_tlssig(const char *sig_name, const char *kem_name, int dtls_flag) {
     SSL_CTX *cctx = NULL, *sctx = NULL;
     SSL *clientssl = NULL, *serverssl = NULL;
     int ret = 1, testresult = 0;
+    char group[1024] = {0};
+    char certpath_ca[300];
     char certpath[300];
     char privkeypath[300];
     char *certsdir = "certs";
@@ -752,6 +927,7 @@ static int qs_tlssig(const char *sig_name, int dtls_flag) {
         return 1;
     }
 
+    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt");
     sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt");
     sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key");
     /* ensure certsdir exists */
@@ -763,14 +939,14 @@ static int qs_tlssig(const char *sig_name, int dtls_flag) {
             goto err;
         }
     }
-    if (!create_cert_key(libctx, (char *)sig_name, certpath, privkeypath)) {
+    if (!create_cert_key(libctx, (char *)sig_name, certpath_ca, certpath, privkeypath)) {
         fprintf(stderr, "Cert/keygen failed for %s at %s/%s\n", sig_name,
                 certpath, privkeypath);
         ret = -1;
         goto err;
     }
 
-    testresult = create_tls1_3_ctx_pair(libctx, &sctx, &cctx, certpath,
+    testresult = create_tls1_3_ctx_pair(libctx, &sctx, &cctx, certpath_ca, certpath,
                                         privkeypath, dtls_flag);
 
     if (!testresult) {
@@ -778,13 +954,14 @@ static int qs_tlssig(const char *sig_name, int dtls_flag) {
         goto err;
     }
 
-    testresult =
-        create_tls_objects(sctx, cctx, &serverssl, &clientssl, dtls_flag);
+    serverssl = SSL_new(sctx);
+    clientssl = SSL_new(cctx);
 
-    if (!testresult) {
-        ret = -2;
-        goto err;
-    }
+
+    sprintf(group, "%s:%s", sig_name, kem_name);
+
+    SSL_set1_groups_list(serverssl, kem_name);
+    SSL_set1_groups_list(clientssl, kem_name);
 
     testresult = create_tls_connection(serverssl, clientssl, SSL_ERROR_NONE);
     if (!testresult) {
@@ -817,6 +994,8 @@ static int qs_tls_run(const OSSL_PARAM params[], void *data) {
     const OSSL_PARAM *p =
         OSSL_PARAM_locate_const(params, OSSL_CAPABILITY_TLS_SIGALG_NAME);
 
+    int query_nocache = 0;
+
     if (p == NULL || p->data_type != OSSL_PARAM_UTF8_STRING) {
         ret = -1;
         goto err;
@@ -827,21 +1006,25 @@ static int qs_tls_run(const OSSL_PARAM params[], void *data) {
     if (sigalg_name == NULL)
         return 0;
 
+    kemalgs = OSSL_PROVIDER_query_operation(oqsprov, OSSL_OP_KEM, &query_nocache);
 
-    ret = qs_tlssig(sigalg_name, 0);
+    for (; kemalgs->algorithm_names != NULL; kemalgs++) {
 
-    if (ret >= 0) {
-        fprintf(stderr,
-                cGREEN "  TLS-SIG handshake test succeeded: %s" cNORM "\n",
-                sigalg_name);
-    } else {
-        fprintf(stderr,
-                cRED
-                "  TLS-SIG handshake test failed: %s, return code: %d" cNORM
-                "\n",
-                sigalg_name, ret);
-        ERR_print_errors_fp(stderr);
-        (*errcnt)++;
+        ret = qs_tlssig(sigalg_name, kemalgs->algorithm_names, 0);
+
+        if (ret >= 0) {
+            fprintf(stderr,
+                    cGREEN "  TLS-SIG handshake test succeeded: %s" cNORM "\n",
+                    sigalg_name);
+        } else {
+            fprintf(stderr,
+                    cRED
+                    "  TLS-SIG handshake test failed: %s, return code: %d" cNORM
+                    "\n",
+                    sigalg_name, ret);
+            ERR_print_errors_fp(stderr);
+            (*errcnt)++;
+        }
     }
 
 #ifdef DTLS1_3_VERSION
@@ -889,8 +1072,6 @@ int main(int argc, char *argv[]) {
     size_t i;
     int errcnt = 0, test = 0, query_nocache;
 
-    const OSSL_ALGORITHM *kemalgs;
-    const OSSL_ALGORITHM *sigalgs;
 
     //T((encodingctx = OSSL_LIB_CTX_new()) != NULL);
     T((libctx = OSSL_LIB_CTX_new()) != NULL);

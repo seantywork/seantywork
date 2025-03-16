@@ -4,6 +4,8 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <openssl/err.h>
 #include <openssl/provider.h>
 #include <openssl/bio.h>
@@ -19,6 +21,7 @@
 #include <openssl/trace.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <pthread.h>
 
 #include "oqs/oqs.h"
 
