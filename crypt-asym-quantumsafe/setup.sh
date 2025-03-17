@@ -9,10 +9,10 @@ sudo apt update
 
 sudo apt install astyle cmake gcc ninja-build python3-pytest python3-pytest-xdist unzip xsltproc doxygen graphviz python3-yaml valgrind
 
-curl -L https://github.com/open-quantum-safe/liboqs/archive/refs/tags/$LIBOQSV.tar.gz -O $LIBOQSV.tar.gz
+curl -L https://github.com/open-quantum-safe/liboqs/archive/refs/tags/$LIBOQSV.tar.gz -o $LIBOQSV.tar.gz
 
 
-curl -L https://github.com/open-quantum-safe/oqs-provider/archive/refs/tags/$OQSPROVV.tar.gz -O $OQSPROVV.tar.gz
+curl -L https://github.com/open-quantum-safe/oqs-provider/archive/refs/tags/$OQSPROVV.tar.gz -o $OQSPROVV.tar.gz
 
 
 tar xzf $LIBOQSV.tar.gz

@@ -956,7 +956,6 @@ static int qs_tlssig(const char *sig_name, const char *kem_name, int dtls_flag) 
     sprintf(group, "sig: %s, kem: %s\n", sig_name, kem_name);
     
     fputs(group, logfile);
-    
 
     if(strcmp(sig_name, "dilithium3") == 0 && strcmp(kem_name, "frodo640shake") == 0){
 

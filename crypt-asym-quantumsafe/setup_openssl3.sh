@@ -1,8 +1,9 @@
 #!/bin/bash 
 
-OSSLV="3.3.3"
+OSSLV="openssl-3.4.1"
 
-wget "https://github.com/openssl/openssl/releases/download/openssl-$OSSLV/openssl-$OSSLV.tar.gz" -O "openssl-$OSSLV.tar.gz"
+
+curl -L "https://github.com/openssl/openssl/releases/download/openssl-$OSSLV/openssl-$OSSLV.tar.gz" -o "openssl-$OSSLV.tar.gz"
 
 tar -zxf "openssl-$OSSLV.tar.gz"
 

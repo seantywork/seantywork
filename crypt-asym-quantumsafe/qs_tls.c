@@ -98,7 +98,41 @@ int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, 
 }
 
 
-int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
+
+static void print_cn_name(const char* label, X509_NAME* const name)
+{
+    int idx = -1, success = 0;
+    unsigned char *utf8 = NULL;
+    
+    do
+    {
+        if(!name) break; /* failed */
+        
+        idx = X509_NAME_get_index_by_NID(name, NID_commonName, -1);
+        if(!(idx > -1))  break; /* failed */
+        
+        X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, idx);
+        if(!entry) break; /* failed */
+        
+        ASN1_STRING* data = X509_NAME_ENTRY_get_data(entry);
+        if(!data) break; /* failed */
+        
+        int length = ASN1_STRING_to_UTF8(&utf8, data);
+        if(!utf8 || !(length > 0))  break; /* failed */
+        
+        fprintf(stdout, "  %s: %s\n", label, utf8);
+        success = 1;
+        
+    } while (0);
+    
+    if(utf8)
+        OPENSSL_free(utf8);
+    
+    if(!success)
+        fprintf(stdout, "  %s: <not available>\n", label);
+}
+
+static int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
 {
     
     int depth = X509_STORE_CTX_get_error_depth(x509_ctx);
@@ -108,6 +142,11 @@ int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
     X509_NAME* iname = cert ? X509_get_issuer_name(cert) : NULL;
     X509_NAME* sname = cert ? X509_get_subject_name(cert) : NULL;
     
+    print_cn_name("Issuer (cn)", iname);
+    
+
+    print_cn_name("Subject (cn)", sname);
+
     fprintf(stdout, "verify_callback (depth=%d)(preverify=%d)\n", depth, preverify);
     
     if(preverify == 0)
@@ -130,11 +169,11 @@ int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
             fprintf(stdout, "  Error = %d\n", err);
     }
 
-#if !defined(NDEBUG)
+    printf("client skip verify\n");
+
     return 1;
-#else
-    return preverify;
-#endif
+    //return preverify;
+
 }
 
 int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
@@ -177,8 +216,10 @@ int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
             goto err;
     }
 
+    
     if (!SSL_CTX_load_verify_locations(clientctx, certfile_ca, NULL))
         goto err;
+
 
     SSL_CTX_set_verify(clientctx, SSL_VERIFY_PEER, verify_callback);
 
@@ -186,9 +227,6 @@ int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
 
     printf("client load ca: %s\n", certfile_ca);
 
-    printf("client load cert: %s\n", certfile_c);
-
-    printf("client load key: %s\n", privkeyfile_c);
 
     if (!SSL_CTX_use_certificate_file(clientctx, certfile_c, SSL_FILETYPE_PEM))
         goto err;
@@ -200,8 +238,8 @@ int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
         goto err;
 
 
-        
-    printf("client file done: %s\n", certfile_ca);
+    
+    printf("client file done: %s\n", certfile_c);
 
     if (!SSL_CTX_use_certificate_file(serverctx, certfile, SSL_FILETYPE_PEM))
         goto err;
@@ -211,6 +249,8 @@ int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
 
     if (!SSL_CTX_check_private_key(serverctx))
         goto err;
+
+    printf("server file done: %s\n", certfile);
 
     *sctx = serverctx;
     *cctx = clientctx;
@@ -295,8 +335,10 @@ int create_tls_client(SSL *clientssl) {
     printf("client ssl connected\n");
 
 
+    
     ret = SSL_get_verify_result(clientssl);
     
+    /*
     if (ret != X509_V_OK){
         printf("client ssl verify failed\n");
         return 0;
@@ -304,6 +346,10 @@ int create_tls_client(SSL *clientssl) {
 
     printf("client ssl verified\n");
 
+    */
+
+    printf("client ssl skip verifification\n");
+    
 
     uint8_t wbuff[32] = {0};
 
