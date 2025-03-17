@@ -4,3 +4,4 @@ openssl*
 *.pem
 *.tar.gz
 certs
+*.txt

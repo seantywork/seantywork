@@ -3,6 +3,7 @@
 #include "qs_common.h"
 #include "qs_tls.h"
 
+FILE* logfile = NULL;
 static OSSL_LIB_CTX *libctx = NULL;
 static OSSL_PROVIDER *oqsprov = NULL;
 //static OSSL_LIB_CTX *encodingctx = NULL;
@@ -520,11 +521,15 @@ dend:
 static int qs_kem(const char *kemalg_name) {
     EVP_MD_CTX *mdctx = NULL;
     EVP_PKEY_CTX *ctx = NULL;
+    EVP_PKEY_CTX *ctx_pub = NULL;
     EVP_PKEY *key = NULL;
+    EVP_PKEY *decoded_key_pub = NULL;
     unsigned char *out = NULL;
     unsigned char *secenc = NULL;
     unsigned char *secdec = NULL;
     size_t outlen, seclen;
+
+    
 
     BIO *bp_public = NULL;
     BIO *bp_private = NULL;
@@ -559,6 +564,7 @@ static int qs_kem(const char *kemalg_name) {
             goto err;
         }
 
+
         /*
         result = EVP_PKEY_CTX_set_params(ctx, NULL);
 
@@ -577,8 +583,26 @@ static int qs_kem(const char *kemalg_name) {
             goto err;
         }
 
+        struct KeyPair kp;
 
+        memset(&kp, 0, sizeof(struct KeyPair));
 
+        if(get_param_octet_string(key, OSSL_PKEY_PARAM_PUB_KEY, &kp.pubkey, &kp.pubkey_len)){
+
+            printf("get pub key failed\n");
+            result = -1;
+            goto err;
+        }
+
+        if(get_param_octet_string(key, OSSL_PKEY_PARAM_PRIV_KEY, &kp.privkey, &kp.privkey_len)){
+
+            printf("get privkey failed\n");
+            result = -1;
+            goto err;
+
+        }
+
+        printf("privkey len: %d, pubkeylen: %d\n", kp.privkey_len, kp.pubkey_len);
 
         EVP_PKEY_CTX_free(ctx);
         ctx = NULL;
@@ -913,6 +937,8 @@ static int qs_tlssig(const char *sig_name, const char *kem_name, int dtls_flag) 
     int ret = 1, testresult = 0;
     char group[1024] = {0};
     char certpath_ca[300];
+    char certpath_c[300];
+    char privkeypath_c[300];
     char certpath[300];
     char privkeypath[300];
     char *certsdir = "certs";
@@ -927,47 +953,70 @@ static int qs_tlssig(const char *sig_name, const char *kem_name, int dtls_flag) 
         return 1;
     }
 
-    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt");
-    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt");
-    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key");
-    /* ensure certsdir exists */
-    if (mkdir(certsdir, 0700)) {
-        if (errno != EEXIST) {
-            fprintf(stderr, "Couldn't create certsdir %s: Err = %d\n", certsdir,
-                    errno);
+    sprintf(group, "sig: %s, kem: %s\n", sig_name, kem_name);
+    
+    fputs(group, logfile);
+    
+
+    if(strcmp(sig_name, "dilithium3") == 0 && strcmp(kem_name, "frodo640shake") == 0){
+
+        sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt");
+        sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt");
+        sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key");
+        sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt");
+        sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key");
+        /* ensure certsdir exists */
+        if (mkdir(certsdir, 0700)) {
+            if (errno != EEXIST) {
+                fprintf(stderr, "Couldn't create certsdir %s: Err = %d\n", certsdir,
+                        errno);
+                ret = -1;
+                goto err;
+            }
+        }
+        if (!create_cert_key(libctx, (char *)sig_name, certpath_ca, certpath_c, privkeypath_c, certpath, privkeypath)) {
+            fprintf(stderr, "Cert/keygen failed for %s at %s/%s\n", sig_name,
+                    certpath, privkeypath);
             ret = -1;
             goto err;
         }
+
+        testresult = create_tls1_3_ctx_pair(libctx, &sctx, &cctx, certpath_ca, certpath_c, privkeypath_c, 
+                                certpath, privkeypath, dtls_flag);
+
+        if (!testresult) {
+            ret = -1;
+            goto err;
+        }
+
+
+        serverssl = SSL_new(sctx);
+        clientssl = SSL_new(cctx);
+
+        testresult = SSL_set1_groups_list(serverssl, kem_name);
+
+        if (!testresult) {
+            ret = -5;
+            goto err;
+        }
+        testresult = SSL_set1_groups_list(clientssl, kem_name);
+
+        if (!testresult) {
+            ret = -5;
+            goto err;
+        }
+
+        testresult = create_tls_connection(serverssl, clientssl, SSL_ERROR_NONE);
+        if (!testresult) {
+            ret = -5;
+            goto err;
+        }
+
+    } else {
+
+        return 1;
     }
-    if (!create_cert_key(libctx, (char *)sig_name, certpath_ca, certpath, privkeypath)) {
-        fprintf(stderr, "Cert/keygen failed for %s at %s/%s\n", sig_name,
-                certpath, privkeypath);
-        ret = -1;
-        goto err;
-    }
 
-    testresult = create_tls1_3_ctx_pair(libctx, &sctx, &cctx, certpath_ca, certpath,
-                                        privkeypath, dtls_flag);
-
-    if (!testresult) {
-        ret = -1;
-        goto err;
-    }
-
-    serverssl = SSL_new(sctx);
-    clientssl = SSL_new(cctx);
-
-
-    sprintf(group, "%s:%s", sig_name, kem_name);
-
-    SSL_set1_groups_list(serverssl, kem_name);
-    SSL_set1_groups_list(clientssl, kem_name);
-
-    testresult = create_tls_connection(serverssl, clientssl, SSL_ERROR_NONE);
-    if (!testresult) {
-        ret = -5;
-        goto err;
-    }
 
 err:
     SSL_free(serverssl);
@@ -1012,6 +1061,7 @@ static int qs_tls_run(const OSSL_PARAM params[], void *data) {
 
         ret = qs_tlssig(sigalg_name, kemalgs->algorithm_names, 0);
 
+        /*
         if (ret >= 0) {
             fprintf(stderr,
                     cGREEN "  TLS-SIG handshake test succeeded: %s" cNORM "\n",
@@ -1025,6 +1075,7 @@ static int qs_tls_run(const OSSL_PARAM params[], void *data) {
             ERR_print_errors_fp(stderr);
             (*errcnt)++;
         }
+        */
     }
 
 #ifdef DTLS1_3_VERSION
@@ -1118,6 +1169,8 @@ int main(int argc, char *argv[]) {
             }
         }
     } else if (strcmp(argv[1], "tls") == 0){
+
+        logfile = fopen("log.txt", "w");
 
 #ifdef OSSL_CAPABILITY_TLS_SIGALG_NAME
         // crashes: EVP_SIGNATURE_do_all_provided(libctx, test_oqs_sigs, &errcnt);

@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <openssl/err.h>
@@ -108,5 +109,24 @@ int get_param_octet_string(const EVP_PKEY *key, const char *param_name,
 int read_file_to_buffer(uint8_t* buff, int max_buff_len, char* file_path);
 
 #define MAXLOOPS 1000000
+
+
+struct KeyPair {
+    /** \brief The public key. */
+    uint8_t *pubkey;
+
+    /** \brief The public key length, in bytes. */
+    size_t pubkey_len;
+
+    /** \brief The private key. */
+    uint8_t *privkey;
+
+    /** \brief The private key length, in bytes. */
+    size_t privkey_len;
+
+    /** \brief Indicates if the pair of keys is from a quantum-resistant
+     * algorithm (1) or not (0). */
+    int is_pq;
+};
 
 #endif

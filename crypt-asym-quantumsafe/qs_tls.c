@@ -1,17 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0 AND MIT
 
 #include "qs_tls.h"
-int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *certfilename, char *privkeyfilename) {
+int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *certfilename_c, char *privkeyfilename_c, char *certfilename, char *privkeyfilename) {
 
     EVP_PKEY_CTX *evpctx_ca = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);  
+    EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);  
     EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);
     EVP_PKEY *pkey_ca = NULL;
+    EVP_PKEY *pkey_c = NULL;
     EVP_PKEY *pkey = NULL;
     X509 *x509_ca = X509_new();
+    X509 *x509_c = X509_new();
     X509 *x509 = X509_new();
     X509_NAME *name_ca = NULL;
+    X509_NAME *name_c = NULL;
     X509_NAME *name = NULL;
     BIO *keybio_ca = NULL, *certbio_ca = NULL;
+    BIO *keybio_c = NULL, *certbio_c = NULL;
     BIO *keybio = NULL, *certbio = NULL;
     int ret = 1;
 
@@ -33,6 +38,25 @@ int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, 
         !PEM_write_bio_X509(certbio_ca, x509_ca))
         ret = 0;
 
+    if (!evpctx_c || !EVP_PKEY_keygen_init(evpctx_c) ||
+        !EVP_PKEY_generate(evpctx_c, &pkey_c) || !pkey_c || !x509_c ||
+        !ASN1_INTEGER_set(X509_get_serialNumber(x509_c), 1) ||
+        !X509_gmtime_adj(X509_getm_notBefore(x509_c), 0) ||
+        !X509_gmtime_adj(X509_getm_notAfter(x509_c), 31536000L) ||
+        !X509_set_pubkey(x509_c, pkey_c) || !(name_c = X509_get_subject_name(x509_c)) ||
+        !X509_NAME_add_entry_by_txt(name_c, "C", MBSTRING_ASC,
+                                    (unsigned char *)"CH", -1, -1, 0) ||
+        !X509_NAME_add_entry_by_txt(name_c, "O", MBSTRING_ASC,
+                                    (unsigned char *)"test.org", -1, -1, 0) ||
+        !X509_NAME_add_entry_by_txt(name_c, "CN", MBSTRING_ASC,
+                                    (unsigned char *)"localhost_c", -1, -1, 0) ||
+        !X509_set_issuer_name(x509_c, name_ca) ||
+        !X509_sign(x509_c, pkey_ca, EVP_sha256()) ||
+        !(keybio_c = BIO_new_file(privkeyfilename_c, "wb")) ||
+        !PEM_write_bio_PrivateKey(keybio_c, pkey_c, NULL, NULL, 0, NULL, NULL) ||
+        !(certbio_c = BIO_new_file(certfilename_c, "wb")) ||
+        !PEM_write_bio_X509(certbio_c, x509_c))
+        ret = 0;
 
     if (!evpctx || !EVP_PKEY_keygen_init(evpctx) ||
         !EVP_PKEY_generate(evpctx, &pkey) || !pkey || !x509 ||
@@ -60,6 +84,11 @@ int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, 
     EVP_PKEY_CTX_free(evpctx_ca);
     BIO_free(keybio_ca);
     BIO_free(certbio_ca);
+    EVP_PKEY_free(pkey_c);
+    X509_free(x509_c);
+    EVP_PKEY_CTX_free(evpctx_c);
+    BIO_free(keybio_c);
+    BIO_free(certbio_c);
     EVP_PKEY_free(pkey);
     X509_free(x509);
     EVP_PKEY_CTX_free(evpctx);
@@ -83,6 +112,8 @@ int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
     
     if(preverify == 0)
     {
+
+
         if(err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
             fprintf(stdout, "  Error = X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY\n");
         else if(err == X509_V_ERR_CERT_UNTRUSTED)
@@ -107,7 +138,7 @@ int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
 }
 
 int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
-                                char *certfile_ca, char *certfile, char *privkeyfile, int dtls_flag) {
+                                char *certfile_ca, char *certfile_c, char *privkeyfile_c, char *certfile, char *privkeyfile, int dtls_flag) {
 
 
     printf("pair\n");
@@ -121,6 +152,7 @@ int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
         serverctx = SSL_CTX_new_ex(libctx, NULL, DTLS_server_method());
         clientctx = SSL_CTX_new_ex(libctx, NULL, DTLS_client_method());
     } else {
+
         serverctx = SSL_CTX_new_ex(libctx, NULL, TLS_server_method());
         clientctx = SSL_CTX_new_ex(libctx, NULL, TLS_client_method());
     }
@@ -145,7 +177,6 @@ int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
             goto err;
     }
 
-
     if (!SSL_CTX_load_verify_locations(clientctx, certfile_ca, NULL))
         goto err;
 
@@ -153,7 +184,23 @@ int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
 
     SSL_CTX_set_verify_depth(clientctx, 5);
 
+    printf("client load ca: %s\n", certfile_ca);
 
+    printf("client load cert: %s\n", certfile_c);
+
+    printf("client load key: %s\n", privkeyfile_c);
+
+    if (!SSL_CTX_use_certificate_file(clientctx, certfile_c, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_use_PrivateKey_file(clientctx, privkeyfile_c, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_check_private_key(clientctx))
+        goto err;
+
+
+        
     printf("client file done: %s\n", certfile_ca);
 
     if (!SSL_CTX_use_certificate_file(serverctx, certfile, SSL_FILETYPE_PEM))
@@ -216,9 +263,17 @@ int create_tls_client(SSL *clientssl) {
         return 0;
     }
 
-    SSL_set_fd(clientssl, c);
+    int ret = SSL_set_fd(clientssl, s);
 
-    int ret = SSL_connect(clientssl);
+    if(ret != 1){
+
+        printf("client ssl set fd failed\n");
+        return 0;
+    }
+
+
+
+    ret = SSL_connect(clientssl);
 
     if(ret != 1){
 
@@ -226,19 +281,7 @@ int create_tls_client(SSL *clientssl) {
         return 0;
     }
 
-    /*
-    for (i = 0; i < 2; i++) {
-        if (SSL_read_ex(clientssl, &buf, sizeof(buf), &readbytes) > 0) {
-            if (readbytes != 0){
-                printf("failed to get new session ticket 0\n");
-                return 0;
-            }
-        } else if (SSL_get_error(clientssl, 0) != SSL_ERROR_WANT_READ) {
-            printf("failed to get new session ticket 1\n");
-            return 0;
-        }
-    }
-    */
+    
 
     X509* cert = SSL_get_peer_certificate(clientssl);
     if(cert == NULL) { 
