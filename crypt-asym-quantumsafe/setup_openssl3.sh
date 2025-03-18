@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-OSSLV="openssl-3.4.1"
+OSSLV="3.4.1"
 
 
 curl -L "https://github.com/openssl/openssl/releases/download/openssl-$OSSLV/openssl-$OSSLV.tar.gz" -o "openssl-$OSSLV.tar.gz"
