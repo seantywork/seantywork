@@ -12,6 +12,7 @@
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 #include <openssl/core_names.h>

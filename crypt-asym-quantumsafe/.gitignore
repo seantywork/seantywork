@@ -5,3 +5,5 @@ openssl*
 *.tar.gz
 certs
 *.txt
+*.srl
+*.csr
