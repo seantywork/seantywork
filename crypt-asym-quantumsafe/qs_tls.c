@@ -404,9 +404,6 @@ int create_tls_client(SSL *clientssl) {
     printf("client ssl verified\n");
 
 
-    printf("client ssl skip verifification\n");
-    
-
     uint8_t wbuff[32] = {0};
 
     strcpy(wbuff, "hello");
