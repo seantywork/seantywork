@@ -5,7 +5,9 @@
 
 FILE* logfile = NULL;
 static OSSL_LIB_CTX *libctx = NULL;
+static OSSL_PROVIDER *defaultprov = NULL;
 static OSSL_PROVIDER *oqsprov = NULL;
+static OSSL_PROVIDER *fibsprov = NULL;
 //static OSSL_LIB_CTX *encodingctx = NULL;
 //static OSSL_PROVIDER *encodingprov = NULL;
 static char *modulename = NULL;
@@ -1128,11 +1130,12 @@ int main(int argc, char *argv[]) {
 
     messagelen = strlen(message);
 
-    //load_oqs_provider(encodingctx, "default", "oqs.cnf");
-    load_oqs_provider(libctx, "oqsprovider", "oqs.cnf");
+    //load_oqs_provider(libctx, "default", "/usr/local/ssl/openssl.cnf");
+    load_oqs_provider(libctx, "oqsprovider", "/usr/local/ssl/openssl.cnf");
 
-    //encodingprov = OSSL_PROVIDER_load(encodingctx, "default");
+    defaultprov = OSSL_PROVIDER_load(libctx, "default");
     oqsprov = OSSL_PROVIDER_load(libctx, "oqsprovider");
+    fibsprov = OSSL_PROVIDER_load(libctx, "fibs");
 
     if(strcmp(argv[1], "kem") == 0){
 

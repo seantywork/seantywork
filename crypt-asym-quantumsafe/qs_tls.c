@@ -18,6 +18,20 @@ int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, 
     BIO *keybio_ca = NULL, *certbio_ca = NULL;
     BIO *keybio_c = NULL, *certbio_c = NULL;
     BIO *keybio = NULL, *certbio = NULL;
+
+    /*
+    X509_EXTENSION *ext_c = NULL;
+    ASN1_OCTET_STRING *skid_c = NULL;
+    AUTHORITY_KEYID *akid_c = NULL; 
+    unsigned char md_c[EVP_MAX_MD_SIZE];
+    unsigned int md_len_c = 0;
+
+    X509_EXTENSION *ext = NULL;
+    ASN1_OCTET_STRING *skid = NULL;
+    AUTHORITY_KEYID *akid = NULL; 
+    unsigned char md[EVP_MAX_MD_SIZE];
+    unsigned int md_len = 0;
+    */
     int ret = 1;
 
     if (!evpctx_ca || !EVP_PKEY_keygen_init(evpctx_ca) ||

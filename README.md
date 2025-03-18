@@ -3815,6 +3815,123 @@ gpg --output un_encrypted.data --decrypt encrypted.data
 
 
 
+
+# quantum safe
+
+# get suitable openssl
+
+OSSLV="openssl-3.4.1"
+
+
+curl -L "https://github.com/openssl/openssl/releases/download/openssl-$OSSLV/openssl-$OSSLV.tar.gz" -o "openssl-$OSSLV.tar.gz"
+
+tar -zxf "openssl-$OSSLV.tar.gz"
+
+cd "openssl-$OSSLV"
+
+./config
+
+make
+
+make test
+
+sudo make install
+
+sudo ldconfig /usr/local/lib64/
+
+# get oqs
+
+LIBOQSV="0.12.0"
+OQSPROVV="0.8.0"
+
+rm -rf liboqs* oqs-provider* *.tar.gz
+
+sudo apt update 
+
+sudo apt install astyle cmake gcc ninja-build python3-pytest python3-pytest-xdist unzip xsltproc doxygen graphviz python3-yaml valgrind
+
+curl -L https://github.com/open-quantum-safe/liboqs/archive/refs/tags/$LIBOQSV.tar.gz -o $LIBOQSV.tar.gz
+
+
+curl -L https://github.com/open-quantum-safe/oqs-provider/archive/refs/tags/$OQSPROVV.tar.gz -o $OQSPROVV.tar.gz
+
+
+tar xzf $LIBOQSV.tar.gz
+
+tar xzf $OQSPROVV.tar.gz
+
+mv "liboqs-$LIBOQSV" liboqs
+
+mv "oqs-provider-$OQSPROVV" oqs-provider
+
+pushd liboqs
+
+mkdir build 
+
+pushd build 
+
+cmake -GNinja .. 
+
+ninja 
+
+sudo ninja install
+
+popd 
+
+popd 
+
+pushd oqs-provider
+
+cmake -S . -B _build && cmake --build _build && ctest --test-dir _build && sudo cmake --install _build
+
+popd
+
+# add below to /usr/local/ssl/openssl.cnf
+
+openssl_conf = openssl_init
+
+[openssl_init]
+providers = provider_sect
+
+[provider_sect]
+oqsprovider = oqsprovider_sect
+default = default_sect
+fips = fips_sect
+
+[default_sect]
+activate = 1
+
+[fips_sect]
+activate = 1
+
+[oqsprovider_sect]
+activate = 1
+
+
+# check
+
+openssl list -providers
+
+
+
+# pq certgen
+
+openssl req -x509 -new -newkey dilithium3 -keyout dilithium3_CA.key -out dilithium3_CA.crt -nodes -subj "/CN=test CA" -days 365
+
+openssl genpkey -algorithm dilithium3 -out dilithium3_srv.key
+
+openssl req -new -newkey dilithium3 -keyout dilithium3_srv.key -out dilithium3_srv.csr -nodes -subj "/CN=test server" 
+
+openssl x509 -req -in dilithium3_srv.csr -out dilithium3_srv.crt -CA dilithium3_CA.crt -CAkey dilithium3_CA.key -CAcreateserial -days 365
+
+
+# server test
+
+openssl s_server -cert dilithium3_srv.crt -key dilithium3_srv.key -www -tls1_3 -groups frodo640shake
+
+# client test 
+
+openssl s_client -groups frodo640shake -CAfile certs/dilithium3_ca.crt 
 ```
 
 
