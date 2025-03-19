@@ -2355,6 +2355,26 @@ ip link set eth0 master bond1
 ip link set eth1 master bond1
 ```
 
+```shell
+
+# netkit
+
+sudo ip netns add net1
+
+sudo ip link add nkpeer0 type netkit
+
+sudo ip link set nkpeer0 netns net1
+
+sudo ip link set dev nk0 up
+
+sudo ip netns exec net1 ip link set dev nkpeer0 up
+
+sudo ip addr add 10.168.0.1/24 dev nk0
+
+sudo ip netns exec net1 ip addr add 10.168.0.2/24 dev nkpeer0
+
+
+```
 
 # NFTABLES NFT
 

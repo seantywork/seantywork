@@ -26,7 +26,7 @@
 #include <xdp/libxdp.h>
 #include <xdp/xsk.h>
 
-char* ifname = "veth01";
+char* ifname = NULL;
 char* filename = "/bpf/xdp_map_allow.o";
 char* mapname = "allowed_addr";
 int map_fd = 0;
@@ -61,6 +61,15 @@ int main(int argc, char **argv){
 
     int err;
     char errmsg[1024];
+
+    if(argc < 2){
+
+        printf("supply if name\n");
+
+        return -1;
+    }
+
+    ifname = argv[1];
 
     DECLARE_LIBBPF_OPTS(bpf_object_open_opts, opts);
     DECLARE_LIBXDP_OPTS(xdp_program_opts, xdp_opts, 0);
