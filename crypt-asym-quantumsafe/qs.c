@@ -772,7 +772,6 @@ static int qs_kem(){
 	uint8_t *shared_secret_e = NULL;
 	uint8_t *shared_secret_d = NULL;
 
-    uint8_t *reserved_ciphertext= NULL;
 
 	kem = OQS_KEM_new(OQS_KEM_alg_kyber_768);
 	if (kem == NULL) {
@@ -801,11 +800,31 @@ static int qs_kem(){
 
     memcpy(ciphertext, message,kem->length_ciphertext);
 
-    reserved_ciphertext = (uint8_t*)malloc(kem->length_ciphertext);
+    memset(shared_secret_e, 0, kem->length_shared_secret);
 
-    memset(reserved_ciphertext, 0, kem->length_ciphertext);
+    memset(shared_secret_d, 0, kem->length_shared_secret);
 
-    memcpy(reserved_ciphertext, ciphertext, kem->length_ciphertext);
+    printf("shared secret e: length: %d: ", kem->length_shared_secret);
+
+    for (int i = 0 ; i < kem->length_shared_secret; i++){
+
+
+        printf("%02X", shared_secret_e[i]);
+
+    }
+
+    printf("\n");
+
+    printf("shared secret d: length: %d: ", kem->length_shared_secret);
+
+    for (int i = 0 ; i < kem->length_shared_secret; i++){
+
+
+        printf("%02X", shared_secret_d[i]);
+
+    }
+
+    printf("\n");
 
 	OQS_STATUS rc = OQS_KEM_keypair(kem, public_key, secret_key);
 	if (rc != OQS_SUCCESS) {
@@ -816,7 +835,6 @@ static int qs_kem(){
 		return OQS_ERROR;
 	}
 
-    printf("reserved ciphertex: %s\n", reserved_ciphertext);
 
 	rc = OQS_KEM_encaps(kem, ciphertext, shared_secret_e, public_key);
 	if (rc != OQS_SUCCESS) {
@@ -847,7 +865,30 @@ static int qs_kem(){
 
     }
 
-	printf("[example_heap]  OQS_KEM_kyber_768 operations completed.\n");
+
+    printf("shared secret e: %d: ", kem->length_shared_secret);
+
+    for (int i = 0 ; i < kem->length_shared_secret; i++){
+
+
+        printf("%02X", shared_secret_e[i]);
+
+    }
+
+    printf("\n");
+
+    printf("shared secret d: %d: ", kem->length_shared_secret);
+
+    for (int i = 0 ; i < kem->length_shared_secret; i++){
+
+
+        printf("%02X", shared_secret_d[i]);
+
+    }
+
+    printf("\n");
+
+	printf("OQS_KEM_kyber_768 operations completed.\n");
 	cleanup_heap(secret_key, shared_secret_e, shared_secret_d, public_key,
 	             ciphertext, kem);
 
