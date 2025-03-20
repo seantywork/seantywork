@@ -520,12 +520,12 @@ dend:
 }
 
 
-static int qs_kem(const char *kemalg_name) {
-    EVP_MD_CTX *mdctx = NULL;
+static int qs_kem_all(const char *kemalg_name) {
+
     EVP_PKEY_CTX *ctx = NULL;
-    EVP_PKEY_CTX *ctx_pub = NULL;
+
     EVP_PKEY *key = NULL;
-    EVP_PKEY *decoded_key_pub = NULL;
+
     unsigned char *out = NULL;
     unsigned char *secenc = NULL;
     unsigned char *secdec = NULL;
@@ -604,6 +604,7 @@ static int qs_kem(const char *kemalg_name) {
 
         }
 
+
         printf("privkey len: %d, pubkeylen: %d\n", kp.privkey_len, kp.pubkey_len);
 
         EVP_PKEY_CTX_free(ctx);
@@ -613,12 +614,13 @@ static int qs_kem(const char *kemalg_name) {
 
         if(ctx == NULL){
 
-            printf("get key failed\n");
+            printf("new ctx from key failed\n");
 
             result = -1;
 
             goto err;
         }
+
 
         result = EVP_PKEY_encapsulate_init(ctx, NULL);
 
@@ -695,7 +697,6 @@ static int qs_kem(const char *kemalg_name) {
         }
 
 
-
         if(memcmp(secenc, secdec, seclen) != 0){
 
             printf("failed to verify\n");
@@ -746,6 +747,112 @@ err:
     }
 
     return result;
+}
+
+static void cleanup_heap(uint8_t *secret_key, uint8_t *shared_secret_e,
+    uint8_t *shared_secret_d, uint8_t *public_key,
+    uint8_t *ciphertext, OQS_KEM *kem) {
+    if (kem != NULL) {
+        OQS_MEM_secure_free(secret_key, kem->length_secret_key);
+        OQS_MEM_secure_free(shared_secret_e, kem->length_shared_secret);
+        OQS_MEM_secure_free(shared_secret_d, kem->length_shared_secret);
+    }
+    OQS_MEM_insecure_free(public_key);
+    OQS_MEM_insecure_free(ciphertext);
+    OQS_KEM_free(kem);
+}
+
+
+static int qs_kem(){
+
+	OQS_KEM *kem = NULL;
+	uint8_t *public_key = NULL;
+	uint8_t *secret_key = NULL;
+	uint8_t *ciphertext = NULL;
+	uint8_t *shared_secret_e = NULL;
+	uint8_t *shared_secret_d = NULL;
+
+    uint8_t *reserved_ciphertext= NULL;
+
+	kem = OQS_KEM_new(OQS_KEM_alg_kyber_768);
+	if (kem == NULL) {
+		printf("[example_heap]  OQS_KEM_kyber_768 was not enabled at "
+		       "compile-time.\n");
+		return OQS_SUCCESS;
+	}
+
+	public_key = OQS_MEM_malloc(kem->length_public_key);
+	secret_key = OQS_MEM_malloc(kem->length_secret_key);
+	ciphertext = OQS_MEM_malloc(kem->length_ciphertext);
+	shared_secret_e = OQS_MEM_malloc(kem->length_shared_secret);
+	shared_secret_d = OQS_MEM_malloc(kem->length_shared_secret);
+	if ((public_key == NULL) || (secret_key == NULL) || (ciphertext == NULL) ||
+	        (shared_secret_e == NULL) || (shared_secret_d == NULL)) {
+		fprintf(stderr, "ERROR: OQS_MEM_malloc failed!\n");
+		cleanup_heap(secret_key, shared_secret_e, shared_secret_d, public_key,
+		             ciphertext, kem);
+
+		return OQS_ERROR;
+	}
+
+    messagelen = strlen(message);
+
+    printf("messagelen: %d, ciphertext len: %d\n", messagelen, kem->length_ciphertext);
+
+    memcpy(ciphertext, message,kem->length_ciphertext);
+
+    reserved_ciphertext = (uint8_t*)malloc(kem->length_ciphertext);
+
+    memset(reserved_ciphertext, 0, kem->length_ciphertext);
+
+    memcpy(reserved_ciphertext, ciphertext, kem->length_ciphertext);
+
+	OQS_STATUS rc = OQS_KEM_keypair(kem, public_key, secret_key);
+	if (rc != OQS_SUCCESS) {
+		fprintf(stderr, "ERROR: OQS_KEM_keypair failed!\n");
+		cleanup_heap(secret_key, shared_secret_e, shared_secret_d, public_key,
+		             ciphertext, kem);
+
+		return OQS_ERROR;
+	}
+
+    printf("reserved ciphertex: %s\n", reserved_ciphertext);
+
+	rc = OQS_KEM_encaps(kem, ciphertext, shared_secret_e, public_key);
+	if (rc != OQS_SUCCESS) {
+		fprintf(stderr, "ERROR: OQS_KEM_encaps failed!\n");
+		cleanup_heap(secret_key, shared_secret_e, shared_secret_d, public_key,
+		             ciphertext, kem);
+
+		return OQS_ERROR;
+	}
+
+	rc = OQS_KEM_decaps(kem, shared_secret_d, ciphertext, secret_key);
+	if (rc != OQS_SUCCESS) {
+		fprintf(stderr, "ERROR: OQS_KEM_decaps failed!\n");
+		cleanup_heap(secret_key, shared_secret_e, shared_secret_d, public_key,
+		             ciphertext, kem);
+
+		return OQS_ERROR;
+	}
+
+    rc = memcmp(shared_secret_d, shared_secret_e, kem->length_shared_secret);
+
+    if(rc != 0){
+		fprintf(stderr, "ERROR: memcmp failed\n");
+		cleanup_heap(secret_key, shared_secret_e, shared_secret_d, public_key,
+		             ciphertext, kem);
+
+		return OQS_ERROR;
+
+    }
+
+	printf("[example_heap]  OQS_KEM_kyber_768 operations completed.\n");
+	cleanup_heap(secret_key, shared_secret_e, shared_secret_d, public_key,
+	             ciphertext, kem);
+
+	return OQS_SUCCESS; // success
+
 }
 
 static int qs_signatures(const char *sigalg_name) {
@@ -1135,15 +1242,15 @@ int main(int argc, char *argv[]) {
 
     defaultprov = OSSL_PROVIDER_load(libctx, "default");
     oqsprov = OSSL_PROVIDER_load(libctx, "oqsprovider");
-    fibsprov = OSSL_PROVIDER_load(libctx, "fibs");
+    //fibsprov = OSSL_PROVIDER_load(libctx, "fibs");
 
-    if(strcmp(argv[1], "kem") == 0){
+    if(strcmp(argv[1], "kem-all") == 0){
 
         kemalgs = OSSL_PROVIDER_query_operation(oqsprov, OSSL_OP_KEM, &query_nocache);
 
         if (kemalgs) {
             for (; kemalgs->algorithm_names != NULL; kemalgs++) {
-                if (qs_kem(kemalgs->algorithm_names)) {
+                if (qs_kem_all(kemalgs->algorithm_names)) {
                     fprintf(stderr, cGREEN "  KEM test succeeded: %s" cNORM "\n",
                             kemalgs->algorithm_names);
                 } else {
@@ -1153,6 +1260,16 @@ int main(int argc, char *argv[]) {
                     errcnt++;
                 }
             }
+        }
+
+    } else if(strcmp(argv[1], "kem") == 0){
+
+        if (qs_kem() == OQS_SUCCESS) {
+            fprintf(stderr, cGREEN "  KEM test succeeded" cNORM "\n");
+        } else {
+            fprintf(stderr, cRED "  KEM test failed" cNORM "\n");
+            ERR_print_errors_fp(stderr);
+            errcnt++;
         }
 
     } else if(strcmp(argv[1], "sig") == 0){

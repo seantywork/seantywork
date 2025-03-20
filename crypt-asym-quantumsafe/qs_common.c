@@ -175,6 +175,8 @@ int is_kem_algorithm_hybrid(const char *_alg_) {
     return is_string_in_list(kHybridKEMAlgorithms, _alg_);
 }
 
+
+
 int get_param_octet_string(const EVP_PKEY *key, const char *param_name,
                            uint8_t **buf, size_t *buf_len) {
     *buf = NULL;
@@ -205,6 +207,28 @@ int get_param_octet_string(const EVP_PKEY *key, const char *param_name,
         fputs(cNORM "\n", stderr);
         free(*buf);
         *buf = NULL;
+    } else {
+        ret = 0;
+    }
+
+out:
+    return ret;
+}
+
+
+int set_param_octet_string(EVP_PKEY *key, const char *param_name,
+    uint8_t *buf, size_t buf_len) {
+
+    int ret = -1;
+
+    if (EVP_PKEY_set_octet_string_param(key, param_name, buf, buf_len) != 1) {
+        fprintf(stderr,
+                cRED
+                "`EVP_PKEY_set_octet_string_param` failed with param `%s`: ",
+                param_name);
+        ERR_print_errors_fp(stderr);
+        fputs(cNORM "\n", stderr);
+
     } else {
         ret = 0;
     }
@@ -246,3 +270,5 @@ int read_file_to_buffer(uint8_t* buff, int max_buff_len, char* file_path){
 
     return valread;
 }
+
+

@@ -105,6 +105,9 @@ int is_kem_algorithm_hybrid(const char *_alg_);
 int get_param_octet_string(const EVP_PKEY *key, const char *param_name,
                            uint8_t **buf, size_t *buf_len);
 
+int set_param_octet_string(EVP_PKEY *key, const char *param_name,
+                            uint8_t *buf, size_t buf_len);
+
 #define PEM_BUFF_LEN 8192
 
 int read_file_to_buffer(uint8_t* buff, int max_buff_len, char* file_path);
