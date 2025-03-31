@@ -547,7 +547,7 @@ void deth_setup(struct net_device *dev){
 	ether_setup(dev); 
 	dev->watchdog_timeo = timeout;
 	dev->netdev_ops = &deth_netdev_ops;
-//	dev->header_ops = &deth_header_ops;
+	dev->header_ops = &deth_header_ops;
 	dev->flags           |= IFF_NOARP;
 	dev->features        |= NETIF_F_HW_CSUM;
 
