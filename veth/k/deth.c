@@ -205,7 +205,7 @@ void deth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 	priv = netdev_priv(dev);
 	spin_lock(&priv->lock);
 
-	/* retrieve statusword: real netdevices use I/O instructions */
+
 	statusword = priv->status;
 	priv->status = 0;
 	if (statusword & DETH_RX_INTR) {
@@ -233,12 +233,7 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 
 
     printk(KERN_INFO "entered hw tx\n");
-	/*
-	 * This function deals with hw details. This interface loops
-	 * back the packet to the other deth interface (if any).
-	 * In other words, this function implements the deth behaviour,
-	 * while all other procedures are rather device-independent
-	 */
+
 	struct iphdr *ih;
 	struct net_device *dest;
 	struct deth_priv *priv;
@@ -256,27 +251,11 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 
     int i;
     printk(KERN_INFO "len is %i\n",len);
-    //for (i=14 ; i<len; i++)
-    //    printk(" %02x",buf[i]&0xff);
-    //printk("\n");
+
 
 
 
 	/*
-	 * Ethhdr is 14 bytes, but the kernel arranges for iphdr
-	 * to be aligned (i.e., ethhdr is unaligned)
-	 */
-	/*
-	ih = (struct iphdr *)(buf+sizeof(struct ethhdr));
-	saddr = &ih->saddr;
-	daddr = &ih->daddr;
-
-	((u8 *)saddr)[2] ^= 1; 
-	((u8 *)daddr)[2] ^= 1;
-
-	ih->check = 0;         
-	ih->check = ip_fast_csum((unsigned char *)ih,ih->ihl);
-
 
 	if (dev == deth_devs[0])
 		printk(KERN_INFO "%08x:%05i --> %08x:%05i\n",
@@ -364,27 +343,6 @@ int deth_header(struct sk_buff *skb, struct net_device *dev,
 }
 
 
-
-/*
-int deth_change_mtu(struct net_device *dev, int new_mtu){
-
-	unsigned long flags;
-	struct deth_priv *priv = netdev_priv(dev);
-	spinlock_t *lock = &priv->lock;
-
-	if ((new_mtu < 68) || (new_mtu > 1500)){
-
-        return -EINVAL;
-    }
-
-	spin_lock_irqsave(lock, flags);
-	dev->mtu = new_mtu;
-	spin_unlock_irqrestore(lock, flags);
-	return 0; 
-
-}
-*/
-
 int deth_open(struct net_device *dev){
 
 	if (dev == deth_devs[1]){
@@ -419,27 +377,6 @@ int deth_stop(struct net_device *dev){
     printk(KERN_INFO "stopped deth\n");
 }
 
-/*
-int deth_set_config(struct net_device *dev, struct ifmap *map){
-
-	if (dev->flags & IFF_UP){
-        return -EBUSY;
-    }
-
-	if (map->base_addr != dev->base_addr) {
-		printk(KERN_INFO "deth: can't change I/O address\n");
-		return -EOPNOTSUPP;
-	}
-
-	if (map->irq != dev->irq) {
-
-		dev->irq = map->irq;
-
-	}
-
-	return 0;
-}
-*/
 
 netdev_tx_t deth_xmit(struct sk_buff *skb, struct net_device *dev){
 
@@ -472,23 +409,6 @@ netdev_tx_t deth_xmit(struct sk_buff *skb, struct net_device *dev){
 
 }
 
-/*
-int deth_do_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd){
-
-
-    printk(KERN_INFO "deth ioctl\n");
-	return 0;
-}
-*/
-
-/*
-struct net_device_stats* deth_get_stats(struct net_device *dev){
-
-	struct deth_priv *priv = netdev_priv(dev);
-	return &priv->stats;
-
-}
-*/
 
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
@@ -532,10 +452,6 @@ const struct net_device_ops deth_netdev_ops = {
 	.ndo_open            = deth_open,
 	.ndo_stop            = deth_stop,
 	.ndo_start_xmit      = deth_xmit,
-//	.ndo_do_ioctl        = deth_do_ioctl,
-//	.ndo_set_config      = deth_set_config,
-//	.ndo_get_stats       = deth_get_stats,
-//	.ndo_change_mtu      = deth_change_mtu,
 	.ndo_tx_timeout      = deth_tx_timeout,
 };
 
