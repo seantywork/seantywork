@@ -449,7 +449,7 @@ int dummveth_header(struct sk_buff *skb, struct net_device *dev,
 	eth->h_proto = htons(type);
 	memcpy(eth->h_source, saddr ? saddr : dev->dev_addr, dev->addr_len);
 	memcpy(eth->h_dest,   daddr ? daddr : dev->dev_addr, dev->addr_len);
-	//eth->h_dest[ETH_ALEN-1]   ^= 0x01;   /* dest is us xor 1 */
+	eth->h_dest[ETH_ALEN-1]   ^= 0x01;   /* dest is us xor 1 */
 	return (dev->hard_header_len);
 
 }
