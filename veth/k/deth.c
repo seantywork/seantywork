@@ -347,7 +347,7 @@ int deth_rebuild_header(struct sk_buff *skb){
 }
 
 
-/*
+
 
 int deth_header(struct sk_buff *skb, struct net_device *dev,
 	unsigned short type, const void *daddr, const void *saddr,
@@ -362,7 +362,7 @@ int deth_header(struct sk_buff *skb, struct net_device *dev,
 	return (dev->hard_header_len);
 
 }
-*/
+
 
 
 /*
@@ -389,12 +389,12 @@ int deth_open(struct net_device *dev){
 
 	if (dev == deth_devs[1]){
 
-        memcpy(dev->dev_addr, "DETH00", ETH_ALEN);
+        memcpy(dev->dev_addr, "DETH01", ETH_ALEN);
 
 
     } else {
 
-		memcpy(dev->dev_addr, "DETH01", ETH_ALEN);
+		memcpy(dev->dev_addr, "DETH00", ETH_ALEN);
 	}
 
 	struct deth_priv *priv = netdev_priv(dev);
@@ -521,11 +521,10 @@ void deth_tx_timeout(struct net_device *dev, unsigned int txqueue)
 	return;
 }
 
-/*
+
 const struct header_ops deth_header_ops = {
     .create = deth_header
 };
-*/
 
 
 
