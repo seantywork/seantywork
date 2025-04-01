@@ -46,7 +46,6 @@ void deth_teardown_pool(struct net_device *dev){
 	while ((pkt = priv->ppool)) {
 		priv->ppool = pkt->next;
 		kfree (pkt);
-		/* FIXME - in-flight packets ? */
 	}
 }    
 
@@ -98,7 +97,7 @@ void deth_enqueue_buf(struct net_device *dev, struct deth_packet *pkt){
 	struct deth_priv *priv = netdev_priv(dev);
 
 	spin_lock_irqsave(&priv->lock, flags);
-	pkt->next = priv->rx_queue;  /* FIXME - misorders packets */
+	pkt->next = priv->rx_queue;  
 	priv->rx_queue = pkt;
 	spin_unlock_irqrestore(&priv->lock, flags);
 
@@ -144,7 +143,7 @@ int deth_poll(struct napi_struct *napi, int budget){
 
 	while (npackets < budget && priv->rx_queue) {
 		pkt = deth_dequeue_buf(dev);
-		skb = dev_alloc_skb(pkt->datalen + 2);
+		skb = dev_alloc_skb(NET_IP_ALIGN + pkt->datalen);
 		if (! skb) {
 			if (printk_ratelimit()){
                 printk(KERN_INFO "deth: packet dropped\n");
@@ -154,7 +153,7 @@ int deth_poll(struct napi_struct *napi, int budget){
 			deth_release_buffer(pkt);
 			continue;
 		}
-		skb_reserve(skb, 2);  
+		skb_reserve(skb, NET_IP_ALIGN);  
 		memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
 		skb->dev = dev;
 		skb->protocol = eth_type_trans(skb, dev);
@@ -210,7 +209,6 @@ void deth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 	priv->status = 0;
 	if (statusword & DETH_RX_INTR) {
         printk(KERN_INFO "napi receive\n");
-		//deth_rx_ints(dev, 0);  
 		napi_schedule(&priv->napi);
 	}
 	if (statusword & DETH_TX_INTR) {
@@ -234,10 +232,10 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 
     printk(KERN_INFO "entered hw tx\n");
 
-	struct iphdr *ih;
+	//struct iphdr *ih;
 	struct net_device *dest;
 	struct deth_priv *priv;
-	u32 *saddr, *daddr;
+	//u32 *saddr, *daddr;
 	struct deth_packet *tx_buffer;
 
 	if (len < sizeof(struct ethhdr) + sizeof(struct iphdr)) {
@@ -245,13 +243,6 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 				len);
 		return;
 	}
-
-
-    // enable this conditional to look at the data
-
-    int i;
-    printk(KERN_INFO "len is %i\n",len);
-
 
 
 
@@ -274,9 +265,6 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 	
 	struct deth_priv *spriv = netdev_priv(dev);
 
-	printk(KERN_INFO "src: rx_int_enabled: %d\n", spriv->rx_int_enabled);
-	printk(KERN_INFO "dst: rx_int_enabled: %d\n", priv->rx_int_enabled);
-	
 	tx_buffer = deth_get_tx_buffer(dev);
 
 	if(!tx_buffer) {
@@ -298,30 +286,15 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 	priv->tx_packetdata = buf;
 	priv->status |= DETH_TX_INTR;
 	if (lockup && ((priv->stats.tx_packets + 1) % lockup) == 0) {
-        	/* Simulate a dropped transmit interrupt */
+
 		netif_stop_queue(dev);
 		printk(KERN_INFO "simulate lockup at %ld, txp %ld\n", jiffies, (unsigned long) priv->stats.tx_packets);
-	}
-	else{
+
+	} else{
 
         deth_interrupt(0, dev, NULL);
     }
 
-
-
-}
-
-
-
-int deth_rebuild_header(struct sk_buff *skb){
-
-	struct ethhdr *eth = (struct ethhdr *) skb->data;
-	struct net_device *dev = skb->dev;
-
-	memcpy(eth->h_source, dev->dev_addr, dev->addr_len);
-	memcpy(eth->h_dest, dev->dev_addr, dev->addr_len);
-	eth->h_dest[ETH_ALEN-1]   ^= 0x01;   /* dest is us xor 1 */
-	return 0;
 
 }
 
@@ -347,12 +320,12 @@ int deth_open(struct net_device *dev){
 
 	if (dev == deth_devs[1]){
 
-        memcpy(dev->dev_addr, "DETH01", ETH_ALEN);
+        memcpy((void*)dev->dev_addr, "DETH01", ETH_ALEN);
 
 
     } else {
 
-		memcpy(dev->dev_addr, "DETH00", ETH_ALEN);
+		memcpy((void*)dev->dev_addr, "DETH00", ETH_ALEN);
 	}
 
 	struct deth_priv *priv = netdev_priv(dev);
@@ -408,7 +381,6 @@ netdev_tx_t deth_xmit(struct sk_buff *skb, struct net_device *dev){
 
 
 }
-
 
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
