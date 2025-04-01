@@ -262,8 +262,6 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 
 	dest = deth_devs[dev == deth_devs[0] ? 1 : 0];
 	priv = netdev_priv(dest);
-	
-	struct deth_priv *spriv = netdev_priv(dev);
 
 	tx_buffer = deth_get_tx_buffer(dev);
 
