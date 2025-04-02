@@ -293,7 +293,8 @@ void kneigh_hw_tx(char *buf, int len, struct net_device *dev){
 
 	ih = (struct iphdr*)(buf + sizeof(struct ethhdr));
 
-	net = dev_net(dest);
+	/*
+	net = dev_net(dev);
 	
 	if(net == NULL){
 
@@ -302,7 +303,7 @@ void kneigh_hw_tx(char *buf, int len, struct net_device *dev){
 		return;
 	}
 
-    rt = ip_route_output(net, ih->daddr,ih->saddr, 0 ,dest->ifindex);
+    rt = ip_route_output(net, ih->daddr,ih->saddr, 0 ,dev->ifindex);
 
 	if(IS_ERR(rt)){
 
@@ -311,24 +312,21 @@ void kneigh_hw_tx(char *buf, int len, struct net_device *dev){
 		return;
 
 	}
+	*/
 
-	n = __ipv4_neigh_lookup(rt->dst.dev,rt->rt_gw4);
+	n = __ipv4_neigh_lookup(dev,ih->daddr);
 
 	if(n == NULL){
-		n = neigh_create(&arp_tbl, &haddr, rt->dst.dev);
+		n = neigh_create(&arp_tbl, &ih->daddr, dev);
 	}
 	if(IS_ERR(n)){
 
 		printk("kneigh: failed to lookup\n");
 
 		return;
-	}
+	}        
 
-	haddr=rt->rt_gw4;        
-
-    printk(KERN_INFO "[G] Default Gateway IP [%d.%d.%d.%d] ",(haddr>>0)&0xff,(haddr>>8)&0xff,(haddr>>16)&0xff,(haddr>>24)&0xff);
-
-	printk(KERN_INFO "[G] Default Gateway mac [%pM] ",n->ha);
+	printk(KERN_INFO "[kneigh] got neigh mac [%pM] ",n->ha);
 
 	printk("eth src: %02X:%02X:%02X:%02X:%02X:%02X\n", 
 		eh->h_source[0],  
@@ -345,6 +343,7 @@ void kneigh_hw_tx(char *buf, int len, struct net_device *dev){
 		eh->h_dest[4], 
 		eh->h_dest[5]);
 
+	neigh_release(n);
 
 	if(ih->protocol == IPPROTO_UDP){
 
@@ -491,6 +490,7 @@ void kneigh_setup(struct net_device *dev){
 	ether_setup(dev); 
 	dev->watchdog_timeo = timeout;
 	dev->netdev_ops = &kneigh_netdev_ops;
+//	dev->flags           |= IFF_NOARP;
 	dev->features        |= NETIF_F_HW_CSUM;
 
 	kneigh_privs[setup_ptr] = netdev_priv(dev);
