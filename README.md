@@ -2376,6 +2376,63 @@ sudo ip netns exec net1 ip addr add 10.168.0.2/24 dev nkpeer0
 
 ```
 
+```shell
+
+
+# xfrm
+
+# xfrm ip addr
+
+sudo ip link add dev veth01 type veth peer name veth02 netns vnet
+sudo ip addr add 192.168.10.1/24 dev veth01
+sudo ip addr add 10.168.66.1/24 dev veth01
+sudo ip link set up veth01
+sudo ip netns exec vnet ip addr add 192.168.10.2/24 dev veth02
+sudo ip netns exec vnet ip addr add 10.168.66.2/24 dev veth02
+sudo ip netns exec vnet ip link set up veth02
+
+# xfrm state, policy
+
+ip xfrm state add \
+    src 10.168.66.1/24 dst 10.168.66.2/24 proto esp spi 0x01000000 reqid 0x01000000 mode tunnel \
+    aead 'rfc4106(gcm(aes))' 0x000000000000000000000000000000000000000000000000000000000000000000000000 128 \
+    sel src 10.168.66.1/24 dst 10.168.66.2/24
+
+ip xfrm state add \
+    src 10.168.66.2/24 dst 10.168.66.1/24 proto esp spi 0x02000000 reqid 0x02000000 mode tunnel \
+    aead 'rfc4106(gcm(aes))' 0x000000000000000000000000000000000000000000000000000000000000000000000000 128 \
+    sel src 10.168.66.2/24 dst 10.168.66.1/24
+
+ip xfrm policy add \
+    src 10.168.66.1/24 dst 10.168.66.2/24 dir out \
+    tmpl src 10.168.66.1/24 dst 10.168.66.2/24 proto esp reqid 0x01000000 mode tunnel
+
+ip xfrm policy add \
+    src 10.168.66.2/24 dst 10.168.66.1/24 dir in \
+    tmpl src 10.168.66.2/24 dst 10.168.66.1/24 proto esp reqid 0x02000000 mode tunnel
+
+
+ip netns exec vnet ip xfrm state add \
+    src 10.168.66.1/24 dst 10.168.66.2/24 proto esp spi 0x01000000 reqid 0x01000000 mode tunnel \
+    aead 'rfc4106(gcm(aes))' 0x000000000000000000000000000000000000000000000000000000000000000000000000 128 \
+    sel src 10.168.66.1/24 dst 10.168.66.2/24
+
+ip netns exec vnet ip xfrm state add \
+    src 10.168.66.2/24 dst 10.168.66.1/24 proto esp spi 0x02000000 reqid 0x02000000 mode tunnel \
+    aead 'rfc4106(gcm(aes))' 0x000000000000000000000000000000000000000000000000000000000000000000000000 128 \
+    sel src 10.168.66.2/24 dst 10.168.66.1/24
+
+ip netns exec vnet ip xfrm policy add \
+    src 10.168.66.1/24 dst 10.168.66.2/24 dir in \
+    tmpl src 10.168.66.1/24 dst 10.168.66.2/24 proto esp reqid 0x01000000 mode tunnel
+
+ip netns exec vnet ip xfrm policy add \
+    src 10.168.66.2/24 dst 10.168.66.1/24 dir out \
+    tmpl src 10.168.66.2/24 dst 10.168.66.1/24 proto esp reqid 0x02000000 mode tunnel
+
+
+```
+
 # NFTABLES NFT
 
 
