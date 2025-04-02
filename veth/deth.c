@@ -50,7 +50,7 @@ void deth_teardown_pool(struct net_device *dev){
 }    
 
 
-struct deth_packet *deth_get_tx_buffer(struct net_device *dev){
+struct deth_packet *deth_tx_cons_buffer(struct net_device *dev){
 
 	struct deth_priv *priv = netdev_priv(dev);
 	unsigned long flags;
@@ -59,7 +59,6 @@ struct deth_packet *deth_get_tx_buffer(struct net_device *dev){
 	spin_lock_irqsave(&priv->lock, flags);
 	pkt = priv->ppool;
 	if(!pkt) {
-		// PDEBUG("Out of Pool\n");
         printk (KERN_INFO "out of pool\n");
 		return pkt;
 	}
@@ -74,7 +73,7 @@ struct deth_packet *deth_get_tx_buffer(struct net_device *dev){
 
 }
 
-void deth_release_buffer(struct deth_packet *pkt){
+void deth_tx_release_buffer(struct deth_packet *pkt){
 
 	unsigned long flags;
 	struct deth_priv *priv = netdev_priv(pkt->dev);
@@ -91,7 +90,7 @@ void deth_release_buffer(struct deth_packet *pkt){
 
 }
 
-void deth_enqueue_buf(struct net_device *dev, struct deth_packet *pkt){
+void deth_rx_prod_buf(struct net_device *dev, struct deth_packet *pkt){
 
 	unsigned long flags;
 	struct deth_priv *priv = netdev_priv(dev);
@@ -106,7 +105,7 @@ void deth_enqueue_buf(struct net_device *dev, struct deth_packet *pkt){
 
 
 
-struct deth_packet *deth_dequeue_buf(struct net_device *dev){
+struct deth_packet *deth_rx_cons_buf(struct net_device *dev){
 
 	struct deth_priv *priv = netdev_priv(dev);
 	struct deth_packet *pkt;
@@ -129,61 +128,6 @@ void deth_rx_ints(struct net_device *dev, int enable){
 }
 
 
-
-int deth_poll(struct napi_struct *napi, int budget){
-
-
-	int npackets = 0;
-	struct sk_buff *skb;
-	struct deth_priv *priv = container_of(napi, struct deth_priv, napi);
-	struct net_device *dev = priv->dev;
-	struct deth_packet *pkt;
-
-    printk(KERN_INFO "polling\n");
-
-	while (npackets < budget && priv->rx_queue) {
-		pkt = deth_dequeue_buf(dev);
-		skb = dev_alloc_skb(NET_IP_ALIGN + pkt->datalen);
-		if (! skb) {
-			if (printk_ratelimit()){
-                printk(KERN_INFO "deth: packet dropped\n");
-            }
-			priv->stats.rx_dropped++;
-			npackets++;
-			deth_release_buffer(pkt);
-			continue;
-		}
-		skb_reserve(skb, NET_IP_ALIGN);  
-		memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
-		skb->dev = dev;
-		skb->protocol = eth_type_trans(skb, dev);
-		skb->ip_summed = CHECKSUM_UNNECESSARY;
-		netif_receive_skb(skb);
-
-		npackets++;
-		priv->stats.rx_packets++;
-		priv->stats.rx_bytes += pkt->datalen;
-		deth_release_buffer(pkt);
-	}
-
-    printk(KERN_INFO "polling done\n");
-
-	if (npackets < budget) {
-        printk(KERN_INFO "npackets smaller than budget\n");
-		unsigned long flags;
-		spin_lock_irqsave(&priv->lock, flags);
-		if (napi_complete_done(napi, npackets)){
-			printk(KERN_INFO "napi complete\n");
-            //deth_rx_ints(dev, 1);
-        }
-		spin_unlock_irqrestore(&priv->lock, flags);
-	}
-
-    printk(KERN_INFO "polling end\n");
-
-	return npackets;
-
-}
 
 
 void deth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
@@ -227,15 +171,108 @@ void deth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 	return;
 }
 
+
+int deth_poll(struct napi_struct *napi, int budget){
+
+
+	int npackets = 0;
+	struct sk_buff *skb;
+	struct deth_priv *priv = container_of(napi, struct deth_priv, napi);
+	struct net_device *dev = priv->dev;
+	struct deth_packet *pkt;
+
+    printk(KERN_INFO "polling\n");
+
+	while (npackets < budget && priv->rx_queue) {
+		pkt = deth_rx_cons_buf(dev);
+		skb = dev_alloc_skb(NET_IP_ALIGN + pkt->datalen);
+		if (! skb) {
+			if (printk_ratelimit()){
+                printk(KERN_INFO "deth: packet dropped\n");
+            }
+			priv->stats.rx_dropped++;
+			npackets++;
+			deth_tx_release_buffer(pkt);
+			continue;
+		}
+		skb_reserve(skb, NET_IP_ALIGN);  
+		memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
+		skb->dev = dev;
+		skb->protocol = eth_type_trans(skb, dev);
+		skb->ip_summed = CHECKSUM_UNNECESSARY;
+		netif_receive_skb(skb);
+
+		npackets++;
+		priv->stats.rx_packets++;
+		priv->stats.rx_bytes += pkt->datalen;
+		deth_tx_release_buffer(pkt);
+	}
+
+    printk(KERN_INFO "polling done\n");
+
+	if (npackets < budget) {
+        printk(KERN_INFO "npackets smaller than budget\n");
+		unsigned long flags;
+		spin_lock_irqsave(&priv->lock, flags);
+		if (napi_complete_done(napi, npackets)){
+			printk(KERN_INFO "napi complete\n");
+            //deth_rx_ints(dev, 1);
+        }
+		spin_unlock_irqrestore(&priv->lock, flags);
+	}
+
+    printk(KERN_INFO "polling end\n");
+
+	return npackets;
+
+}
+
+
+
+netdev_tx_t deth_xmit(struct sk_buff *skb, struct net_device *dev){
+
+    printk("entered xmit\n");
+
+	int len;
+	char *data, shortpkt[ETH_ZLEN];
+	struct deth_priv *priv = netdev_priv(dev);
+
+	data = skb->data;
+	len = skb->len;
+	if (len < ETH_ZLEN) {
+		memset(shortpkt, 0, ETH_ZLEN);
+		memcpy(shortpkt, skb->data, skb->len);
+		len = ETH_ZLEN;
+		data = shortpkt;
+	}
+	netif_trans_update(dev);
+
+	priv->skb = skb;
+
+	deth_hw_tx(data, len, dev);
+
+    printk("exiting xmit\n");
+
+	return 0;
+
+
+}
+
+
 void deth_hw_tx(char *buf, int len, struct net_device *dev){
 
 
     printk(KERN_INFO "entered hw tx\n");
 
-	//struct iphdr *ih;
+	struct ethhdr *eh;
+	struct iphdr *ih;
+	struct udphdr *uh;
+	struct tcphdr *th;
+
 	struct net_device *dest;
 	struct deth_priv *priv;
-	//u32 *saddr, *daddr;
+	u16 sport;
+	u16 dport;
 	struct deth_packet *tx_buffer;
 
 	if (len < sizeof(struct ethhdr) + sizeof(struct iphdr)) {
@@ -245,25 +282,53 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 	}
 
 
+	eh = (struct ethhdr*)buf;
 
-	/*
+	ih = (struct iphdr*)(buf + sizeof(struct ethhdr));
 
-	if (dev == deth_devs[0])
-		printk(KERN_INFO "%08x:%05i --> %08x:%05i\n",
-				ntohl(ih->saddr),ntohs(((struct tcphdr *)(ih+1))->source),
-				ntohl(ih->daddr),ntohs(((struct tcphdr *)(ih+1))->dest));
-	else
-		printk(KERN_INFO "%08x:%05i <-- %08x:%05i\n",
-				ntohl(ih->daddr),ntohs(((struct tcphdr *)(ih+1))->dest),
-				ntohl(ih->saddr),ntohs(((struct tcphdr *)(ih+1))->source));
 
-	*/
+	printk("eth src: %02X:%02X:%02X:%02X:%02X:%02X\n", 
+		eh->h_source[0],  
+		eh->h_source[1],  
+		eh->h_source[2],  
+		eh->h_source[3],  
+		eh->h_source[4],  
+		eh->h_source[5]);
+	printk("eth dst: %02X:%02X:%02X:%02X:%02X:%02X\n", 
+		eh->h_dest[0], 
+		eh->h_dest[1], 
+		eh->h_dest[2], 
+		eh->h_dest[3], 
+		eh->h_dest[4], 
+		eh->h_dest[5]);
 
+
+	if(ih->protocol == IPPROTO_UDP){
+
+		uh = (struct udphdr*)(buf + sizeof(struct ethhdr) + sizeof(struct iphdr));
+
+		sport = ntohs(uh->source);
+		dport = ntohs(uh->dest);
+
+	} else if (ih->protocol == IPPROTO_TCP){
+
+		th = (struct tcphdr*)(buf + sizeof(struct ethhdr) + sizeof(struct iphdr));
+
+		sport = ntohs(th->source);
+		dport = ntohs(th->dest);
+
+	}
+
+	printk("src: %08x:%05i\n",
+		ntohl(ih->daddr), sport);
+
+	printk("dst: %08x:%05i\n",
+		ntohl(ih->daddr), dport);
 
 	dest = deth_devs[dev == deth_devs[0] ? 1 : 0];
 	priv = netdev_priv(dest);
 
-	tx_buffer = deth_get_tx_buffer(dev);
+	tx_buffer = deth_tx_cons_buffer(dev);
 
 	if(!tx_buffer) {
 		printk(KERN_INFO "out of tx buffer, len is %i\n",len);
@@ -272,7 +337,7 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 
 	tx_buffer->datalen = len;
 	memcpy(tx_buffer->data, buf, len);
-	deth_enqueue_buf(dest, tx_buffer);
+	deth_rx_prod_buf(dest, tx_buffer);
 	if (priv->rx_int_enabled) {
 
 		priv->status |= DETH_RX_INTR;
@@ -297,21 +362,6 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 }
 
 
-
-
-int deth_header(struct sk_buff *skb, struct net_device *dev,
-	unsigned short type, const void *daddr, const void *saddr,
-	unsigned len){
-
-	struct ethhdr *eth = (struct ethhdr *)skb_push(skb,ETH_HLEN);
-
-	eth->h_proto = htons(type);
-	memcpy(eth->h_source, saddr ? saddr : dev->dev_addr, dev->addr_len);
-	memcpy(eth->h_dest,   daddr ? daddr : dev->dev_addr, dev->addr_len);
-	eth->h_dest[ETH_ALEN-1]   ^= 0x01;  
-	return (dev->hard_header_len);
-
-}
 
 
 int deth_open(struct net_device *dev){
@@ -349,36 +399,6 @@ int deth_stop(struct net_device *dev){
 }
 
 
-netdev_tx_t deth_xmit(struct sk_buff *skb, struct net_device *dev){
-
-    printk("entered xmit\n");
-
-	int len;
-	char *data, shortpkt[ETH_ZLEN];
-	struct deth_priv *priv = netdev_priv(dev);
-
-	data = skb->data;
-	len = skb->len;
-	if (len < ETH_ZLEN) {
-		memset(shortpkt, 0, ETH_ZLEN);
-		memcpy(shortpkt, skb->data, skb->len);
-		len = ETH_ZLEN;
-		data = shortpkt;
-	}
-	netif_trans_update(dev);
-
-	priv->skb = skb;
-
-	deth_hw_tx(data, len, dev);
-
-
-    printk("exiting xmit\n");
-
-	return 0;
-
-
-
-}
 
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
@@ -412,11 +432,6 @@ void deth_tx_timeout(struct net_device *dev, unsigned int txqueue)
 }
 
 
-const struct header_ops deth_header_ops = {
-    .create = deth_header
-};
-
-
 
 const struct net_device_ops deth_netdev_ops = {
 	.ndo_open            = deth_open,
@@ -433,8 +448,6 @@ void deth_setup(struct net_device *dev){
 	ether_setup(dev); 
 	dev->watchdog_timeo = timeout;
 	dev->netdev_ops = &deth_netdev_ops;
-	dev->header_ops = &deth_header_ops;
-	dev->flags           |= IFF_NOARP;
 	dev->features        |= NETIF_F_HW_CSUM;
 
 	deth_privs[setup_ptr] = netdev_priv(dev);
