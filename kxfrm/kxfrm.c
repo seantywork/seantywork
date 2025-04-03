@@ -5,6 +5,7 @@
 
 struct net_device *kxfrm_devs[DRV_COUNT];
 struct kxfrm_priv *kxfrm_privs[DRV_COUNT];
+__be32 spi_vals[DRV_COUNT];
 int setup_ptr= 0;
 
 
@@ -268,6 +269,7 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 	struct iphdr *ih;
 	struct udphdr *uh;
 	struct tcphdr *th;
+	u8* esph;
 
 	struct net_device *dest;
 	struct kxfrm_priv *priv;
@@ -278,10 +280,23 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 	__be32 haddr;
 
 	struct net* net = NULL;
-    struct rtable *rt = NULL;
-    struct neighbour *n = NULL;
+	struct xfrm_state* x = NULL;
+	__be32 spi;
 
-	dest = kxfrm_devs[dev == kxfrm_devs[0] ? 1 : 0];
+
+	if(dev == kxfrm_devs[0]){
+
+		dest = kxfrm_devs[1];
+
+		spi = spi_vals[0];
+
+	} else {
+
+		dest = kxfrm_devs[0];
+
+		spi = spi_vals[1];
+	}
+
 
 	if (len < sizeof(struct ethhdr) + sizeof(struct iphdr)) {
 		printk("kxfrm: packet too short (%i octets)\n",
@@ -293,20 +308,15 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 
 	ih = (struct iphdr*)(buf + sizeof(struct ethhdr));
 
-	printk("eth src: %02X:%02X:%02X:%02X:%02X:%02X\n", 
-		eh->h_source[0],  
-		eh->h_source[1],  
-		eh->h_source[2],  
-		eh->h_source[3],  
-		eh->h_source[4],  
-		eh->h_source[5]);
-	printk("eth dst: %02X:%02X:%02X:%02X:%02X:%02X\n", 
-		eh->h_dest[0], 
-		eh->h_dest[1], 
-		eh->h_dest[2], 
-		eh->h_dest[3], 
-		eh->h_dest[4], 
-		eh->h_dest[5]);
+
+	net = dev_net(dev);
+
+	if(net == NULL){
+
+		printk("kxfrm: dev_net failed\n");
+
+		return;
+	}
 
 
 	if(ih->protocol == IPPROTO_UDP){
@@ -323,10 +333,222 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 		sport = ntohs(th->source);
 		dport = ntohs(th->dest);
 
+	} else if (ih->protocol == IPPROTO_ESP) {
+
+		printk("kxfrm: ipproto ESP\n");
+
+		/*
+		nskb = skb_copy((struct sk_buff*)buf, GFP_ATOMIC);
+
+		if(nskb){
+
+			printk("kxfrm: sk buff cloned\n");
+
+			dev_kfree_skb(nskb);
+		}
+		*/
+
+		printk("kxfrm: spi: %08X\n", spi);
+
+		x = xfrm_state_lookup_byspi(net, htonl(spi), AF_INET);
+	
+		if(x){
+	
+			struct crypto_aead *aead = x->data;
+			int esp_headerlen = 8;
+			int esp_ivlen = 8;
+			int esp_noncelen = 12;
+			int esp_taglen = 16;
+
+			printk("kxfrm: got xfrm state\n");
+
+			esph = (u8*)(buf + sizeof(struct ethhdr) + sizeof(struct iphdr));
+
+			int frontlen = (int)(esph - (u8*)buf);
+
+			int esplen = len - frontlen - esp_headerlen - esp_ivlen;
+
+			printk("kxfrm: totlen: %d: esplen: %d\n", len, esplen);
+	
+
+			struct crypto_aead *tfm = NULL;
+			struct aead_request *req = NULL;
+		
+			u8 *buffer_src = NULL;
+			u8 *buffer_dst = NULL;
+			size_t buffer_size = esplen * 8;
+
+			struct scatterlist sgsrc = { 0 };
+			struct scatterlist sgdst = { 0 };
+
+			DECLARE_CRYPTO_WAIT(wait);
+
+			u8 nonce[12] = { 0 };
+			u8 key[36] = { 0 };
+
+			struct iphdr *ih_dec;
+			struct udphdr *uh_dec;
+			struct tcphdr *th_dec;
+
+			int err = -1;
+	
+			if(x->aead != NULL){
+
+
+				printk("esp: spi: %02X%02X%02X%02X\n", esph[0], esph[1], esph[2], esph[3]);
+				printk("esp: seq: %02X%02X%02X%02X\n", esph[4], esph[5], esph[6], esph[7]);
+
+				printk("algname: %s\n",x->aead->alg_name);
+				printk("key len: %d\n", x->aead->alg_key_len);
+				printk("icv len: %d\n", esp_ivlen);
+
+				memcpy(key, x->aead->alg_key, 36);
+
+				memcpy(nonce, x->aead->alg_key + 32, 4);
+
+				memcpy(nonce + 4, esph + esp_headerlen, esp_ivlen);
+
+
+				printk("key start: %02X%02X%02X%02X%02X%02X\n", key[0],key[1],key[2],key[3],key[4],key[5]);
+				printk("key end : %02X%02X%02X%02X%02X%02X\n", key[26],key[27],key[28],key[29],key[30],key[31]);
+				printk("nonce: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\n", nonce[0],nonce[1],nonce[2],nonce[3],nonce[4],nonce[5],nonce[6],nonce[7],nonce[8],nonce[9],nonce[10],nonce[11]);
+
+			} else {
+
+				printk("aead null\n");
+
+				return;
+			}
+
+			buffer_src = kmalloc(buffer_size, GFP_KERNEL);
+
+			if(buffer_src == NULL){
+
+				printk("kxfrm: failed: kmalloc: buffer src\n");
+
+				goto esp_end;
+				
+			}
+
+			buffer_dst = kmalloc(buffer_size, GFP_KERNEL);
+
+			if(buffer_dst == NULL){
+
+				printk("kxfrm: failed: kmalloc: buffer dst\n");
+
+				goto esp_end;
+				
+			}
+
+			memcpy(buffer_src, esph + esp_headerlen + esp_ivlen, esplen);
+
+			tfm = crypto_alloc_aead("rfc4106(gcm(aes))", 0, 0);
+
+			if (IS_ERR(tfm)) {
+				
+				printk("kxfrm: failed: crypto_alloc_aead\n");
+				
+				goto esp_end;
+			}
+
+			crypto_aead_clear_flags(tfm, ~0);
+
+			err = crypto_aead_setkey(tfm, key, 36);
+
+			if(err != 0){
+
+				printk("kxfrm: failed: set key\n");
+
+				goto esp_end;
+			}
+
+			/*
+			
+			err = crypto_aead_setauthsize(tfm, esp_taglen);
+
+			if(err != 0){
+
+				printk("kxfrm: failed: set authsize\n");
+
+				goto esp_end;
+			}
+			
+			*/
+
+			req = aead_request_alloc(tfm, GFP_KERNEL);
+
+			if(req == NULL){
+
+				printk("kxfrm: failed: request alloc\n");
+
+				goto esp_end;
+			}
+
+			req->assoclen = 0;
+
+			crypto_init_wait(&wait);
+
+			sg_init_one(&sgsrc, buffer_src, buffer_size);
+			sg_init_one(&sgdst, buffer_dst, buffer_size);
+
+			//aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_SLEEP | CRYPTO_TFM_REQ_MAY_BACKLOG, crypto_req_done, &wait);
+			
+			aead_request_set_callback(req, 0, NULL, NULL);
+
+			aead_request_set_crypt(req, &sgsrc, &sgdst, esplen, nonce);
+			aead_request_set_ad(req, 0);
+
+			//err = crypto_wait_req(crypto_aead_decrypt(req), &wait);
+
+			err = crypto_aead_decrypt(req);
+
+			if(err){
+
+				printk("kxfrm: failed: decrypt: %d\n", err);
+
+				goto esp_end;
+
+			}
+
+			printk("kxfrm: success: decrypt\n");
+
+			ih_dec = (struct iphdr*)buffer_dst;
+
+			printk("kxfrm: decap src: %08x\n",
+				ntohl(ih_dec->saddr));
+		
+			printk("kxfrm: decap dst: %08x\n",
+				ntohl(ih_dec->daddr));
+
+esp_end:
+
+			if (req != NULL) {
+				aead_request_free(req);
+			}
+		
+			if (tfm != NULL) {
+				crypto_free_aead(tfm);
+			}
+		
+			if (buffer_src != NULL) {
+				kfree(buffer_src);
+			}
+
+			if (buffer_dst != NULL) {
+				kfree(buffer_dst);
+			}
+		
+			return;
+
+		} else {
+	
+			printk("kxfrm: failed: xfrm state\n");
+		}
+	
 	}
 
 	printk("src: %08x:%05i\n",
-		ntohl(ih->daddr), sport);
+		ntohl(ih->saddr), sport);
 
 	printk("dst: %08x:%05i\n",
 		ntohl(ih->daddr), dport);
@@ -365,6 +587,7 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
     }
 
 
+
 }
 
 
@@ -376,10 +599,13 @@ int kxfrm_open(struct net_device *dev){
 
         memcpy((void*)dev->dev_addr, "KXFRM1", ETH_ALEN);
 
+		spi_vals[1] = 0x02000000;
 
     } else {
 
 		memcpy((void*)dev->dev_addr, "KXFRM0", ETH_ALEN);
+
+		spi_vals[0] = 0x01000000;
 	}
 
 	struct kxfrm_priv *priv = netdev_priv(dev);

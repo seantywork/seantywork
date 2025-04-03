@@ -28,9 +28,13 @@
 #include <linux/tcp.h>       
 #include <linux/udp.h>
 
-#include <net/neighbour.h>
-#include <net/route.h>
-#include <net/arp.h>
+#include <linux/socket.h>
+#include <net/xfrm.h>
+#include <crypto/aead.h>
+#include <linux/random.h>
+#include <linux/crypto.h>
+#include <linux/scatterlist.h>
+
 
 
 #define DRV_NAME	"kxfrm"
@@ -133,5 +137,8 @@ void kxfrm_tx_timeout(struct net_device *dev, unsigned int txqueue);
 /* module entry */
 
 void kxfrm_setup(struct net_device *dev);
+
+
+
 
 #endif
