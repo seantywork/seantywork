@@ -353,26 +353,48 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 		x = xfrm_state_lookup_byspi(net, htonl(spi), AF_INET);
 	
 		if(x){
-	
-			struct crypto_aead *aead = x->data;
+
+			struct crypto_skcipher *skcipher = NULL;
+			struct skcipher_request *req = NULL;
 			int esp_headerlen = 8;
 			int esp_ivlen = 16;
 			int esp_taglen = 16;
 
+			u8* buffer_src = NULL;
+			u8* buffer_dst = NULL;
+			u8* buffer_final = NULL;
+			int buffer_size = 0;
+			struct scatterlist sg_src = {0};
+			struct scatterlist sg_dst = {0};
+			struct scatterlist sg_final = {0};
+
+			struct iphdr* ih_dec;
+			struct udphdr* uh_dec;
+			struct tcphdr* th_dec;
+
+			u8* data_dec;
+
+			int err = -1;
+
+			DECLARE_CRYPTO_WAIT(wait);
+
 			printk("kxfrm: got xfrm state\n");
 
-			printk("tfm algname: %s\n",aead->base.__crt_alg->cra_name);
-		
 			esph = (u8*)(buf + sizeof(struct ethhdr) + sizeof(struct iphdr));
 
 			int frontlen = (int)(esph - (u8*)buf);
 
 			int esplen = len - frontlen - esp_headerlen - esp_ivlen;
 
-			printk("kxfrm: totlen: %d: esplen: %d\n", len, esplen);
+			int payloadlen = esplen - esp_taglen;
+
+			buffer_size = esplen * 8;
+
+			printk("kxfrm: totlen: %d: esplen: %d: payloadlen: %d\n", len, esplen, payloadlen);
 		
 			u8 nonce[16] = { 0 };
-			u8 key[36] = { 0 };
+			u8 key[32] = { 0 };
+			u8 auth_key[32]  = {0};
 
 			printk("esp: spi: %02X%02X%02X%02X\n", esph[0], esph[1], esph[2], esph[3]);
 			printk("esp: seq: %02X%02X%02X%02X\n", esph[4], esph[5], esph[6], esph[7]);
@@ -387,14 +409,189 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 
 				printk("ealgname: %s\n",x->ealg->alg_name);
 
+				memcpy(key, x->ealg->alg_key, 32);
+
+				printk("ealg key start: %02X%02X%02X%02X\n", key[0], key[1], key[2], key[3]);
+
 			}
 
 			if(x->calg != NULL){
-				
+
 				printk("calgname: %s\n",x->calg->alg_name);
 
 			}
 
+			memcpy(nonce, esph + esp_headerlen, esp_ivlen);
+
+			printk("kxfrm: got nonce\n");
+
+			buffer_src = kmalloc(buffer_size, GFP_KERNEL);
+
+			if(buffer_src == NULL){
+
+				printk("kxfrm: failed: src\n");
+
+				goto esp_end;
+			}
+
+			buffer_dst = kmalloc(buffer_size, GFP_KERNEL);
+
+			if(buffer_dst == NULL){
+
+				printk("kxfrm: failed: dst\n");
+
+				goto esp_end;
+			}
+
+			buffer_final = kmalloc(buffer_size, GFP_KERNEL);
+
+			if(buffer_final == NULL){
+
+				printk("kxfrm: failed: dst\n");
+
+				goto esp_end;
+			}
+
+
+			memcpy(buffer_src, esph + esp_headerlen + esp_ivlen, payloadlen);
+
+			skcipher = crypto_alloc_skcipher("cbc(aes)", 0, 0);
+			if (IS_ERR(skcipher)) {
+				printk("kxfrm: could not allocate skcipher handle\n");
+				goto esp_end;
+			}
+		
+			req = skcipher_request_alloc(skcipher, GFP_KERNEL);
+			if (!req) {
+				printk("kxfrm: could not allocate skcipher request\n");
+				goto esp_end;
+			}
+
+			skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
+
+			err = crypto_skcipher_setkey(skcipher, key, 32);
+
+			if(err != 0){
+				printk("kxfrm: setkey: %d\n", err);
+
+				goto esp_end;
+			}
+
+			sg_init_one(&sg_src, buffer_src, buffer_size);
+			sg_init_one(&sg_dst, buffer_dst, buffer_size);
+			sg_init_one(&sg_final, buffer_final, buffer_size);
+
+			skcipher_request_set_crypt(req, &sg_src, &sg_dst, payloadlen, nonce);
+
+			err = crypto_wait_req(crypto_skcipher_decrypt(req), &wait);
+
+			if(err != 0){
+
+				printk("kxfrm: decrypt: %d\n", err);
+
+				goto esp_end;
+			}
+
+			printk("kxfrm: decrypt success\n");
+
+			ih_dec = (struct iphdr*)buffer_dst;
+
+			int pkt_len = ntohs(ih_dec->tot_len);
+
+			printk("decap ip src: %08x\n", ntohl(ih_dec->saddr));
+		
+			printk("decap ip dst: %08x\n",ntohl(ih_dec->daddr));
+
+			printk("decap ip data len: %d\n", pkt_len);			
+
+			
+			if(pkt_len % 16 != 0){
+
+				pkt_len = pkt_len + (16 - (pkt_len % 16));
+
+			}
+			
+
+			printk("decap ip padded data len: %d\n", pkt_len);			
+
+			if(ih_dec->protocol == IPPROTO_UDP){
+
+				uh_dec = (struct udphdr*)(buffer_dst + sizeof(struct iphdr));
+
+				printk("dec ip proto udp: dst port: %05i\n", ntohs(uh_dec->dest));
+
+				data_dec = (u8*)(buffer_dst + sizeof(struct iphdr) + sizeof(struct udphdr));
+
+				if(ntohs(uh_dec->dest) == 9999){
+
+					printk("9999: data: %s\n", data_dec);
+				}
+
+
+				skcipher_request_set_crypt(req, &sg_dst, &sg_final, pkt_len, nonce);
+
+				err = crypto_wait_req(crypto_skcipher_encrypt(req), &wait);
+
+				if(err != 0){
+
+					printk("kxfrm: encrypt: %d\n", err);
+
+					goto esp_end;
+				}
+
+			}
+
+			if(ih_dec->protocol == IPPROTO_TCP){
+
+				th_dec = (struct tcphdr*)(buffer_dst + sizeof(struct iphdr));
+
+				printk("dec ip proto tcp: dst port: %05i\n", ntohs(th_dec->dest));
+
+				data_dec = (u8*)(buffer_dst + sizeof(struct iphdr) + sizeof(struct tcphdr));
+			
+				if(ntohs(th_dec->dest) == 9999){
+
+					printk("9999: data: %s\n", data_dec);
+				}
+
+				skcipher_request_set_crypt(req, &sg_dst, &sg_final, pkt_len, nonce);
+
+				err = crypto_wait_req(crypto_skcipher_encrypt(req), &wait);
+
+				if(err != 0){
+
+					printk("kxfrm: encrypt: %d\n", err);
+
+					goto esp_end;
+				}
+
+			}
+
+			printk("kxfrm: success\n");
+
+
+esp_end:
+			if (skcipher != NULL){
+				crypto_free_skcipher(skcipher);
+			}
+			if (req != NULL){
+				skcipher_request_free(req);
+			}
+			if(buffer_src != NULL){
+
+				kfree(buffer_src);
+
+			}
+
+			if(buffer_dst != NULL){
+
+				kfree(buffer_dst);
+			}
+
+			if(buffer_final != NULL){
+
+				kfree(buffer_final);
+			}
 
 		} else {
 	

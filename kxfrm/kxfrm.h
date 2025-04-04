@@ -30,7 +30,7 @@
 
 #include <linux/socket.h>
 #include <net/xfrm.h>
-#include <crypto/aead.h>
+#include <crypto/skcipher.h>
 #include <linux/random.h>
 #include <linux/crypto.h>
 #include <linux/scatterlist.h>
