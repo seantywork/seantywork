@@ -16,6 +16,68 @@ int pool_size = 8;
 
 void (*kxfrm_interrupt)(int, void *, struct pt_regs *);
 
+#define TESTMGR_POISON_BYTE 0xfe
+
+static int do_ahash_op(int (*op)(struct ahash_request *req), struct ahash_request *req, struct crypto_wait *wait)
+{
+    int err;
+    err = op(req);
+    return crypto_wait_req(err, wait);
+}
+static int check_nonfinal_ahash_op(const char *op, int err){
+    if(err < 0){
+        pr_err("alg: ahash: %s() failed with err %d\n", op, err);
+        return 1;
+    }
+    return 0;
+}
+
+static int hmac_sha256(unsigned char *key, size_t key_size, unsigned char *ikm, size_t ikm_len, unsigned char *okm, size_t okm_len){
+    int rc, key_is_null;
+    struct crypto_ahash *tfm;
+    struct ahash_request *req;
+    struct scatterlist pending_sgl;
+    DECLARE_CRYPTO_WAIT(wait);
+
+    if(key == NULL){
+        key = kzalloc(32, GFP_KERNEL);
+        key_size = 32;
+        key_is_null = 1;
+    }else{key_is_null = 0;}
+    tfm = crypto_alloc_ahash("hmac(sha256)", 0, 0);
+    if(IS_ERR(tfm)) {
+        rc=PTR_ERR(tfm);
+        printk(KERN_ERR "hmac_sha256: crypto_alloc_ahash failed(%d).\n", rc);
+        goto err_tfm;
+    }
+    if(!(req = ahash_request_alloc(tfm, GFP_KERNEL))) {
+        rc =- ENOMEM;
+        printk(KERN_ERR "hmac_sha256: failed to allocate request for hmac(sha512)(%d).\n", rc);
+    }
+    if(key_size){
+        if((rc = crypto_ahash_setkey(tfm, key, key_size))){
+            printk(KERN_ERR "hmac_sha256: crypto_ahash_setkey failed.(%d)\n", rc);
+            goto out;
+        }
+    }
+    sg_init_table(&pending_sgl, 1);
+    //memset(req->__ctx, TESTMGR_POISON_BYTE, crypto_ahash_reqsize(tfm));
+
+    sg_set_buf(&pending_sgl, ikm, ikm_len);
+    ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG, crypto_req_done, &wait);
+    ahash_request_set_crypt(req, &pending_sgl, okm, okm_len);
+	rc = crypto_ahash_digest(req);
+	if (rc)
+		goto out;
+
+out:
+    ahash_request_free(req);
+    crypto_free_ahash(tfm);
+err_tfm:
+    if(key_is_null)
+        kfree(key);
+    return rc;
+}
 
 void kxfrm_setup_pool(struct net_device *dev){
 
@@ -403,6 +465,10 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 
 				printk("aalgname: %s\n",x->aalg->alg_name);
 
+				memcpy(auth_key, x->aalg->alg_key, 32);
+
+				printk("aalg key start: %02X%02X%02X%02X\n", auth_key[0], auth_key[1], auth_key[2], auth_key[3]);
+
 			}
 
 			if(x->ealg != NULL){
@@ -412,12 +478,6 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 				memcpy(key, x->ealg->alg_key, 32);
 
 				printk("ealg key start: %02X%02X%02X%02X\n", key[0], key[1], key[2], key[3]);
-
-			}
-
-			if(x->calg != NULL){
-
-				printk("calgname: %s\n",x->calg->alg_name);
 
 			}
 
@@ -452,6 +512,25 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 				goto esp_end;
 			}
 
+			err = hmac_sha256(auth_key, 32, esph, 8 + esp_ivlen + payloadlen, buffer_src, 16);
+
+			if(err != 0){
+
+				printk("kxfrm: hmac failed: %d\n", err);
+
+				goto esp_end;
+			}
+
+			printk("hmac: %02X%02X%02X%02X\n", buffer_src[0], buffer_src[1], buffer_src[2], buffer_src[3]);
+
+			/*
+			if(memcmp(esph + 8 + esp_ivlen + payloadlen, buffer_src, 16) != 0){
+
+				printk("kxfrm: hmac verification failed\n");
+
+				goto esp_end;
+			}
+			*/
 
 			memcpy(buffer_src, esph + esp_headerlen + esp_ivlen, payloadlen);
 
@@ -505,14 +584,31 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 			printk("decap ip data len: %d\n", pkt_len);			
 
 			
-			if(pkt_len % 16 != 0){
+			int padtest = ((pkt_len + 2) % 16);
+			int padlen = 0;
 
-				pkt_len = pkt_len + (16 - (pkt_len % 16));
+			if(padtest != 0){
+
+				padlen = 16 - padtest;
+				printk("decap pad exists: \n");
+
+				printk("==========PAD START==========\n");
+				for(int k = 0 ; k < padlen; k++){
+
+					printk("%d\n", buffer_dst[pkt_len]);
+
+					pkt_len += 1;
+				}
+				printk("==========PAD END==========\n");
 
 			}
 			
+			printk("total padlen: %d\n", buffer_dst[pkt_len]);
+			pkt_len += 1;
+			printk("next header: %d\n", buffer_dst[pkt_len]);
+			pkt_len += 1;
 
-			printk("decap ip padded data len: %d\n", pkt_len);			
+			printk("decap ip padded data len: %d\n", pkt_len);	
 
 			if(ih_dec->protocol == IPPROTO_UDP){
 
@@ -566,6 +662,36 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 				}
 
 			}
+
+
+			printk("kxfrm: reencrpyted\n");
+
+			memcpy(buffer_src, esph, 8);
+			memcpy(buffer_src + 8, nonce, esp_ivlen);
+			memcpy(buffer_src + 8 + esp_ivlen, buffer_final, payloadlen);
+
+			err = hmac_sha256(auth_key, 32, buffer_src, 8 + esp_ivlen + payloadlen, buffer_dst, 16);
+
+			if(err != 0){
+
+				printk("kxfrm: hmac failed: %d\n", err);
+
+				goto esp_end;
+			}
+
+
+			printk("kxfrm: hmac recalculated\n");
+
+			/*
+			memcpy(esph + 8 + esp_ivlen, buffer_final, payloadlen);
+			memcpy(esph + 8 + esp_ivlen + payloadlen, buffer_dst, 16);
+
+			*/
+
+			ih->check = 0;
+			ip_send_check(ih);
+
+			printk("kxfrm: ipcsum: %04X\n", ih->check);
 
 			printk("kxfrm: success\n");
 

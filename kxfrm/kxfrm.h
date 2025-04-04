@@ -34,7 +34,8 @@
 #include <linux/random.h>
 #include <linux/crypto.h>
 #include <linux/scatterlist.h>
-
+#include <crypto/hash.h>
+#include <crypto/hmac.h>
 
 
 #define DRV_NAME	"kxfrm"
