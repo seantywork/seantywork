@@ -2562,6 +2562,23 @@ firewall-cmd --zone=trusted --add-source=10.10.0.0/16 --permanent
 
 ```
 
+# SSH 
+
+```shell
+# use identity
+
+# private key at
+# ~/.ssh/identity
+
+# .ssh/config
+
+Host 192.168.101.171
+  HostName 192.168.101.171
+  User thy
+  IdentityFile       ~/.ssh/identity
+
+```
+
 # SSH TUNNEL 
 
 ```shell
@@ -2581,6 +2598,14 @@ ssh-keygen -t rsa
  
 
 ssh-copy-id username@node_name 
+
+
+# move id_rsa to the client 
+
+# add id_rsa.pub to authrized_keys 
+
+# on client move id_rsa to ~/.ssh 
+
 
 ```
 
