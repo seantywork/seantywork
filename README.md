@@ -982,6 +982,18 @@ git format-patch -1 HEAD
 
 git commit --signoff
 
+# stat patch before applying
+
+git apply --stat a_file.patch
+
+# check patch before applying
+
+git apply --check a_file.patch
+
+# apply patch 
+
+git am --signoff < a_file.path
+
 # git submodule
 
 git submodule add <repository.git>
