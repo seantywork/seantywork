@@ -11,8 +11,9 @@ fips = fips_sect
 [default_sect]
 activate = 1
 
-[fips_sect]
-activate = 1
 
 [oqsprovider_sect]
+activate = 1
+
+[fips_sect]
 activate = 1

@@ -11,9 +11,14 @@ static int set_ext_ctx(X509V3_CTX* extctx, X509* cert){
 
 int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *certfilename_c, char *privkeyfilename_c, char *certfilename, char *privkeyfilename) {
 
-    EVP_PKEY_CTX *evpctx_ca = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);  
-    EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);  
-    EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);
+    //EVP_PKEY_CTX *evpctx_ca = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);  
+    //EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);  
+    //EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);
+
+    EVP_PKEY_CTX *evpctx_ca = EVP_PKEY_CTX_new_from_name(libctx, algname, NULL);  
+    EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, algname, NULL);  
+    EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, algname, NULL);
+
     EVP_PKEY *pkey_ca = NULL;
     EVP_PKEY *pkey_c = NULL;
     EVP_PKEY *pkey = NULL;

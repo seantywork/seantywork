@@ -3,7 +3,10 @@
 
 #include "qs_common.h"
 
+#define THIS_SIG_NAME "mldsa65"
+#define THIS_KEM_NAME "mlkem768"
 
+#define DIGESTNAME NULL
 
 int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *certfile_c, char *privkeyfile_c, char *certfilename, char *privkeyfilename);
 

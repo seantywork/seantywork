@@ -15,7 +15,7 @@ static char *configfile = NULL;
 const OSSL_ALGORITHM *kemalgs;
 const OSSL_ALGORITHM *sigalgs;
 
-static char *message = "cryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinccryptoinc";
+static char *message = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf";
 static int messagelen = 0;
 
 typedef struct endecode_params_st {
@@ -520,7 +520,7 @@ dend:
 }
 
 
-static int qs_kem_all(const char *kemalg_name) {
+static int qs_kem_oqs(const char *kemalg_name) {
 
     EVP_PKEY_CTX *ctx = NULL;
 
@@ -763,6 +763,18 @@ static void cleanup_heap(uint8_t *secret_key, uint8_t *shared_secret_e,
 }
 
 
+static void cleanup_heap_sig(uint8_t *public_key, uint8_t *secret_key, uint8_t *signature, OQS_SIG *sig) {
+    if (sig != NULL) {
+        OQS_MEM_secure_free(secret_key, sig->length_secret_key);
+
+    }
+    OQS_MEM_insecure_free(public_key);
+    OQS_MEM_insecure_free(signature);
+    OQS_SIG_free(sig);
+}
+
+
+
 static int qs_kem(){
 
 	OQS_KEM *kem = NULL;
@@ -773,7 +785,7 @@ static int qs_kem(){
 	uint8_t *shared_secret_d = NULL;
 
 
-	kem = OQS_KEM_new(OQS_KEM_alg_kyber_768);
+	kem = OQS_KEM_new(OQS_KEM_alg_ml_kem_768);
 	if (kem == NULL) {
 		printf("[example_heap]  OQS_KEM_kyber_768 was not enabled at "
 		       "compile-time.\n");
@@ -888,7 +900,7 @@ static int qs_kem(){
 
     printf("\n");
 
-	printf("OQS_KEM_kyber_768 operations completed.\n");
+	printf("operations completed.\n");
 	cleanup_heap(secret_key, shared_secret_e, shared_secret_d, public_key,
 	             ciphertext, kem);
 
@@ -896,7 +908,7 @@ static int qs_kem(){
 
 }
 
-static int qs_signatures(const char *sigalg_name) {
+static int qs_signatures_oqs(const char *sigalg_name) {
     EVP_MD_CTX *mdctx = NULL;
     EVP_PKEY_CTX *ctx = NULL;
     EVP_PKEY *key = NULL;
@@ -1080,6 +1092,68 @@ err:
 }
 
 
+
+
+static int qs_signatures() {
+
+	OQS_SIG *sig = NULL;
+	uint8_t *public_key = NULL;
+	uint8_t *secret_key = NULL;
+
+	uint8_t *signature = NULL;
+	size_t signature_len;
+	OQS_STATUS rc;
+
+	sig = OQS_SIG_new(OQS_SIG_alg_ml_dsa_65);
+	if (sig == NULL) {
+		printf("OQS_SIG_alg_ml_dsa_65 was not enabled at compile-time.\n");
+		return OQS_ERROR;
+	}
+
+	public_key = OQS_MEM_malloc(sig->length_public_key);
+	secret_key = OQS_MEM_malloc(sig->length_secret_key);
+
+	signature = OQS_MEM_malloc(sig->length_signature);
+	if ((public_key == NULL) || (secret_key == NULL) || (signature == NULL)) {
+		fprintf(stderr, "ERROR: OQS_MEM_malloc failed!\n");
+		cleanup_heap_sig(public_key, secret_key, signature, sig);
+		return OQS_ERROR;
+	}
+
+
+	rc = OQS_SIG_keypair(sig, public_key, secret_key);
+	if (rc != OQS_SUCCESS) {
+		fprintf(stderr, "ERROR: OQS_SIG_keypair failed!\n");
+		cleanup_heap_sig(public_key, secret_key, signature, sig);
+		return OQS_ERROR;
+	}
+	rc = OQS_SIG_sign(sig, signature, &signature_len, message, messagelen, secret_key);
+	if (rc != OQS_SUCCESS) {
+		fprintf(stderr, "ERROR: OQS_SIG_sign failed!\n");
+		cleanup_heap_sig(public_key, secret_key, signature, sig);
+		return OQS_ERROR;
+	}
+
+    printf("signature: ");
+    for (int i = 0; i < signature_len; i++){
+
+        printf("%02X", signature[i]);
+    }
+    printf("\n");
+	rc = OQS_SIG_verify(sig, message, messagelen, signature, signature_len, public_key);
+	if (rc != OQS_SUCCESS) {
+		fprintf(stderr, "ERROR: OQS_SIG_verify failed!\n");
+		cleanup_heap_sig(public_key, secret_key, signature, sig);
+		return OQS_ERROR;
+	}
+
+	printf("operations completed.\n");
+	cleanup_heap_sig(public_key, secret_key, signature, sig);
+	return OQS_SUCCESS; // success
+
+}
+
+
 #ifdef OSSL_CAPABILITY_TLS_SIGALG_NAME
 static int qs_tlssig(const char *sig_name, const char *kem_name, int dtls_flag) {
     SSL_CTX *cctx = NULL, *sctx = NULL;
@@ -1174,6 +1248,93 @@ err:
     SSL_CTX_free(cctx);
     return ret;
 }
+
+
+
+
+static int qs_tlsnet(const char *sig_name, const char *kem_name, int dtls_flag) {
+    SSL_CTX *cctx = NULL, *sctx = NULL;
+    SSL *clientssl = NULL, *serverssl = NULL;
+    int ret = 1, testresult = 0;
+    char group[1024] = {0};
+    char certpath_ca[300];
+    char certpath_c[300];
+    char privkeypath_c[300];
+    char certpath[300];
+    char privkeypath[300];
+    char *certsdir = "certs";
+#ifndef OPENSSL_SYS_VMS
+    const char *sep = "/";
+#else
+    const char *sep = "";
+#endif
+
+
+    sprintf(group, "sig: %s, kem: %s\n", sig_name, kem_name);
+    
+    fputs(group, logfile);
+
+    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt");
+    sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt");
+    sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key");
+    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt");
+    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key");
+    /* ensure certsdir exists */
+    if (mkdir(certsdir, 0700)) {
+        if (errno != EEXIST) {
+            fprintf(stderr, "Couldn't create certsdir %s: Err = %d\n", certsdir,
+                    errno);
+            ret = -1;
+            goto err;
+        }
+    }
+    if (!create_cert_key(libctx, (char *)sig_name, certpath_ca, certpath_c, privkeypath_c, certpath, privkeypath)) {
+        fprintf(stderr, "Cert/keygen failed for %s at %s/%s\n", sig_name,
+                certpath, privkeypath);
+        ret = -1;
+        goto err;
+    }
+
+    testresult = create_tls1_3_ctx_pair(libctx, &sctx, &cctx, certpath_ca, certpath_c, privkeypath_c, 
+                            certpath, privkeypath, dtls_flag);
+
+    if (!testresult) {
+        ret = -1;
+        goto err;
+    }
+
+
+    serverssl = SSL_new(sctx);
+    clientssl = SSL_new(cctx);
+
+    testresult = SSL_set1_groups_list(serverssl, kem_name);
+
+    if (!testresult) {
+        ret = -5;
+        goto err;
+    }
+    testresult = SSL_set1_groups_list(clientssl, kem_name);
+
+    if (!testresult) {
+        ret = -5;
+        goto err;
+    }
+
+    testresult = create_tls_connection(serverssl, clientssl, SSL_ERROR_NONE);
+    if (!testresult) {
+        ret = -5;
+        goto err;
+    }
+
+
+err:
+    SSL_free(serverssl);
+    SSL_free(clientssl);
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+    return ret;
+}
+
 
 /* reactivate when EVP_SIGNATURE_do_all_provided doesn't crash any more:
 static void test_oqs_sigs(EVP_SIGNATURE *evpsig, void *vp) {
@@ -1278,20 +1439,20 @@ int main(int argc, char *argv[]) {
 
     messagelen = strlen(message);
 
-    //load_oqs_provider(libctx, "default", "/usr/local/ssl/openssl.cnf");
-    load_oqs_provider(libctx, "oqsprovider", "/usr/local/ssl/openssl.cnf");
+    if(strcmp(argv[1], "kem-oqs") == 0){
 
-    defaultprov = OSSL_PROVIDER_load(libctx, "default");
-    oqsprov = OSSL_PROVIDER_load(libctx, "oqsprovider");
-    //fibsprov = OSSL_PROVIDER_load(libctx, "fibs");
+        // openssl < 3.5
 
-    if(strcmp(argv[1], "kem-all") == 0){
+        load_oqs_provider(libctx, "oqsprovider", "/usr/local/ssl/openssl.cnf");
+
+        defaultprov = OSSL_PROVIDER_load(libctx, "default");
+        oqsprov = OSSL_PROVIDER_load(libctx, "oqsprovider");
 
         kemalgs = OSSL_PROVIDER_query_operation(oqsprov, OSSL_OP_KEM, &query_nocache);
 
         if (kemalgs) {
             for (; kemalgs->algorithm_names != NULL; kemalgs++) {
-                if (qs_kem_all(kemalgs->algorithm_names)) {
+                if (qs_kem_oqs(kemalgs->algorithm_names)) {
                     fprintf(stderr, cGREEN "  KEM test succeeded: %s" cNORM "\n",
                             kemalgs->algorithm_names);
                 } else {
@@ -1313,13 +1474,20 @@ int main(int argc, char *argv[]) {
             errcnt++;
         }
 
-    } else if(strcmp(argv[1], "sig") == 0){
+    } else if(strcmp(argv[1], "sig-oqs") == 0){
+
+        // openssl < 3.5
+
+        load_oqs_provider(libctx, "oqsprovider", "/usr/local/ssl/openssl.cnf");
+
+        defaultprov = OSSL_PROVIDER_load(libctx, "default");
+        oqsprov = OSSL_PROVIDER_load(libctx, "oqsprovider");
 
         sigalgs = OSSL_PROVIDER_query_operation(oqsprov, OSSL_OP_SIGNATURE, &query_nocache);
 
         if (sigalgs) {
             for (; sigalgs->algorithm_names != NULL; sigalgs++) {
-                if (qs_signatures(sigalgs->algorithm_names)) {
+                if (qs_signatures_oqs(sigalgs->algorithm_names)) {
                     fprintf(stderr, cGREEN "  Signature test succeeded: %s" cNORM "\n", sigalgs->algorithm_names);
                 } else {
                     fprintf(stderr, cRED "  Signature test failed: %s" cNORM "\n", sigalgs->algorithm_names);
@@ -1328,13 +1496,60 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-    } else if (strcmp(argv[1], "tls") == 0){
+
+    } else if (strcmp(argv[1], "sig") == 0){
+
+            
+        if ( qs_signatures() == OQS_SUCCESS) {
+
+            fprintf(stderr, cGREEN "sig test succeeded" cNORM "\n");
+
+        } else {
+
+            errcnt += 1;
+
+            fprintf(stderr, cRED "sig test failed" cNORM "\n");
+
+        }
+
+    } else if (strcmp(argv[1], "tls-all") == 0){
+
+        // openssl < 3.5
+
+        load_oqs_provider(libctx, "oqsprovider", "/usr/local/ssl/openssl.cnf");
+
+        defaultprov = OSSL_PROVIDER_load(libctx, "default");
+        oqsprov = OSSL_PROVIDER_load(libctx, "oqsprovider");
 
         logfile = fopen("log.txt", "w");
 
 #ifdef OSSL_CAPABILITY_TLS_SIGALG_NAME
         // crashes: EVP_SIGNATURE_do_all_provided(libctx, test_oqs_sigs, &errcnt);
         OSSL_PROVIDER_do_all(libctx, qs_tls, &errcnt);
+#else
+        fprintf(stderr,
+                "TLS-SIG handshake test not enabled. Update OpenSSL to more "
+                "current version.\n");
+#endif
+    } else if (strcmp(argv[1], "tls") == 0){
+
+        logfile = fopen("log.txt", "w");
+
+#ifdef OSSL_CAPABILITY_TLS_SIGALG_NAME
+        // crashes: EVP_SIGNATURE_do_all_provided(libctx, test_oqs_sigs, &errcnt);
+        int res = qs_tlsnet(THIS_SIG_NAME, THIS_KEM_NAME, 0);
+            
+        if (res == 1) {
+
+            fprintf(stderr, cGREEN "tls net test succeeded" cNORM "\n");
+
+        } else {
+
+            errcnt += 1;
+
+            fprintf(stderr, cRED "tls net test failed" cNORM "\n");
+
+        }
 #else
         fprintf(stderr,
                 "TLS-SIG handshake test not enabled. Update OpenSSL to more "

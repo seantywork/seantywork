@@ -296,10 +296,16 @@ int main(){
         return -1;
     }
 
-    load_oqs_provider(libctx, THIS_PROVIDER, THIS_CONFFILE);
+    // openssl version < 3.5
+
+    //load_oqs_provider(libctx, THIS_PROVIDER, THIS_CONFFILE);
+
+    //oqsprov = OSSL_PROVIDER_load(libctx, THIS_PROVIDER);
 
 
-    oqsprov = OSSL_PROVIDER_load(libctx, THIS_PROVIDER);
+    // load_oqs_provider(libctx, THIS_PROVIDER, THIS_CONFFILE);
+
+    // oqsprov = OSSL_PROVIDER_load(libctx, THIS_PROVIDER);
 
     result = run();
 

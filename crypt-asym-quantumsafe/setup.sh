@@ -7,7 +7,7 @@ rm -rf liboqs* oqs-provider* *.tar.gz
 
 sudo apt update 
 
-sudo apt install astyle cmake gcc ninja-build python3-pytest python3-pytest-xdist unzip xsltproc doxygen graphviz python3-yaml valgrind
+sudo apt install astyle cmake gcc ninja-build python3-pytest python3-pytest-xdist unzip xsltproc doxygen graphviz python3-yaml valgrind ca-certificates
 
 curl -L https://github.com/open-quantum-safe/liboqs/archive/refs/tags/$LIBOQSV.tar.gz -o "$LIBOQSV.tar.gz"
 

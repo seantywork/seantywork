@@ -31,8 +31,8 @@
 #define THIS_PROVIDER "oqsprovider"
 #define THIS_CONFFILE "/usr/local/ssl/openssl.cnf"
 
-#define THIS_SIGNATURE_ALGORITHM "dilithium3"
-#define THIS_KEM_ALGORITHM "frodo640shake"
+#define THIS_SIGNATURE_ALGORITHM "mldsa65"
+#define THIS_KEM_ALGORITHM "mlkem768"
 
 #define CA_CERT "ca.crt.pem"
 #define SERVER_CERT "srv.crt.pem"
