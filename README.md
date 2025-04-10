@@ -4240,7 +4240,12 @@ docker run --rm -t -v ./local:/usr/workspace localhost/image-name /bin/bash -c '
 
 # run with interactive 
 
-docker run --rm -t -v ./local:/usr/workspace localhost/image-name /bin/bash -c 'cd test && ./hello.sh'
+docker run --rm -it -v ./local:/usr/workspace localhost/image-name /bin/bash -c 'cd test && ./hello.sh'
+
+# run with environment 
+
+docker run --rm -e MYENV=hello localhost/image-name
+
 
 # exec
 
