@@ -4154,11 +4154,102 @@ docker login <address:port>
 
 ```shell
 
-docker image 
-docker container
-docker network
-docker volume
- 
+
+# in case of podman
+
+
+vim ~/.config/containers/registries.conf
+
+unqualified-search-registries = ["docker.io"]
+
+
+# login
+
+docker login
+
+# logout 
+
+docker logout
+
+# pull 
+
+docker pull image:tag
+
+# tag 
+
+docker tag orgimg/test newimg/test 
+
+# push 
+
+docker push newimg/test
+
+# build 
+
+docker build -t image-name:tag
+
+# export 
+
+docker save localhost/image-name:latest -o test.tar.gz
+
+# import 
+
+docker load -i test.tar.gz
+
+# util
+
+docker image ...
+docker container ...
+docker network ...
+docker volume ... 
+
+# network
+
+docker network create --driver=bridge cbr0
+
+# network ls
+
+docker network ls
+
+# network rm 
+
+docker network rm cbr0
+
+# run with name
+
+docker run --rm --name name0  -p 8080:80 localhost/image-name
+
+# run with network
+
+docker run --rm --network cbr0  -p 8080:80 localhost/image-name
+
+# run with port
+
+docker run --rm -p 8080:80 localhost/image-name
+
+# run with volume
+
+docker run --rm -v ./local:/workspace localhost/image-name
+
+# run detached
+
+docker run --rm -d localhost/image-name
+
+# run with command
+
+docker run --rm -t -v ./local:/usr/workspace localhost/image-name /bin/bash -c 'cd test && ./hello.sh'
+
+# run with interactive 
+
+docker run --rm -t -v ./local:/usr/workspace localhost/image-name /bin/bash -c 'cd test && ./hello.sh'
+
+# exec
+
+docker exec -it container /bin/bash
+
+# stop 
+
+docker stop container
+
 ```
 
 
