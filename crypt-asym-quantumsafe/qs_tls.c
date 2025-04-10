@@ -9,6 +9,158 @@ static int set_ext_ctx(X509V3_CTX* extctx, X509* cert){
     return 1;
 }
 
+
+int create_cert_key_oqs(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *certfilename_c, char *privkeyfilename_c, char *certfilename, char *privkeyfilename) {
+
+    EVP_PKEY_CTX *evpctx_ca = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);  
+    EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);  
+    EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);
+
+
+    EVP_PKEY *pkey_ca = NULL;
+    EVP_PKEY *pkey_c = NULL;
+    EVP_PKEY *pkey = NULL;
+
+    X509V3_CTX extctx;
+    X509_EXTENSION *extension_usage = NULL;
+
+    X509V3_set_ctx_nodb(&extctx);
+
+
+    EVP_MD_CTX *mdctx_ca = NULL;
+    EVP_MD_CTX *mdctx_c = NULL;
+    EVP_MD_CTX *mdctx = NULL;
+
+    char* message_ca = NULL;
+    unsigned char *sig_ca;
+    size_t siglen_ca = 0;
+
+    char* message_c = NULL;
+    unsigned char *sig_c;
+    size_t siglen_c = 0;
+
+    char* message = NULL;
+    unsigned char *sig;
+    size_t siglen = 0;
+
+    X509 *x509_ca = X509_new();
+    X509 *x509_c = X509_new();
+    X509 *x509 = X509_new();
+    X509_NAME *name_ca = NULL;
+    X509_NAME *name_c = NULL;
+    X509_NAME *name = NULL;
+    BIO *keybio_ca = NULL, *certbio_ca = NULL;
+    BIO *keybio_c = NULL, *certbio_c = NULL;
+    BIO *keybio = NULL, *certbio = NULL;
+
+    /*
+    X509_EXTENSION *ext_c = NULL;
+    ASN1_OCTET_STRING *skid_c = NULL;
+    AUTHORITY_KEYID *akid_c = NULL; 
+    unsigned char md_c[EVP_MAX_MD_SIZE];
+    unsigned int md_len_c = 0;
+
+    X509_EXTENSION *ext = NULL;
+    ASN1_OCTET_STRING *skid = NULL;
+    AUTHORITY_KEYID *akid = NULL; 
+    unsigned char md[EVP_MAX_MD_SIZE];
+    unsigned int md_len = 0;
+    */
+    int ret = 1;
+
+    if (!evpctx_ca || !EVP_PKEY_keygen_init(evpctx_ca) ||
+        !EVP_PKEY_generate(evpctx_ca, &pkey_ca) || !pkey_ca || !x509_ca ||
+        !X509_set_version(x509_ca, 2) ||
+        !ASN1_INTEGER_set(X509_get_serialNumber(x509_ca), 1) ||
+        !X509_gmtime_adj(X509_getm_notBefore(x509_ca), 0) ||
+        !X509_gmtime_adj(X509_getm_notAfter(x509_ca), 31536000L) ||
+        !X509_set_pubkey(x509_ca, pkey_ca) || !(name_ca = X509_get_subject_name(x509_ca)) ||
+        !X509_NAME_add_entry_by_txt(name_ca, "C", MBSTRING_ASC,
+                                    (unsigned char *)"CH", -1, -1, 0) ||
+        !X509_NAME_add_entry_by_txt(name_ca, "O", MBSTRING_ASC,
+                                    (unsigned char *)"test.org", -1, -1, 0) ||
+        !X509_NAME_add_entry_by_txt(name_ca, "CN", MBSTRING_ASC,
+                                    (unsigned char *)"localhost_ca", -1, -1, 0) ||
+        !X509_set_issuer_name(x509_ca, name_ca) ||
+        !set_ext_ctx(&extctx, x509_ca)||
+        !(extension_usage = X509V3_EXT_conf_nid(NULL, &extctx, NID_basic_constraints, "critical,CA:TRUE")) ||
+        !X509_add_ext(x509_ca, extension_usage, -1)||
+//        !(mdctx_ca = EVP_MD_CTX_new()) ||
+//        !EVP_DigestSignInit_ex(mdctx_ca, NULL, "SHAKE128", libctx, NULL, pkey_ca, NULL) ||
+//        !X509_sign_ctx(x509_ca, mdctx_ca) ||
+        !X509_sign(x509_ca, pkey_ca, NULL) ||
+        !(certbio_ca = BIO_new_file(certfilename_ca, "wb")) ||
+        !PEM_write_bio_X509(certbio_ca, x509_ca))
+        ret = 0;
+
+    if (!evpctx_c || !EVP_PKEY_keygen_init(evpctx_c) ||
+        !EVP_PKEY_generate(evpctx_c, &pkey_c) || !pkey_c || !x509_c ||
+        !X509_set_version(x509_c, 2) ||
+        !ASN1_INTEGER_set(X509_get_serialNumber(x509_c), 1) ||
+        !X509_gmtime_adj(X509_getm_notBefore(x509_c), 0) ||
+        !X509_gmtime_adj(X509_getm_notAfter(x509_c), 31536000L) ||
+        !X509_set_pubkey(x509_c, pkey_c) || !(name_c = X509_get_subject_name(x509_c)) ||
+        !X509_NAME_add_entry_by_txt(name_c, "C", MBSTRING_ASC,
+                                    (unsigned char *)"CH", -1, -1, 0) ||
+        !X509_NAME_add_entry_by_txt(name_c, "O", MBSTRING_ASC,
+                                    (unsigned char *)"test.org", -1, -1, 0) ||
+        !X509_NAME_add_entry_by_txt(name_c, "CN", MBSTRING_ASC,
+                                    (unsigned char *)"localhost_c", -1, -1, 0) ||
+        !X509_set_issuer_name(x509_c, name_ca) ||
+ //       !(mdctx_c = EVP_MD_CTX_new()) ||
+ //       !EVP_DigestSignInit_ex(mdctx_c, NULL, "SHAKE128", libctx, NULL, pkey_ca, NULL) ||
+ //       !X509_sign_ctx(x509_c, mdctx_c) ||
+        !X509_sign(x509_c, pkey_ca, NULL) ||
+        !(keybio_c = BIO_new_file(privkeyfilename_c, "wb")) ||
+        !PEM_write_bio_PrivateKey(keybio_c, pkey_c, NULL, NULL, 0, NULL, NULL) ||
+        !(certbio_c = BIO_new_file(certfilename_c, "wb")) ||
+        !PEM_write_bio_X509(certbio_c, x509_c))
+        ret = 0;
+
+    if (!evpctx || !EVP_PKEY_keygen_init(evpctx) ||
+        !EVP_PKEY_generate(evpctx, &pkey) || !pkey || !x509 ||
+        !X509_set_version(x509, 2) ||
+        !ASN1_INTEGER_set(X509_get_serialNumber(x509), 1) ||
+        !X509_gmtime_adj(X509_getm_notBefore(x509), 0) ||
+        !X509_gmtime_adj(X509_getm_notAfter(x509), 31536000L) ||
+        !X509_set_pubkey(x509, pkey) || !(name = X509_get_subject_name(x509)) ||
+        !X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC,
+                                    (unsigned char *)"CH", -1, -1, 0) ||
+        !X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC,
+                                    (unsigned char *)"test.org", -1, -1, 0) ||
+        !X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC,
+                                    (unsigned char *)"localhost", -1, -1, 0) ||
+        !X509_set_issuer_name(x509, name_ca) ||
+//        !(mdctx = EVP_MD_CTX_new()) ||
+//        !EVP_DigestSignInit_ex(mdctx, NULL, "SHAKE128", libctx, NULL, pkey_ca, NULL) ||
+//        !X509_sign_ctx(x509, mdctx) ||
+        !X509_sign(x509, pkey_ca, NULL) ||
+        !(keybio = BIO_new_file(privkeyfilename, "wb")) ||
+        !PEM_write_bio_PrivateKey(keybio, pkey, NULL, NULL, 0, NULL, NULL) ||
+        !(certbio = BIO_new_file(certfilename, "wb")) ||
+        !PEM_write_bio_X509(certbio, x509))
+        ret = 0;
+
+
+    EVP_PKEY_free(pkey_ca);
+    X509_free(x509_ca);
+    EVP_PKEY_CTX_free(evpctx_ca);
+    BIO_free(keybio_ca);
+    BIO_free(certbio_ca);
+    EVP_PKEY_free(pkey_c);
+    X509_free(x509_c);
+    EVP_PKEY_CTX_free(evpctx_c);
+    BIO_free(keybio_c);
+    BIO_free(certbio_c);
+    EVP_PKEY_free(pkey);
+    X509_free(x509);
+    EVP_PKEY_CTX_free(evpctx);
+    BIO_free(keybio);
+    BIO_free(certbio);
+    return ret;
+}
+
+
 int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *certfilename_c, char *privkeyfilename_c, char *certfilename, char *privkeyfilename) {
 
     //EVP_PKEY_CTX *evpctx_ca = EVP_PKEY_CTX_new_from_name(libctx, algname, OQSPROV_PROPQ);  

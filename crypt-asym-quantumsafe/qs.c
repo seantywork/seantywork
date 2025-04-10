@@ -1197,7 +1197,7 @@ static int qs_tlssig(const char *sig_name, const char *kem_name, int dtls_flag) 
                 goto err;
             }
         }
-        if (!create_cert_key(libctx, (char *)sig_name, certpath_ca, certpath_c, privkeypath_c, certpath, privkeypath)) {
+        if (!create_cert_key_oqs(libctx, (char *)sig_name, certpath_ca, certpath_c, privkeypath_c, certpath, privkeypath)) {
             fprintf(stderr, "Cert/keygen failed for %s at %s/%s\n", sig_name,
                     certpath, privkeypath);
             ret = -1;
