@@ -4185,7 +4185,7 @@ docker push newimg/test
 
 # build 
 
-docker build -t image-name:tag
+docker build -t image-name:tag .
 
 # export 
 
