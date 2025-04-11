@@ -1154,6 +1154,62 @@ static int qs_signatures() {
 }
 
 
+static int sig_verify(BIO* cert_pem, BIO* intermediate_pem)
+{
+    //BIO *b = BIO_new(BIO_s_mem());
+    //BIO_puts(b, intermediate_pem);
+
+    BIO* b = intermediate_pem;
+    X509 * issuer = PEM_read_bio_X509(b, NULL, NULL, NULL);
+    EVP_PKEY *signing_key=X509_get_pubkey(issuer);
+
+    //BIO *c = BIO_new(BIO_s_mem());
+    //BIO_puts(c, cert_pem);
+    BIO* c = cert_pem;
+    X509 * x509 = PEM_read_bio_X509(c, NULL, NULL, NULL);
+    
+    int result = X509_verify(x509, signing_key);
+    
+
+    EVP_PKEY_free(signing_key);
+    X509_free(x509);
+    X509_free(issuer);
+ 
+    return result;
+}
+
+static int cert_verify(){
+
+    OpenSSL_add_all_algorithms();
+    OpenSSL_add_all_ciphers();
+    OpenSSL_add_all_digests(); 
+
+    BIO* cert = NULL;
+    BIO* intermediate = NULL;
+
+
+    cert = BIO_new(BIO_s_file());
+
+    intermediate = BIO_new(BIO_s_file());
+
+    int ret = BIO_read_filename(cert, "./srv.crt.pem");
+
+    ret = BIO_read_filename(intermediate, "./ca.crt.pem");
+
+    //cert_info(cert);
+    //cert_info(intermediate);
+    int res = sig_verify(cert,intermediate);
+    printf("result: %d\n",res);
+
+
+    BIO_free_all(cert);
+    BIO_free_all(intermediate);
+
+    return res;
+
+}
+
+
 #ifdef OSSL_CAPABILITY_TLS_SIGALG_NAME
 static int qs_tlssig(const char *sig_name, const char *kem_name, int dtls_flag) {
     SSL_CTX *cctx = NULL, *sctx = NULL;
@@ -1512,7 +1568,21 @@ int main(int argc, char *argv[]) {
 
         }
 
-    } else if (strcmp(argv[1], "tls-all") == 0){
+    } else if (strcmp(argv[1], "cert") == 0){
+
+        if ( cert_verify() == 1) {
+
+            fprintf(stderr, cGREEN "cert test succeeded" cNORM "\n");
+
+        } else {
+
+            errcnt += 1;
+
+            fprintf(stderr, cRED "cert test failed" cNORM "\n");
+
+        }
+
+    } else if (strcmp(argv[1], "tls-oqs") == 0){
 
         // openssl < 3.5
 

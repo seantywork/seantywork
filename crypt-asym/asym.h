@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <openssl/err.h>
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/evp.h>
@@ -15,7 +19,17 @@
 #include <openssl/bio.h>
 #include <openssl/ec.h>
 #include <openssl/ecdh.h>
-
+#include <openssl/buffer.h>
+#include <openssl/evp.h>
+#include <openssl/core_names.h>
+#include <openssl/decoder.h>
+#include <openssl/encoder.h>
+#include <errno.h>
+#include <openssl/ssl.h>
+#include <openssl/trace.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <pthread.h>
 
 
 
@@ -53,6 +67,8 @@ void cert_verify();
 void cert_show();
 
 void signature();
+
+void tls();
 
 
 

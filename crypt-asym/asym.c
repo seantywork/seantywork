@@ -572,12 +572,17 @@ void cert_create(){
     X509* x509_ca = X509_new();
     X509* x509_s = X509_new();
 
+    X509V3_CTX extctx;
+    X509_EXTENSION *extension_usage = NULL;
+
+    X509V3_set_ctx_nodb(&extctx);
+
     X509_NAME* ca_name = X509_NAME_new();
     X509_NAME* s_name = X509_NAME_new();
-    X509_NAME_add_entry_by_txt(ca_name, "CN" , MBSTRING_ASC, "ca", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(s_name ,"CN" , MBSTRING_ASC, "s", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(ca_name, "CN" , MBSTRING_ASC, "localhost_ca", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(s_name ,"CN" , MBSTRING_ASC, "localhost", -1, -1, 0);
 
-    char *subject_alt_name = "DNS: s.test";
+    char *subject_alt_name = "DNS: localhost";
     X509_EXTENSION *extension_san = NULL;
     ASN1_OCTET_STRING *subject_alt_name_ASN1 = NULL;
     subject_alt_name_ASN1 = ASN1_OCTET_STRING_new();
@@ -609,6 +614,7 @@ void cert_create(){
 
     fclose(fp);
 
+    X509_set_version(x509_ca, 2);
 
     if(ASN1_INTEGER_set(X509_get_serialNumber(x509_ca), 420) == 0){
         printf("asn1 set serial number fail\n");
@@ -625,6 +631,11 @@ void cert_create(){
 
     
     X509_set_issuer_name(x509_ca, ca_name);
+
+    X509V3_set_ctx(&extctx, x509_ca, x509_ca, NULL, NULL, 0);
+    extension_usage = X509V3_EXT_conf_nid(NULL, &extctx, NID_basic_constraints, "critical,CA:TRUE");
+    X509_add_ext(x509_ca, extension_usage, -1);
+
     X509_set_subject_name(x509_ca, ca_name);
     //set public key
     if(X509_set_pubkey(x509_ca, pub_key_ca) == 0){
@@ -637,6 +648,7 @@ void cert_create(){
         printf("Creating certificate failed...\n");
     }
 
+    X509_set_version(x509_s, 2);
 
     if(ASN1_INTEGER_set(X509_get_serialNumber(x509_s), 420) == 0){
         printf("asn1 set serial number fail\n");
@@ -667,11 +679,11 @@ void cert_create(){
         printf("Creating certificate failed...\n");
     }
 
-    fp = fopen("ca.pem", "w");
+    fp = fopen("ca.crt.pem", "w");
     PEM_write_X509(fp, x509_ca);
     fclose(fp);
 
-    fp = fopen("s.pem", "w");
+    fp = fopen("srv.crt.pem", "w");
     PEM_write_X509(fp, x509_s);
     fclose(fp);
 
@@ -692,9 +704,9 @@ void cert_verify(){
 
     intermediate = BIO_new(BIO_s_file());
 
-    int ret = BIO_read_filename(cert, "./s.pem");
+    int ret = BIO_read_filename(cert, "./srv.crt.pem");
 
-    ret = BIO_read_filename(intermediate, "./ca.pem");
+    ret = BIO_read_filename(intermediate, "./ca.crt.pem");
 
     //cert_info(cert);
     //cert_info(intermediate);
@@ -723,9 +735,9 @@ void cert_show(){
 
     intermediate = BIO_new(BIO_s_file());
 
-    int ret = BIO_read_filename(cert, "./s.pem");
+    int ret = BIO_read_filename(cert, "./srv.crt.pem");
 
-    ret = BIO_read_filename(intermediate, "./ca.pem");
+    ret = BIO_read_filename(intermediate, "./ca.crt.pem");
 
     cert_info(cert);
     cert_info(intermediate);
@@ -833,6 +845,377 @@ void signature(){
 
 }
 
+static int create_tls_client(SSL *clientssl) {
+
+    int i;
+    unsigned char buf;
+    size_t readbytes;
+
+    int s;
+    struct sockaddr_in addr;
+
+    int port = 8080;
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+
+    s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s < 0) {
+        perror("Unable to create socket");
+        exit(EXIT_FAILURE);
+    }
+
+    int option = 1;
+
+    //setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+
+    int c = connect(s, (struct sockaddr*)&addr, sizeof(addr));
+
+    if(c < 0){
+
+        printf("client connect failed\n");
+        return 0;
+    }
+
+    int ret = SSL_set_fd(clientssl, s);
+
+    if(ret != 1){
+
+        printf("client ssl set fd failed\n");
+        return 0;
+    }
+
+
+
+    ret = SSL_connect(clientssl);
+
+    if(ret != 1){
+
+        printf("client ssl connect failed\n");
+        return 0;
+    }
+
+    
+
+    X509* cert = SSL_get_peer_certificate(clientssl);
+    if(cert == NULL) { 
+        printf("client failed to get peer cert\n");
+        exit(EXIT_FAILURE);
+    } else {
+        X509_free(cert); 
+
+    } 
+
+    printf("client ssl connected\n");
+
+
+    
+    ret = SSL_get_verify_result(clientssl);
+    
+    if (ret != X509_V_OK){
+        printf("client ssl verify failed\n");
+        return 0;
+    };
+
+    printf("client ssl verified\n");
+
+
+    uint8_t wbuff[32] = {0};
+
+    strcpy(wbuff, "hello");
+
+    ret = SSL_write(clientssl, wbuff, 32);
+
+    if(ret <= 0){
+
+        printf("client ssl write failed\n");
+
+        return 0;
+    }
+
+    sleep(3);
+
+    return 1;
+}
+
+
+static void* create_tls_server(void* varg){
+
+    int i;
+    unsigned char buf;
+    size_t readbytes;
+
+    int s;
+    struct sockaddr_in addr;
+    socklen_t addrlen;
+
+    int port = 8080;
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    
+
+    s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s < 0) {
+        perror("Unable to create socket");
+        exit(EXIT_FAILURE);
+    }
+
+    int option = 1;
+
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+
+    if (bind(s, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        perror("Unable to bind");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(s, 1) < 0) {
+        perror("Unable to listen");
+        exit(EXIT_FAILURE);
+    }
+
+    SSL *serverssl = (SSL *)varg;
+
+    addrlen = sizeof(addr);
+
+    printf("server accept...\n");
+
+    int c = accept(s, (struct sockaddr*)&addr, &addrlen);
+
+    if(c < 0){
+
+        printf("accept failed\n");
+
+        exit(EXIT_FAILURE);
+    }
+
+    printf("server accepted\n");
+
+    SSL_set_fd(serverssl, c);
+
+    int ret = SSL_accept(serverssl);
+
+    if(ret != 1){
+
+        printf("SSL accept failed\n");
+
+        exit(EXIT_FAILURE);
+    }
+
+    printf("server ssl accepted\n");
+
+
+    uint8_t rbuff[32] = {0};
+
+    ret = SSL_read(serverssl, rbuff, 32);
+
+    if(ret <= 0){
+        printf("server read failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if(strcmp(rbuff, "hello") == 0){
+
+        printf("success: server hello\n");
+    } else {
+        printf("failed: server\n");
+    }
+
+}
+
+static void print_cn_name(const char* label, X509_NAME* const name)
+{
+    int idx = -1, success = 0;
+    unsigned char *utf8 = NULL;
+    
+    do
+    {
+        if(!name) break; /* failed */
+        
+        idx = X509_NAME_get_index_by_NID(name, NID_commonName, -1);
+        if(!(idx > -1))  break; /* failed */
+        
+        X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, idx);
+        if(!entry) break; /* failed */
+        
+        ASN1_STRING* data = X509_NAME_ENTRY_get_data(entry);
+        if(!data) break; /* failed */
+        
+        int length = ASN1_STRING_to_UTF8(&utf8, data);
+        if(!utf8 || !(length > 0))  break; /* failed */
+        
+        fprintf(stdout, "  %s: %s\n", label, utf8);
+        success = 1;
+        
+    } while (0);
+    
+    if(utf8)
+        OPENSSL_free(utf8);
+    
+    if(!success)
+        fprintf(stdout, "  %s: <not available>\n", label);
+}
+
+static int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
+{
+    
+    int depth = X509_STORE_CTX_get_error_depth(x509_ctx);
+    int err = X509_STORE_CTX_get_error(x509_ctx);
+    
+    X509* cert = X509_STORE_CTX_get_current_cert(x509_ctx);
+    X509_NAME* iname = cert ? X509_get_issuer_name(cert) : NULL;
+    X509_NAME* sname = cert ? X509_get_subject_name(cert) : NULL;
+
+    print_cn_name("issueer cn: ", iname);
+
+    print_cn_name("subject cn: ", sname);
+
+    fprintf(stdout, "verify_callback (depth=%d)(preverify=%d)\n", depth, preverify);
+    
+    if(preverify == 0)
+    {
+
+
+        if(err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
+            fprintf(stdout, "  Error = X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY\n");
+        else if(err == X509_V_ERR_CERT_UNTRUSTED)
+            fprintf(stdout, "  Error = X509_V_ERR_CERT_UNTRUSTED\n");
+        else if(err == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN)
+            fprintf(stdout, "  Error = X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN\n");
+        else if(err == X509_V_ERR_CERT_NOT_YET_VALID)
+            fprintf(stdout, "  Error = X509_V_ERR_CERT_NOT_YET_VALID\n");
+        else if(err == X509_V_ERR_CERT_HAS_EXPIRED)
+            fprintf(stdout, "  Error = X509_V_ERR_CERT_HAS_EXPIRED\n");
+        else if(err == X509_V_OK)
+            fprintf(stdout, "  Error = X509_V_OK\n");
+        else
+            fprintf(stdout, "  Error = %d\n", err);
+    }
+
+
+    return preverify;
+
+}
+
+void tls(){
+
+    int dtls_flag = 0;
+    OSSL_LIB_CTX *libctx = NULL;
+    SSL *clientssl = NULL, *serverssl = NULL;
+    SSL_CTX *serverctx = NULL, *clientctx = NULL;
+
+    char *certfile_ca = "ca.crt.pem";
+    char *certfile = "srv.crt.pem";
+    char *privkeyfile = "s_priv.pem";
+
+    SSL_library_init();
+    
+    SSL_load_error_strings();
+
+    CONF_modules_load(NULL, NULL, CONF_MFLAGS_IGNORE_MISSING_FILE);
+
+    libctx = OSSL_LIB_CTX_new();
+
+    if (libctx == NULL){
+        goto err;
+    }
+
+    if (dtls_flag) {
+        serverctx = SSL_CTX_new_ex(libctx, NULL, DTLS_server_method());
+        clientctx = SSL_CTX_new_ex(libctx, NULL, DTLS_client_method());
+    } else {
+
+        serverctx = SSL_CTX_new_ex(libctx, NULL, TLS_server_method());
+        clientctx = SSL_CTX_new_ex(libctx, NULL, TLS_client_method());
+    }
+
+    if (serverctx == NULL || clientctx == NULL)
+        goto err;
+
+    const long flags = SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION;
+    
+    SSL_CTX_set_options(clientctx, flags);
+
+    SSL_CTX_set_options(serverctx, SSL_OP_ALLOW_CLIENT_RENEGOTIATION);
+    if (dtls_flag) {
+#ifdef DTLS1_3_VERSION
+        if (!SSL_CTX_set_min_proto_version(serverctx, DTLS1_3_VERSION) ||
+            !SSL_CTX_set_max_proto_version(serverctx, DTLS1_3_VERSION) ||
+            !SSL_CTX_set_min_proto_version(clientctx, DTLS1_3_VERSION) ||
+            !SSL_CTX_set_max_proto_version(clientctx, DTLS1_3_VERSION))
+#endif
+            goto err;
+    } else {
+        if (!SSL_CTX_set_min_proto_version(serverctx, TLS1_3_VERSION) ||
+            !SSL_CTX_set_max_proto_version(serverctx, TLS1_3_VERSION) ||
+            !SSL_CTX_set_min_proto_version(clientctx, TLS1_3_VERSION) ||
+            !SSL_CTX_set_max_proto_version(clientctx, TLS1_3_VERSION))
+            goto err;
+    }
+
+
+    if (!SSL_CTX_load_verify_locations(clientctx, certfile_ca, NULL))
+        goto err;
+
+
+    SSL_CTX_set_verify(clientctx, SSL_VERIFY_PEER, verify_callback);
+
+    SSL_CTX_set_verify_depth(clientctx, 5);
+
+    printf("client load ca: %s\n", certfile_ca);
+
+/*
+    if (!SSL_CTX_use_certificate_file(clientctx, certfile_c, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_use_PrivateKey_file(clientctx, privkeyfile_c, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_check_private_key(clientctx))
+        goto err;
+
+*/
+    
+    printf("client file done: %s\n", certfile_ca);
+
+    if (!SSL_CTX_use_certificate_file(serverctx, certfile, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_use_PrivateKey_file(serverctx, privkeyfile, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_check_private_key(serverctx))
+        goto err;
+
+    printf("server file done: %s\n", certfile);
+
+    serverssl = SSL_new(serverctx);
+    clientssl = SSL_new(clientctx);
+
+    pthread_t tid;
+
+    pthread_create(&tid, NULL, create_tls_server, (void*)serverssl);
+
+    printf("server thread created\n");
+
+    sleep(1);
+
+    create_tls_client(clientssl);
+
+
+err:
+
+    SSL_free(serverssl);
+    SSL_free(clientssl);
+    SSL_CTX_free(serverctx);
+    SSL_CTX_free(clientctx);
+    OSSL_LIB_CTX_free(libctx);
+}
 
 
 unsigned char* char2hex(int arrlen, unsigned char* bytearray){

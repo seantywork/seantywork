@@ -121,6 +121,10 @@ int main(int argc, char** argv){
 
         signature();   
     
+    }else if (strcmp(argv[1], "tls") == 0){
+
+        tls();   
+    
     }  else {
 
         fprintf(stderr, "invalid argument\n");
