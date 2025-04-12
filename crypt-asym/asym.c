@@ -597,12 +597,7 @@ void cert_create(){
     X509_EXTENSION *extskid = NULL;
     ASN1_OCTET_STRING *skid = NULL;
 
-    char *subject_alt_name = "DNS:localhost";
-    X509_EXTENSION *extension_san = NULL;
-    ASN1_OCTET_STRING *subject_alt_name_ASN1 = NULL;
-    subject_alt_name_ASN1 = ASN1_OCTET_STRING_new();
-    ASN1_OCTET_STRING_set(subject_alt_name_ASN1, (unsigned char*) subject_alt_name, strlen(subject_alt_name));
-    X509_EXTENSION_create_by_NID(&extension_san, NID_subject_alt_name, 0, subject_alt_name_ASN1);
+    char *subject_alt_name = "localhost";
 
 
     FILE* fp = fopen("./ca_priv.pem", "r");
@@ -733,12 +728,28 @@ void cert_create(){
     skid = ASN1_OCTET_STRING_new();
     ASN1_OCTET_STRING_set(skid, md, md_len);
     extskid = X509V3_EXT_i2d(NID_subject_key_identifier, 0, skid);
+
+
     X509_add_ext(x509_s, extskid, -1);
 
     X509_add_ext(x509_s, extakid, -1);
 
-    X509_add_ext(x509_s, extension_san, -1);
 
+    GENERAL_NAMES *gens = sk_GENERAL_NAME_new_null();
+    GENERAL_NAME *gen = GENERAL_NAME_new();
+    ASN1_IA5STRING *ia5 = ASN1_IA5STRING_new();
+    ASN1_STRING_set(ia5, subject_alt_name, strlen(subject_alt_name));
+    GENERAL_NAME_set0_value(gen, GEN_DNS, ia5);
+    sk_GENERAL_NAME_push(gens, gen);
+
+    X509_add1_ext_i2d(x509_s, NID_subject_alt_name, gens, 0, X509V3_ADD_DEFAULT);
+
+    //X509_add_ext(x509_s, extension_san, -1);
+
+
+/*
+    X509_add_ext(x509_s, extension_san, -1);
+*/
 
     //sign certificate with private key
     if(X509_sign(x509_s, priv_key_ca, EVP_sha256()) == 0){
@@ -754,6 +765,7 @@ void cert_create(){
     fp = fopen("srv.crt.pem", "wb");
     PEM_write_X509(fp, x509_s);
     fclose(fp);
+
 
     X509_free(x509_ca);
     X509_free(x509_s);
@@ -1124,7 +1136,7 @@ static void print_cn_name(const char* label, X509_NAME* const name)
         int length = ASN1_STRING_to_UTF8(&utf8, data);
         if(!utf8 || !(length > 0))  break; /* failed */
         
-        fprintf(stdout, "  %s:%d: %s\n", label, length, utf8);
+        fprintf(stdout, "  %s: %s\n", label, utf8);
         success = 1;
         
     } while (0);
@@ -1146,7 +1158,7 @@ static int verify_callback(int preverify, X509_STORE_CTX* x509_ctx)
     X509_NAME* iname = cert ? X509_get_issuer_name(cert) : NULL;
     X509_NAME* sname = cert ? X509_get_subject_name(cert) : NULL;
 
-    print_cn_name("issueer cn: ", iname);
+    print_cn_name("issuer cn: ", iname);
 
     print_cn_name("subject cn: ", sname);
 
