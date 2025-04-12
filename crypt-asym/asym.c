@@ -569,20 +569,35 @@ void cert_create(){
     time(&exp_s);
     exp_s += 31536000;
 
+    char* serial_ca = "6d530ea7d4a0f7745fea74dc700a2c23d6aca20e";
+    char* serial_s = "5f4e186311429e8e08f3d6ff656d7e7233860c67";
+    ASN1_INTEGER* serial_asn1 = ASN1_INTEGER_new();
+    ASN1_INTEGER* serial_asn1_s = ASN1_INTEGER_new();
+
     X509* x509_ca = X509_new();
     X509* x509_s = X509_new();
 
     X509V3_CTX extctx;
     X509_EXTENSION *extension_usage = NULL;
+    X509_EXTENSION *extension_skid = NULL;
+    X509_EXTENSION *extension_akid = NULL;
 
     X509V3_set_ctx_nodb(&extctx);
 
-    X509_NAME* ca_name = X509_NAME_new();
-    X509_NAME* s_name = X509_NAME_new();
-    X509_NAME_add_entry_by_txt(ca_name, "CN" , MBSTRING_ASC, "localhost_ca", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(s_name ,"CN" , MBSTRING_ASC, "localhost", -1, -1, 0);
+    //X509_NAME* ca_name = X509_NAME_new();
+    //X509_NAME* s_name = X509_NAME_new();
 
-    char *subject_alt_name = "DNS: localhost";
+    unsigned char md[EVP_MAX_MD_SIZE];
+    unsigned int md_len = 0;
+
+    AUTHORITY_KEYID *akid = AUTHORITY_KEYID_new();
+    akid->keyid = ASN1_OCTET_STRING_new();
+    X509_EXTENSION *extakid = NULL;
+
+    X509_EXTENSION *extskid = NULL;
+    ASN1_OCTET_STRING *skid = NULL;
+
+    char *subject_alt_name = "DNS:localhost";
     X509_EXTENSION *extension_san = NULL;
     ASN1_OCTET_STRING *subject_alt_name_ASN1 = NULL;
     subject_alt_name_ASN1 = ASN1_OCTET_STRING_new();
@@ -616,9 +631,20 @@ void cert_create(){
 
     X509_set_version(x509_ca, 2);
 
-    if(ASN1_INTEGER_set(X509_get_serialNumber(x509_ca), 420) == 0){
+    
+    BIGNUM* q = BN_new();
+
+    BN_hex2bn(&q, serial_ca);
+
+    serial_asn1 = BN_to_ASN1_INTEGER(q, serial_asn1);
+
+    X509_set_serialNumber(x509_ca, serial_asn1);
+    
+    /*
+    if(ASN1_INTEGER_set(X509_get_serialNumber(x509_ca), 234) == 0){
         printf("asn1 set serial number fail\n");
     }
+    */
 
 
     if(X509_time_adj_ex(X509_getm_notBefore(x509_ca), 0, 0, 0) == NULL){
@@ -629,18 +655,34 @@ void cert_create(){
         printf("set end time fail\n");
     }
 
+    X509_NAME* ca_name = X509_get_subject_name(x509_ca);
+    X509_NAME_add_entry_by_txt(ca_name, "CN" , MBSTRING_ASC, (unsigned char *)"localhost_ca", -1, -1, 0);
+
     
-    X509_set_issuer_name(x509_ca, ca_name);
+    if (X509_set_issuer_name(x509_ca, ca_name) != 1){
+        printf("set ca name fail\n");
+    }
 
-    X509V3_set_ctx(&extctx, x509_ca, x509_ca, NULL, NULL, 0);
-    extension_usage = X509V3_EXT_conf_nid(NULL, &extctx, NID_basic_constraints, "critical,CA:TRUE");
-    X509_add_ext(x509_ca, extension_usage, -1);
 
-    X509_set_subject_name(x509_ca, ca_name);
     //set public key
     if(X509_set_pubkey(x509_ca, pub_key_ca) == 0){
         printf("set pubkey fail\n");
     }
+
+
+    X509_pubkey_digest(x509_ca, EVP_sha1(), md, &md_len);
+    skid = ASN1_OCTET_STRING_new();
+    ASN1_OCTET_STRING_set(skid, md, md_len);
+    extskid = X509V3_EXT_i2d(NID_subject_key_identifier, 0, skid);
+    X509_add_ext(x509_ca, extskid, -1);
+
+    ASN1_OCTET_STRING_set(akid->keyid, md, md_len);
+    extakid = X509V3_EXT_i2d(NID_authority_key_identifier, 0, akid);
+    X509_add_ext(x509_ca, extakid, -1);
+
+    X509V3_set_ctx(&extctx, x509_ca, x509_ca, NULL, NULL, 0);
+    extension_usage = X509V3_EXT_conf_nid(NULL, &extctx, NID_basic_constraints, "critical,CA:TRUE");
+    X509_add_ext(x509_ca, extension_usage, -1);
 
     //sign certificate with private key
     if(X509_sign(x509_ca, priv_key_ca, EVP_sha256()) == 0){
@@ -650,9 +692,19 @@ void cert_create(){
 
     X509_set_version(x509_s, 2);
 
-    if(ASN1_INTEGER_set(X509_get_serialNumber(x509_s), 420) == 0){
+    BIGNUM* q_s = BN_new();
+
+    BN_hex2bn(&q_s, serial_s);
+
+    serial_asn1_s = BN_to_ASN1_INTEGER(q_s, serial_asn1_s);
+
+    X509_set_serialNumber(x509_s, serial_asn1_s);
+
+    /*
+    if(ASN1_INTEGER_set(X509_get_serialNumber(x509_s), 234) == 0){
         printf("asn1 set serial number fail\n");
     }
+    */
 
 
     if(X509_time_adj_ex(X509_getm_notBefore(x509_s), 0, 0, 0) == NULL){
@@ -663,15 +715,30 @@ void cert_create(){
         printf("set end time fail\n");
     }
 
-    X509_set_issuer_name(x509_s, ca_name);
-    X509_set_subject_name(x509_s, s_name);
+    X509_NAME* s_name = X509_get_subject_name(x509_s);
+    X509_NAME_add_entry_by_txt(s_name ,"CN" , MBSTRING_ASC, (unsigned char *)"localhost", -1, -1, 0);
 
-    X509_add_ext(x509_s, extension_san, -1);
+
+    if(X509_set_issuer_name(x509_s, ca_name) != 1){
+        printf("issuer name failed\n");
+    }
+
 
     //set public key
     if(X509_set_pubkey(x509_s, pub_key_s) == 0){
         printf("set pubkey fail\n");
     }
+
+    X509_pubkey_digest(x509_s, EVP_sha1(), md, &md_len);
+    skid = ASN1_OCTET_STRING_new();
+    ASN1_OCTET_STRING_set(skid, md, md_len);
+    extskid = X509V3_EXT_i2d(NID_subject_key_identifier, 0, skid);
+    X509_add_ext(x509_s, extskid, -1);
+
+    X509_add_ext(x509_s, extakid, -1);
+
+    X509_add_ext(x509_s, extension_san, -1);
+
 
     //sign certificate with private key
     if(X509_sign(x509_s, priv_key_ca, EVP_sha256()) == 0){
@@ -679,13 +746,21 @@ void cert_create(){
         printf("Creating certificate failed...\n");
     }
 
-    fp = fopen("ca.crt.pem", "w");
+
+    fp = fopen("ca.crt.pem", "wb");
     PEM_write_X509(fp, x509_ca);
     fclose(fp);
 
-    fp = fopen("srv.crt.pem", "w");
+    fp = fopen("srv.crt.pem", "wb");
     PEM_write_X509(fp, x509_s);
     fclose(fp);
+
+    X509_free(x509_ca);
+    X509_free(x509_s);
+    EVP_PKEY_free(priv_key_ca);
+    EVP_PKEY_free(priv_key_s);
+    EVP_PKEY_free(pub_key_ca);
+    EVP_PKEY_free(pub_key_s);
 
 }
 
@@ -1049,7 +1124,7 @@ static void print_cn_name(const char* label, X509_NAME* const name)
         int length = ASN1_STRING_to_UTF8(&utf8, data);
         if(!utf8 || !(length > 0))  break; /* failed */
         
-        fprintf(stdout, "  %s: %s\n", label, utf8);
+        fprintf(stdout, "  %s:%d: %s\n", label, length, utf8);
         success = 1;
         
     } while (0);

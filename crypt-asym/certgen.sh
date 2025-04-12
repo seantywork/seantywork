@@ -8,7 +8,7 @@ openssl genrsa -out ./certs/ca_priv.pem 4096
 
 openssl rsa -in ./certs/ca_priv.pem -outform PEM -pubout -out ./certs/ca_pub.pem
 
-openssl req -x509 -new -key ./certs/ca_priv.pem -days 3650 -out ./certs/ca.pem -subj "/CN=root"
+openssl req -x509 -new -key ./certs/ca_priv.pem -days 3650 -out ./certs/ca.pem -subj "/CN=localhost_ca"
 
 echo "server key pair, csr generating...."
 
