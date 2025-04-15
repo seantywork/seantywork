@@ -217,9 +217,7 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
     printf("encrypt rv: %d\n", rv);
 
-    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, TAGLEN, outbuf);
-
-    memcpy(gcm_tag, outbuf, TAGLEN);
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, TAGLEN, gcm_tag);
 
     
     unsigned char* tag_hex = char2hex(TAGLEN, gcm_tag);

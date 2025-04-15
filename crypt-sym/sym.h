@@ -12,10 +12,14 @@
 #include <openssl/hmac.h>
 #include <time.h>
 
-#define CBC 1
+#define CBC 0
 #define KEYBIT 256
 #define KEYLEN KEYBIT / 8
+#if CBC
 #define IVLEN 128 / 8
+#else 
+#define IVLEN 12
+#endif
 #define TAGLEN 128 / 8
 
 #define MAX_IN 256
