@@ -49,12 +49,12 @@
 #define MAX_PORTS_PER_THREAD 16
 #endif
 
-#define MAX_BPOOL 16
+#define MAX_BPOOL 32
 
 #define BPOOL_GRP 2
 
 #ifndef MAX_PORTS
-#define MAX_PORTS 32
+#define MAX_PORTS 64
 #endif
 
 #ifndef MAX_THREADS
