@@ -2,7 +2,14 @@
 #include "af-rxtx.h"
 
 
-int lr_count;
+const int g_threads = 4;
+int g_ports = g_threads * 2;
+int g_cpu_core_id_len = 0;
+int g_queue_id_len = 0;
+char* left_ifname = "veth01";
+char* right_ifname = "veth11";
+
+int lr_count = 0;
 struct xdp_program *prog_l;
 struct xdp_program *prog_r;
 int xsk_map_fd_l;
@@ -15,29 +22,27 @@ char* xsk_map_name = "if_redirect";
 enum xdp_attach_mode attach_mode = 0;
 
 struct bpool_params bpool_params_default = {
-	.n_buffers = 64 * 1024,
-	.buffer_size = XSK_UMEM__DEFAULT_FRAME_SIZE,
+	.n_buffers = XDP_NUM_FRAMES,
+	.buffer_size = XDP_FRAME_SIZE,
 	.mmap_flags = 0,
 
 	.n_users_max = 16,
-	.n_buffers_per_slab = XSK_RING_PROD__DEFAULT_NUM_DESCS * 2,
+	.n_buffers_per_slab = XDP_PROD_RING_NUM * 2,
 };
 
 struct xsk_umem_config umem_cfg_default = {
-	.fill_size = XSK_RING_PROD__DEFAULT_NUM_DESCS,
-	.comp_size = XSK_RING_CONS__DEFAULT_NUM_DESCS,
-	.frame_size = XSK_UMEM__DEFAULT_FRAME_SIZE ,
+	.fill_size = XDP_PROD_RING_NUM,
+	.comp_size = XDP_CONS_RING_NUM,
+	.frame_size = XDP_FRAME_SIZE,
 	.frame_headroom = XSK_UMEM__DEFAULT_FRAME_HEADROOM,
 	.flags = 0,
 };
 
-// CRUCIAL
-//   don't use need wakeup
 
 struct port_params port_params_default = {
 	.xsk_cfg = {
-		.rx_size = XSK_RING_CONS__DEFAULT_NUM_DESCS ,
-		.tx_size = XSK_RING_PROD__DEFAULT_NUM_DESCS,
+		.rx_size = XDP_RX_RING_NUM_DESCS,
+		.tx_size = XDP_TX_RING_NUM_DESCS,
 		.libxdp_flags = 0,
 		.xdp_flags = 0,
 		.bind_flags = 0,
@@ -52,9 +57,9 @@ struct port_params port_params_default = {
 
 
 
-struct bpool_params bpool_params;
+struct bpool_params bpool_params[MAX_BPOOL];
 struct xsk_umem_config umem_cfg;
-struct bpool *bp;
+struct bpool **bp;
 
 struct port_params port_params[MAX_PORTS];
 struct port *ports[MAX_PORTS];
@@ -108,17 +113,21 @@ int main(int argc, char **argv)
 	struct bpf_map *map_l;
 	struct bpf_map *map_r;
 
-	/* Parse args. */
-	memcpy(&bpool_params, &bpool_params_default,
-	       sizeof(struct bpool_params));
+	for (int i = 0; i < MAX_BPOOL; i++){
+
+		memcpy(&bpool_params[i], &bpool_params_default, sizeof(struct bpool_params));
+	}
+
+	bp = (struct bpool**)malloc(sizeof(struct bpool*) * MAX_BPOOL);
+
 	memcpy(&umem_cfg, &umem_cfg_default,
 	       sizeof(struct xsk_umem_config));
 	for (i = 0; i < MAX_PORTS; i++)
 		memcpy(&port_params[i], &port_params_default,
 		       sizeof(struct port_params));
 
-	if (parse_args(argc, argv)) {
-		print_usage(argv[0]);
+	if (setup()) {
+		printf("setup failed\n");
 		return -1;
 	}
 
@@ -187,19 +196,32 @@ int main(int argc, char **argv)
 	}
 
 
-	/* Buffer pool initialization. */
-	bp = bpool_init(&bpool_params, &umem_cfg);
-	if (!bp) {
-		printf("Buffer pool initialization failed.\n");
-		return -1;
-	}
-	printf("Buffer pool created successfully.\n");
+	for(int i = 0 ; i < MAX_BPOOL; i++){
 
-	/* Ports initialization. */
-	for (i = 0; i < MAX_PORTS; i++)
-		port_params[i].bp = bp;
+		bp[i] = bpool_init(&bpool_params[i], &umem_cfg);
+		if (!bp[i]) {
+			printf("Buffer pool initialization failed: %d\n", i);
+			return -1;
+		}
+
+		printf("bpool done: %d\n", i);
+
+	}
+
+	printf("buffer pool created successfully.\n");
+
+	int bpptr = 0;
 
 	for (i = 0; i < n_ports; i++) {
+
+		if(i != 0){
+			if(i % BPOOL_GRP == 0){
+				bpptr += 1;
+			}
+		}
+
+		port_params[i].bp = bp[bpptr];
+		
 		ports[i] = port_init(&port_params[i]);
 		if (!ports[i]) {
 			printf("Port %d initialization failed.\n", i);
@@ -276,10 +298,22 @@ int main(int argc, char **argv)
 	for (i = 0; i < n_threads; i++)
 		pthread_join(threads[i], NULL);
 
-	for (i = 0; i < n_ports; i++)
+
+	bpptr = 0;
+	
+	for (i = 0; i < n_ports; i++){
+
+		if(i != 0){
+			if(i % BPOOL_GRP == 0){
+				bpptr += 1;
+			}
+		}
 		port_free(ports[i]);
 
-	bpool_free(bp);
+		bpool_free(bp[bpptr]);
+	}
+
+	free(bp);
 
 	remove_xdp_program();
 

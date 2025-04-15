@@ -289,7 +289,7 @@ struct port *port_init(struct port_params *params)
 		return NULL;
 
 	memcpy(&p->params, params, sizeof(p->params));
-	umem_fq_size = params->bp->umem_cfg.fill_size;
+	umem_fq_size = params->bp->umem_cfg.fill_size / BPOOL_GRP;
 
 	/* bcache. */
 	p->bc = bcache_init(params->bp);
@@ -504,10 +504,20 @@ void *thread_func_poll(void *arg)
 	int i, j;
 	int done = 0;
 	
-	CPU_ZERO(&cpu_cores);
-	CPU_SET(t->cpu_core_id, &cpu_cores);
-	pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpu_cores);
-	
+	if(t->cpu_core_id == -1){
+
+		printf("cpu core id is -1, not locking\n");
+
+	} else {
+
+		printf("cpu core id is %d\n", t->cpu_core_id);
+
+		CPU_ZERO(&cpu_cores);
+		CPU_SET(t->cpu_core_id, &cpu_cores);
+		pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpu_cores);
+		
+	}
+
 	struct pollfd* pollfds;
 
 	struct timespec ts;
@@ -630,64 +640,52 @@ void print_usage(char *prog_name)
 	       port_params_default.iface_queue);
 }
 
-int parse_args(int argc, char **argv)
-{
-	struct option lgopts[] = {
-		{ NULL,  0, 0, 0 }
-	};
-	int opt, option_index;
+int setup(){
 
-	/* Parse the input arguments. */
-	for ( ; ;) {
-		opt = getopt_long(argc, argv, "c:i:q:", lgopts, &option_index);
-		if (opt == EOF)
-			break;
+	for(int i = 0; i < g_threads; i++){
 
-		switch (opt) {
-		case 'b':
-			bpool_params.n_buffers = atoi(optarg);
-			break;
-
-		case 'c':
-			if (n_threads == MAX_THREADS) {
-				printf("Max number of threads (%d) reached.\n",
-				       MAX_THREADS);
-				return -1;
-			}
-
-			thread_data[n_threads].cpu_core_id = atoi(optarg);
-			n_threads++;
-			break;
-
-		case 'i':
-			if (n_ports == MAX_PORTS) {
-				printf("Max number of ports (%d) reached.\n",
-				       MAX_PORTS);
-				return -1;
-			}
-
-			port_params[n_ports].iface = optarg;
-			port_params[n_ports].iface_queue = 0;
-			n_ports++;
-			break;
-
-		case 'q':
-			if (n_ports == 0) {
-				printf("No port specified for queue.\n");
-				return -1;
-			}
-			port_params[n_ports - 1].iface_queue = atoi(optarg);
-			break;
-
-		default:
-			printf("Illegal argument.\n");
+		if (n_threads == MAX_THREADS) {
+			printf("Max number of threads (%d) reached.\n",
+				   MAX_THREADS);
 			return -1;
 		}
+
+		// no locking
+
+		thread_data[n_threads].cpu_core_id = -1;
+		n_threads++;
+		g_cpu_core_id_len++;
+
+	}	
+
+	lr_count = 0;
+
+	for (int i  = 0 ; i < g_ports; i++){
+
+		if (n_ports == MAX_PORTS) {
+			printf("Max number of ports (%d) reached.\n",
+				   MAX_PORTS);
+			return -1;
+		}
+
+		if(lr_count % 2 == 0){
+
+			port_params[n_ports].iface = left_ifname;
+			port_params[n_ports].iface_queue = g_queue_id_len;
+			n_ports++;
+			lr_count += 1;
+		} else {
+			port_params[n_ports].iface = right_ifname;
+			port_params[n_ports].iface_queue = g_queue_id_len;
+			n_ports++;
+			lr_count += 1;
+			g_queue_id_len++;
+		}
+
 	}
 
-	optind = 1; /* reset getopt lib */
+	lr_count = 0;
 
-	/* Check the input arguments. */
 	if (!n_ports) {
 		printf("No ports specified.\n");
 		return -1;

@@ -32,5 +32,12 @@ sudo ip netns exec vnet1 ip addr add 192.168.66.5/24 dev veth12
 sudo ip netns exec vnet1 ip route add 192.168.33.0/24 via 192.168.66.1
 
 
-
 sudo sysctl -w net.ipv4.ip_forward=1
+
+sudo ethtool -L veth01 rx 4
+
+sudo ethtool -L veth01 tx 4
+
+sudo ethtool -L veth11 rx 4
+
+sudo ethtool -L veth11 tx 4

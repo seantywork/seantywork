@@ -38,7 +38,9 @@ void *thread_func_poll(void *arg);
 void print_usage(char *prog_name);
 
 
-int parse_args(int argc, char **argv);
+//int parse_args(int argc, char **argv);
+
+int setup();
 
 void print_port(u32 port_id);
 

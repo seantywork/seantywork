@@ -49,14 +49,24 @@
 #define MAX_PORTS_PER_THREAD 16
 #endif
 
+#define MAX_BPOOL 16
+
+#define BPOOL_GRP 2
 
 #ifndef MAX_PORTS
-#define MAX_PORTS 64
+#define MAX_PORTS 32
 #endif
 
 #ifndef MAX_THREADS
-#define MAX_THREADS 64
+#define MAX_THREADS 32
 #endif
+
+#define XDP_FRAME_SIZE XSK_UMEM__DEFAULT_FRAME_SIZE
+#define XDP_NUM_FRAMES XDP_FRAME_SIZE * 2 * 2 * 2 * 2 
+#define XDP_PROD_RING_NUM     XDP_FRAME_SIZE * 2
+#define XDP_CONS_RING_NUM     XDP_FRAME_SIZE * 2
+#define XDP_RX_RING_NUM_DESCS XDP_FRAME_SIZE * 2
+#define XDP_TX_RING_NUM_DESCS XDP_FRAME_SIZE * 2
 
 typedef __u64 u64;
 typedef __u32 u32;
@@ -152,6 +162,12 @@ struct thread_data {
 };
 
 
+extern const int g_threads;
+extern int g_ports;
+extern int g_cpu_core_id_len;
+extern int g_queue_id_len;
+extern char* left_ifname;
+extern char* right_ifname;
 
 extern int lr_count;
 extern struct xdp_program *prog_l;
@@ -173,9 +189,9 @@ extern struct port_params port_params_default;
 
 
 
-extern struct bpool_params bpool_params;
+extern struct bpool_params bpool_params[MAX_BPOOL];
 extern struct xsk_umem_config umem_cfg;
-extern struct bpool *bp;
+extern struct bpool **bp;
 
 extern struct port_params port_params[MAX_PORTS];
 extern struct port *ports[MAX_PORTS];
