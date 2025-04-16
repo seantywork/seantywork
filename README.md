@@ -2438,6 +2438,7 @@ ip xfrm policy add \
 
 # client in case of encap
 
+ip addr add 10.168.66.1/24 dev ${DEVNAME_10_168_66_1}
 
 ip rule add preference 220 table 220
 
