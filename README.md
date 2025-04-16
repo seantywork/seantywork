@@ -2395,6 +2395,8 @@ sudo ip netns exec net1 ip addr add 10.168.0.2/24 dev nkpeer0
 
 # xfrm ip addr
 
+
+sudo ip netns add vnet
 sudo ip link add dev veth01 type veth peer name veth02 netns vnet
 sudo ip addr add 192.168.10.1/24 dev veth01
 sudo ip addr add 10.168.66.1/24 dev veth01
@@ -2405,19 +2407,17 @@ sudo ip netns exec vnet ip link set up veth02
 
 # xfrm state, policy
 
-# client 
+# client
 
 ip xfrm state add \
     src 192.168.10.1/24 dst 192.168.10.2/24 proto esp spi 0x01000000 reqid 0x01000000 mode tunnel flag af-unspec \
     aead 'rfc4106(gcm(aes))' 0xaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeff 128 \
-    sel src 10.168.66.1/24 dst 10.168.66.2/24 \
-    # encap espinudp 4500 4500 0.0.0.0 \
+    sel src 10.168.66.1/24 dst 10.168.66.2/24
 
 ip xfrm state add \
     src 192.168.10.2/24 dst 192.168.10.1/24 proto esp spi 0x02000000 reqid 0x02000000 mode tunnel flag af-unspec \
     aead 'rfc4106(gcm(aes))' 0xaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeff 128 \
-    sel src 10.168.66.2/24 dst 10.168.66.1/24 \
-    # encap espinudp 4500 4500 0.0.0.0 \
+    sel src 10.168.66.2/24 dst 10.168.66.1/24
 
 ip xfrm policy add \
     src 10.168.66.1/24 dst 10.168.66.2/24 dir out \
@@ -2427,20 +2427,17 @@ ip xfrm policy add \
     src 10.168.66.2/24 dst 10.168.66.1/24 dir in \
     tmpl src 192.168.10.2/24 dst 192.168.10.1/24 proto esp reqid 0x02000000 mode tunnel
 
-
-# server 
+# server
 
 ip netns exec vnet ip xfrm state add \
     src 192.168.10.1/24 dst 192.168.10.2/24 proto esp spi 0x01000000 reqid 0x01000000 mode tunnel flag af-unspec \
     aead 'rfc4106(gcm(aes))' 0xaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeff 128 \
-    sel src 10.168.66.1/24 dst 10.168.66.2/24 \
-    # encap espinudp 4500 4500 0.0.0.0 \
+    sel src 10.168.66.1/24 dst 10.168.66.2/24
 
 ip netns exec vnet ip xfrm state add \
     src 192.168.10.2/24 dst 192.168.10.1/24 proto esp spi 0x02000000 reqid 0x02000000 mode tunnel flag af-unspec \
     aead 'rfc4106(gcm(aes))' 0xaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeff 128 \
-    sel src 10.168.66.2/24 dst 10.168.66.1/24 \
-    # encap espinudp 4500 4500 0.0.0.0 \
+    sel src 10.168.66.2/24 dst 10.168.66.1/24
 
 ip netns exec vnet ip xfrm policy add \
     src 10.168.66.1/24 dst 10.168.66.2/24 dir in \
@@ -2449,6 +2446,8 @@ ip netns exec vnet ip xfrm policy add \
 ip netns exec vnet ip xfrm policy add \
     src 10.168.66.2/24 dst 10.168.66.1/24 dir out \
     tmpl src 192.168.10.2/24 dst 192.168.10.1/24 proto esp reqid 0x02000000 mode tunnel
+
+
 
 
 ```
