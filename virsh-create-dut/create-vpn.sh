@@ -11,10 +11,10 @@ virsh net-undefine netctl2
 virsh net-undefine net1
 virsh net-undefine net2
 
-virsh net-define host/net/netctl1.xml
-virsh net-define host/net/netctl2.xml
-virsh net-define host/net/net1.xml
-virsh net-define host/net/net2.xml
+virsh net-define host-vpn/net/netctl1.xml
+virsh net-define host-vpn/net/netctl2.xml
+virsh net-define host-vpn/net/net1.xml
+virsh net-define host-vpn/net/net2.xml
 
 
 virsh net-start netctl1
@@ -32,8 +32,8 @@ sudo /bin/cp -Rf /var/lib/libvirt/images/ubuntu24.04-4.qcow2 /var/lib/libvirt/im
 sudo /bin/cp -Rf /var/lib/libvirt/images/ubuntu24.04-2.qcow2 /var/lib/libvirt/images/dev2-2.qcow2
 
 
-virsh define host/dev1-4.xml
+virsh define host-vpn/dev1-4.xml
 
-virsh define host/dev2-2.xml
+virsh define host-vpn/dev2-2.xml
 
 sudo sysctl -w net.ipv4.ip_forward=1
