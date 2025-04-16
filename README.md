@@ -2467,7 +2467,7 @@ ip netns exec vnet ip xfrm policy add \
 
 # policy in case of encap
 ip netns exec vnet ip xfrm policy add \
-    src 10.168.66.1/24 dst 10.168.66.2/24 dir in \
+    src 10.168.66.1/24 dst 10.168.66.2/24 dir fwd \
     tmpl src 192.168.10.1/24 dst 192.168.10.2/24 proto esp reqid 0x01000000 mode tunnel
 
 # server in case of encap
