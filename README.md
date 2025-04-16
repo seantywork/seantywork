@@ -2412,12 +2412,15 @@ sudo ip netns exec vnet ip link set up veth02
 ip xfrm state add \
     src 192.168.10.1/24 dst 192.168.10.2/24 proto esp spi 0x01000000 reqid 0x01000000 mode tunnel flag af-unspec \
     aead 'rfc4106(gcm(aes))' 0xaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeff 128 \
-    sel src 10.168.66.1/24 dst 10.168.66.2/24
+    sel src 10.168.66.1/24 dst 10.168.66.2/24 \
+    # encap espinudp 4500 4500 0.0.0.0 \
+
 
 ip xfrm state add \
     src 192.168.10.2/24 dst 192.168.10.1/24 proto esp spi 0x02000000 reqid 0x02000000 mode tunnel flag af-unspec \
     aead 'rfc4106(gcm(aes))' 0xaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeff 128 \
-    sel src 10.168.66.2/24 dst 10.168.66.1/24
+    sel src 10.168.66.2/24 dst 10.168.66.1/24 \
+    # encap espinudp 4500 4500 0.0.0.0 \
 
 ip xfrm policy add \
     src 10.168.66.1/24 dst 10.168.66.2/24 dir out \
@@ -2427,17 +2430,32 @@ ip xfrm policy add \
     src 10.168.66.2/24 dst 10.168.66.1/24 dir in \
     tmpl src 192.168.10.2/24 dst 192.168.10.1/24 proto esp reqid 0x02000000 mode tunnel
 
+# policy in case of encap
+
+ip xfrm policy add \
+    src 10.168.66.2/24 dst 10.168.66.1/24 dir fwd \
+    tmpl src 192.168.10.2/24 dst 192.168.10.1/24 proto esp reqid 0x02000000 mode tunnel
+
+# client in case of encap
+
+
+ip rule add preference 220 table 220
+
+ip route add 10.168.66.0/24 via 192.168.10.2 dev ${DEVNAME_10_168_66_1} proto static src 10.168.66.1 table 220
+
 # server
 
 ip netns exec vnet ip xfrm state add \
     src 192.168.10.1/24 dst 192.168.10.2/24 proto esp spi 0x01000000 reqid 0x01000000 mode tunnel flag af-unspec \
     aead 'rfc4106(gcm(aes))' 0xaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeff 128 \
-    sel src 10.168.66.1/24 dst 10.168.66.2/24
+    sel src 10.168.66.1/24 dst 10.168.66.2/24 \
+    # encap espinudp 4500 4500 0.0.0.0 \
 
 ip netns exec vnet ip xfrm state add \
     src 192.168.10.2/24 dst 192.168.10.1/24 proto esp spi 0x02000000 reqid 0x02000000 mode tunnel flag af-unspec \
     aead 'rfc4106(gcm(aes))' 0xaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeffaabbccddeeff 128 \
-    sel src 10.168.66.2/24 dst 10.168.66.1/24
+    sel src 10.168.66.2/24 dst 10.168.66.1/24 \
+    # encap espinudp 4500 4500 0.0.0.0 \
 
 ip netns exec vnet ip xfrm policy add \
     src 10.168.66.1/24 dst 10.168.66.2/24 dir in \
@@ -2447,6 +2465,16 @@ ip netns exec vnet ip xfrm policy add \
     src 10.168.66.2/24 dst 10.168.66.1/24 dir out \
     tmpl src 192.168.10.2/24 dst 192.168.10.1/24 proto esp reqid 0x02000000 mode tunnel
 
+# policy in case of encap
+ip netns exec vnet ip xfrm policy add \
+    src 10.168.66.1/24 dst 10.168.66.2/24 dir in \
+    tmpl src 192.168.10.1/24 dst 192.168.10.2/24 proto esp reqid 0x01000000 mode tunnel
+
+# server in case of encap
+
+ip rule add preference 220 table 220
+
+ip route add 10.168.66.1 via 192.168.10.2 dev ${DEV_192_168_10_2_NAME} proto static src ${DEV_LOCAL_TS_ADDRESS} table 220
 
 
 
