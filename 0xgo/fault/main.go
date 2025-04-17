@@ -91,15 +91,37 @@ func profiler(waits int) {
 
 }
 
+type NullStruct struct {
+	Value int
+	Field *NullStruct
+}
+
 func main() {
 
-	go threadFunc()
+	argc := len(os.Args)
 
-	go profiler(10)
+	if argc != 2 {
+		fmt.Printf("feed case\n")
+		os.Exit(-1)
+	}
 
-	for {
+	if os.Args[1] == "1" {
 
-		time.Sleep(time.Millisecond * 1000)
+		go threadFunc()
+
+		go profiler(10)
+
+		for {
+
+			time.Sleep(time.Millisecond * 1000)
+
+		}
+
+	} else if os.Args[1] == "2" {
+
+		null := NullStruct{}
+
+		fmt.Printf("val: %d\n", null.Field.Value)
 
 	}
 
