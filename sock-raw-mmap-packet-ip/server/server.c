@@ -422,7 +422,7 @@ void do_serve()
 
             if (needs_flush == 1){
                 rx_flush(rxRing);
-                needs_flush = 1;
+                needs_flush = 0;
             }
         }
     }

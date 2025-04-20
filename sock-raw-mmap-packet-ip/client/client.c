@@ -420,7 +420,13 @@ void do_req()
     int go = 0;
     while(keepalive == 1){
 
-        sleep(1);
+//        sleep(1);
+        struct timespec remaining, request;
+        
+        request.tv_sec = 0;
+        request.tv_nsec = 200000000L;
+         
+        int response = nanosleep(&request, &remaining);
         printf("tx: %d\n", go);
 
         process_tx(txFd, txRing, new_packet, newlen, offset, 1, &dest_daddr);
