@@ -1,13 +1,9 @@
 #include "ncat.h"
 
-int ncat_argc;
-char** ncat_argv;
-NCAT_OPTIONS NCATOPTS;
-int ncat_connect = 0;
-int ncat_listen = 0;
-int serve_content_exists = 0;
-char serve_content[MAX_LOAD_BUFF] = {0};
-int serve_content_ptr = 0;
+
+NCAT_OPTIONS ncat_opts;
+char* serve_content = NULL;
+int _exit_prog = 0;
 
 int main(int argc, char** argv){
 
@@ -24,40 +20,11 @@ int main(int argc, char** argv){
 
     }
 
-    if (pthread_mutex_init(&NCATOPTS._lock, NULL) != 0) { 
-        fprintf(stderr,"mutex init failed\n"); 
-        return -1; 
-    } 
   
 
-
-    ncat_argc = argc - 1;
-
-    ncat_argv = (char**)malloc(ncat_argc * sizeof(char*));
-
-
-
-    for(int i = 0; i < ncat_argc; i ++){
-
-        int idx = i + 1;
-
-        int option_len = strlen(argv[idx]) + 1;
-
-        ncat_argv[i] = (char*)malloc(option_len * sizeof(char));
-
-        memset(ncat_argv[i], 0, option_len * sizeof(char));
-
-        strcpy(ncat_argv[i], argv[idx]);
-
-    }
-
-
-
-    int parsed = NCAT_parse_args(ncat_argc, ncat_argv);
+    int parsed = NCAT_parse_args(argc - 1, &argv[1]);
 
     if(parsed < 0){
-
-        
 
         fprintf(stderr, "failed to parse arg\n");
 
@@ -67,8 +34,8 @@ int main(int argc, char** argv){
 
     }
 
-    NCATOPTS._client_sock_ready = 0;
-    NCATOPTS._client_sockfd = -1;
+    ncat_opts._client_sock_ready = 0;
+    ncat_opts._client_sockfd = -1;
 
 
     int result = NCAT_runner();

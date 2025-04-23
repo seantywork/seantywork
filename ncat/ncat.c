@@ -16,6 +16,8 @@ int NCAT_parse_args(int argc, char** argv){
 
     if(argc < 2){
 
+        printf("needs argument: [-l|--listen] host port\n");
+
         return -1;
     }
 
@@ -31,15 +33,15 @@ int NCAT_parse_args(int argc, char** argv){
             || (strcmp(argv[i], "-l") == 0)
         ){
 
-            NCATOPTS.mode_listen = 1;
+            ncat_opts.mode_listen = 1;
 
         }
 
 
     }
 
-    if(NCATOPTS.mode_listen == 0){
-        NCATOPTS.mode_client = 1;
+    if(ncat_opts.mode_listen == 0){
+        ncat_opts.mode_client = 1;
     }
 
 
@@ -47,8 +49,8 @@ int NCAT_parse_args(int argc, char** argv){
     int port_idx = argc_nohp + 1;
 
 
-    NCATOPTS.host = argv[host_idx];
-    NCATOPTS.port = argv[port_idx];
+    ncat_opts.host = argv[host_idx];
+    ncat_opts.port = argv[port_idx];
 
 
 
@@ -60,22 +62,10 @@ int NCAT_parse_args(int argc, char** argv){
 
 void NCAT_free(){
 
+    if(serve_content != NULL){
 
-
-    for(int i = 0 ; i < ncat_argc; i ++){
-
-
-        free(ncat_argv[i]);
-
-
+        free(serve_content);
     }
-
-    free(ncat_argv);
-
-
-
-
-
 
 }
 
@@ -86,28 +76,81 @@ int NCAT_runner(){
 
     pthread_t thread_id;
 
+    if(ncat_opts.mode_listen == 1){
 
-    pthread_create(&thread_id, NULL, NCAT_get_thread, NULL);
+        int flags = 0;
 
+        if(pipe(ncat_opts._server_sig) != 0){
 
-    if(NCATOPTS.mode_client == 1){
+            printf("failed to initiate server sig\n");
 
-        ncat_connect = 1;
+            return -1;
 
-        status = NCAT_client();
+        }
 
+        flags |= O_NONBLOCK;
 
-        return status;
+        if (fcntl(ncat_opts._server_sig[0], F_SETFL, flags) != 0){
 
+            printf("failed to setup server sig\n");
+
+            return -2;
+        }
 
     }
 
 
+    pthread_create(&thread_id, NULL, NCAT_get_thread, NULL);
 
+    if(ncat_opts.mode_client == 1){
 
-    if(NCATOPTS.mode_listen == 1){
+        status = NCAT_client();
 
-        ncat_listen = 1;
+        return status;
+
+    }
+
+    if(ncat_opts.mode_listen == 1){
+
+        struct pollfd sig_wait = {.fd = ncat_opts._server_sig[0], .events = POLLIN};
+
+        char sig_result[SERVER_SIG_LEN] = {0};    
+
+        for(int count = 0; count < SERVER_SIG_TIMEOUT_COUNT; count++){
+
+            switch(poll(&sig_wait, 1, SERVER_SIG_TIMEOUT_MS)){
+
+                case 1:
+                    if (sig_wait.revents & POLLIN) {
+  
+                        ssize_t len = read(ncat_opts._server_sig[0], sig_result, SERVER_SIG_LEN);
+    
+                        count += SERVER_SIG_TIMEOUT_COUNT;
+
+                        break;
+                    }
+
+                    break;
+                default:
+
+                    count += 1;
+
+            }
+
+        }
+
+        if(strcmp(SERVER_SIG_DONE, sig_result) != 0){
+
+            pthread_kill(thread_id, SIGKILL);
+
+            if(serve_content != NULL){
+
+                free(serve_content);
+                serve_content = NULL;
+            }
+        }
+
+        close(ncat_opts._server_sig[0]);
 
         status = NCAT_listen_and_serve();
 
@@ -128,13 +171,13 @@ int NCAT_runner(){
 int NCAT_client(){
 
 
-    int sockfd, connfd;
-    struct sockaddr_in servaddr, cli;
-    struct in_addr ip_addr;
+    int sockfd;
+    struct sockaddr_in servaddr;
 
-    in_addr_t s_addr = inet_addr(NCATOPTS.host);
 
-    int addr_port = atoi(NCATOPTS.port);
+    in_addr_t s_addr = inet_addr(ncat_opts.host);
+
+    int addr_port = atoi(ncat_opts.port);
 
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -147,67 +190,72 @@ int NCAT_client(){
     servaddr.sin_addr.s_addr = s_addr;
     servaddr.sin_port = htons(addr_port);
 
-    while(ncat_connect){
+    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr))!= 0) {
+        fprintf(stderr, "connection failed\n");
+        return -1;
+    }
 
-        if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr))!= 0) {
-            fprintf(stderr, "connection failed\n");
-            return -1;
+    ncat_opts._client_sockfd = sockfd;
+    ncat_opts._client_sock_ready = 1;
+
+    int keepalive = 1;
+
+    NCAT_COMMS comms; 
+
+    memset(&comms, 0, sizeof(comms));
+
+    while(keepalive){
+
+        char* wbuff = NULL;
+
+        int chunk = 1;
+
+        int content_len = 0;
+
+        wbuff = (char*)malloc(INPUT_BUFF_CHUNK * chunk);
+
+        memset(wbuff, 0, INPUT_BUFF_CHUNK * chunk);
+
+        char* content_ptr = wbuff + content_len;
+
+        char c = 0;
+
+        while((c = fgetc(stdin)) != '\n'){
+
+            *content_ptr = c; 
+
+            content_len += 1;
+
+            if(content_len == (INPUT_BUFF_CHUNK * chunk)){
+
+                chunk += 1;
+
+                wbuff = (char*)realloc(wbuff, INPUT_BUFF_CHUNK * chunk);
+
+            }
+
+            content_ptr = wbuff + content_len;
+            
         }
 
-        pthread_mutex_lock(&NCATOPTS._lock);
+        comms.datalen = htonl(content_len);
+        comms.data = (uint8_t*)wbuff;
 
-        NCATOPTS._client_sockfd = sockfd;
-        NCATOPTS._client_sock_ready = 1;
+        int wb = write(sockfd, &comms, sizeof(uint32_t) + content_len);
 
-        pthread_mutex_unlock(&NCATOPTS._lock);
+        if(wb <= 0){
 
-        int keepalive = 1;
+            keepalive = 0;
 
+            continue;
+        }
+        
 
-        while(keepalive){
+    }   
 
-            char wbuff[MAX_WRITE_BUFF] = {0};
+    ncat_opts._client_sock_ready = 0;
 
-            int valread = 0;
-
-            fgets(wbuff, MAX_WRITE_BUFF, stdin);
-
-            for(int i = MAX_WRITE_BUFF - 1; i > 0; i--){
-
-                if(wbuff[i] == '\n'){
-                    wbuff[i] = '\0';
-                    break;
-                }
-
-            }
-
-            pthread_mutex_lock(&NCATOPTS._lock);
-
-          
-            if(NCATOPTS._client_sock_ready != 1){
-
-
-
-                pthread_mutex_unlock(&NCATOPTS._lock);
-                break;
-            }
-
-            pthread_mutex_unlock(&NCATOPTS._lock);
-            
-            write(sockfd, wbuff, MAX_WRITE_BUFF * sizeof(char));
-            
-
-        }   
-
-        pthread_mutex_lock(&NCATOPTS._lock);
-
-        NCATOPTS._client_sock_ready = 0;
-
-        pthread_mutex_unlock(&NCATOPTS._lock);
-
-        close(sockfd);
-
-    }
+    close(sockfd);
 
  
     return 0;
@@ -217,13 +265,12 @@ int NCAT_client(){
 int NCAT_listen_and_serve(){
 
     
-    int sockfd, connfd, len; 
+    int sockfd, connfd; 
     struct sockaddr_in servaddr, cli; 
-    struct in_addr ip_addr;
 
-    in_addr_t s_addr = inet_addr(NCATOPTS.host);
+    in_addr_t s_addr = inet_addr(ncat_opts.host);
     
-    int addr_port = atoi(NCATOPTS.port);
+    int addr_port = atoi(ncat_opts.port);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
     if (sockfd == -1) { 
@@ -248,8 +295,11 @@ int NCAT_listen_and_serve(){
     
     int clilen = sizeof(cli); 
 
+    NCAT_COMMS comms;
 
-    while(ncat_listen){
+    memset(&comms, 0, sizeof(comms));
+
+    while(_exit_prog != 1){
 
 
         connfd = accept(sockfd, (struct sockaddr*)&cli, (socklen_t*)&clilen); 
@@ -261,9 +311,14 @@ int NCAT_listen_and_serve(){
 
         int valwrite =0;
 
-        if(serve_content_exists == 1){
+        if(serve_content != NULL){
 
-            valwrite = write(connfd, serve_content, MAX_LOAD_BUFF * sizeof(char));
+            uint32_t contentlen = sizeof(uint32_t) + strlen(serve_content);
+
+            comms.datalen = htonl(contentlen);
+            comms.data = (uint8_t*)serve_content;
+
+            valwrite = write(connfd, &comms, contentlen);
 
             if(valwrite <= 0){
 
@@ -274,61 +329,64 @@ int NCAT_listen_and_serve(){
 
         int keepalive = 1;
 
+        comms.datalen = 0;
+        comms.data = NULL;
+        uint32_t rhead = 0;
+
         while(keepalive){
 
-            char rbuff[MAX_READ_BUFF] = {0};
 
             int valread = 0;
 
-            while(valread < MAX_READ_BUFF){
+            while(valread < sizeof(uint32_t)){
 
-                char tmp[MAX_READ_BUFF] = {0};
+                int rb = read(connfd, &rhead + valread, sizeof(uint32_t) - valread);
 
-                int rb = read(connfd, tmp, MAX_READ_BUFF);
-
-                if (rb == 0){
+                if (rb <= 0){
 
                     keepalive = 0;
                     break;
 
                 } 
 
-                if (rb < 0){
-                    fprintf(stderr,"error reading");
+                valread += rb;
+
+            }
+
+            comms.datalen = ntohl(rhead);
+
+            comms.data = (uint8_t*)malloc(comms.datalen);
+
+            valread = 0;
+
+            while(valread < comms.datalen){
+
+                int rb = read(connfd, &comms.data + valread, comms.datalen - valread);
+
+                if (rb <= 0){
+
+                    free(comms.data);
+
                     keepalive = 0;
                     break;
-                }
 
-                for(int i = 0 ; i < rb; i++){
-
-                    int idx = valread + i;
-
-                    rbuff[idx] = tmp[i];
-
-                }
+                } 
 
                 valread += rb;
 
             }
 
-            if(!keepalive){
-                continue;
-            }
+            fprintf(stdout, "%s\n", comms.data);
 
-            fprintf(stdout, "%s\n", rbuff);
+            free(comms.data);
 
         }
 
-
         close(connfd);
-
-
 
     }
 
     close(sockfd);
-
-
 
     return 0;
 }
@@ -337,63 +395,68 @@ int NCAT_listen_and_serve(){
 
 void* NCAT_get_thread(){
 
-    if(NCATOPTS.mode_client){
+    if(ncat_opts.mode_client){
+
+        NCAT_COMMS comms;
+
+        memset(&comms, 0, sizeof(NCAT_COMMS));
 
         for(;;){
 
-            pthread_mutex_lock(&NCATOPTS._lock);
-
-            if(NCATOPTS._client_sock_ready){
+            if(ncat_opts._client_sock_ready){
 
                 int valread = 0;
 
-                char rbuff[MAX_READ_BUFF] = {0};
+                uint8_t rhead = 0;
 
-                int _exit=0;
+                int _exit_prog=0;
                 
-                while(valread < MAX_READ_BUFF){
-                    
-                    char tmp[MAX_READ_BUFF] = {0};
+                while(valread < sizeof(uint32_t)){
 
-                    int rb = read(NCATOPTS._client_sockfd, tmp, MAX_READ_BUFF * sizeof(char));
+                    int rb = read(ncat_opts._client_sockfd, &rhead + valread, sizeof(uint32_t) - valread);
 
                     if(rb <= 0){
                         
-                        _exit = 1;
+                        _exit_prog = 1;
 
                         break;
 
                     }
 
-                    for(int i = 0; i < rb; i++){
-
-                        int idx = valread + i;
-
-                        rbuff[idx] = tmp[i];
-
-                    }
-                    
                     valread += rb;
-
                 }
                
-                if(_exit == 1){
+                comms.datalen = ntohl(rhead);
 
-                    NCATOPTS._client_sock_ready = 0;
+                comms.data = (uint8_t*)malloc(comms.datalen);
 
-                    pthread_mutex_unlock(&NCATOPTS._lock);
+                valread = 0;
 
-                    continue;
+                while(valread < comms.datalen){
+
+                    int rb = read(ncat_opts._client_sockfd, &comms.data + valread, comms.datalen - valread);
+
+                    if(rb <= 0){
+                        
+                        _exit_prog = 1;
+
+                        free(comms.data);
+
+                        break;
+
+                    }
+
+                    valread += rb;
                 }
 
-                fprintf(stdout, "%s \n", rbuff);
+                fprintf(stdout, "%s \n", comms.data);
+
+                free(comms.data);
                 
-                pthread_mutex_unlock(&NCATOPTS._lock);
 
             } else {
                 
-                pthread_mutex_unlock(&NCATOPTS._lock);
-                msleep(500);
+                msleep(100);
 
             }
 
@@ -401,47 +464,43 @@ void* NCAT_get_thread(){
         }
 
 
-    } else if (NCATOPTS.mode_listen){
+    } else if (ncat_opts.mode_listen){
 
-        serve_content_exists = 1;
+        int chunk = 1;
 
-        int line_idx = 0;
+        int content_len = 0;
 
-        //fgets(serve_content, MAX_LOAD_BUFF, stdin);
+        serve_content = (char*)malloc(INPUT_BUFF_CHUNK * chunk);
 
-        //line_idx = strlen(serve_content);
+        memset(serve_content, 0, INPUT_BUFF_CHUNK * chunk);
 
-        char tmp[MAX_TMP_BUFF] = {0};
+        char* content_ptr = serve_content + content_len;
 
-        for(int i = 0 ; i < 10; i ++){
+        char c = 0;
 
-            memset(tmp, 0, MAX_TMP_BUFF * sizeof(char));
+        while(c = fgetc(stdin)){
 
-            fgets(tmp, MAX_TMP_BUFF, stdin);
+            *content_ptr = c; 
 
-            int len_count = strlen(tmp);
+            content_len += 1;
 
-            if(serve_content_ptr + len_count > MAX_LOAD_BUFF){
-                break;
-            }
+            if(content_len == (INPUT_BUFF_CHUNK * chunk)){
 
-            for(int i = 0 ; i < len_count; i++){
+                chunk += 1;
 
-                int idx = serve_content_ptr + i;
-
-                serve_content[idx] = tmp[i];
+                serve_content = (char*)realloc(serve_content, INPUT_BUFF_CHUNK * chunk);
 
             }
 
-            serve_content_ptr += len_count;
-
-
+            content_ptr = serve_content + content_len;
+            
         }
-        
-        
 
+        write(ncat_opts._server_sig[1], SERVER_SIG_DONE, SERVER_SIG_LEN);
 
     }
+
+    pthread_exit(NULL);
 
 }
 
@@ -449,7 +508,6 @@ void* NCAT_get_thread(){
 void msleep(long ms){
 
     struct timespec ts;
-    int res;
 
     ts.tv_sec = ms / 1000;
     ts.tv_nsec = (ms % 1000) * 1000000;

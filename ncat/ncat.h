@@ -15,11 +15,14 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
+#include <fcntl.h>
+#include <poll.h>
 
-#define MAX_LOAD_BUFF 1024 * 1024 * 10
-#define MAX_TMP_BUFF 1024 * 1024 
-#define MAX_READ_BUFF 1024 * 1024
-#define MAX_WRITE_BUFF MAX_READ_BUFF
+#define INPUT_BUFF_CHUNK 1024
+#define SERVER_SIG_DONE "done"
+#define SERVER_SIG_LEN     4
+#define SERVER_SIG_TIMEOUT_COUNT 5
+#define SERVER_SIG_TIMEOUT_MS 100
 
 typedef struct NCAT_OPTIONS {
 
@@ -27,21 +30,20 @@ typedef struct NCAT_OPTIONS {
     int mode_listen;
     int _client_sock_ready;
     int _client_sockfd;
-    pthread_mutex_t _lock;
+    int _server_sig[2];
     char* host;
     char* port;
 
 } NCAT_OPTIONS;
 
+typedef struct NCAT_COMMS {
+    uint32_t datalen;
+    uint8_t* data;
+} NCAT_COMMS;
 
-extern int ncat_argc;
-extern char** ncat_argv;
-extern NCAT_OPTIONS NCATOPTS;
-extern int ncat_connect;
-extern int ncat_listen;
-extern int serve_content_exists;
-extern char serve_content[MAX_LOAD_BUFF];
-extern int serve_content_ptr;
+extern NCAT_OPTIONS ncat_opts;
+extern char* serve_content;
+extern int _exit_prog;
 
 void NCAT_keyboard_interrupt();
 
