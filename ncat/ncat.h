@@ -36,7 +36,7 @@ typedef struct NCAT_OPTIONS {
 
 } NCAT_OPTIONS;
 
-typedef struct NCAT_COMMS {
+typedef struct __attribute__((packed)) NCAT_COMMS {
     uint32_t datalen;
     uint8_t* data;
 } NCAT_COMMS;

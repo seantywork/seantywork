@@ -222,17 +222,15 @@ int NCAT_client(){
 
     while(keepalive){
 
-        char* wbuff = NULL;
-
         int chunk = 1;
 
-        int content_len = 0;
+        int content_len = sizeof(uint32_t) + 0;
 
-        wbuff = (char*)malloc(INPUT_BUFF_CHUNK * chunk);
+        comms.data = (uint8_t*)malloc(sizeof(uint32_t) + (INPUT_BUFF_CHUNK * chunk));
 
-        memset(wbuff, 0, INPUT_BUFF_CHUNK * chunk);
+        memset(comms.data, 0, sizeof(uint32_t) + (INPUT_BUFF_CHUNK * chunk));
 
-        char* content_ptr = wbuff + content_len;
+        char* content_ptr = (char*)(comms.data + content_len);
 
         char c = 0;
 
@@ -242,30 +240,34 @@ int NCAT_client(){
 
             content_len += 1;
 
-            if(content_len == (INPUT_BUFF_CHUNK * chunk)){
+            if(content_len == sizeof(uint32_t) + (INPUT_BUFF_CHUNK * chunk)){
 
                 chunk += 1;
 
-                wbuff = (char*)realloc(wbuff, INPUT_BUFF_CHUNK * chunk);
+                comms.data = (uint8_t*)realloc(comms.data, sizeof(uint32_t) + (INPUT_BUFF_CHUNK * chunk));
 
             }
 
-            content_ptr = wbuff + content_len;
+            content_ptr = (char*)(comms.data + content_len);
             
         }
 
-        comms.datalen = htonl(content_len);
-        comms.data = (uint8_t*)wbuff;
 
-        int wb = write(sockfd, &comms, sizeof(uint32_t) + content_len);
+        comms.datalen = htonl(content_len - sizeof(uint32_t));
+        memcpy(comms.data, &comms.datalen, sizeof(uint32_t));
+
+        int wb = write(sockfd, comms.data, content_len);
 
         if(wb <= 0){
+
+            free(comms.data);
 
             keepalive = 0;
 
             continue;
         }
-        
+    
+        free(comms.data);
 
     }   
 
@@ -303,7 +305,15 @@ int NCAT_listen_and_serve(){
         return -1; 
     } 
    
-    if ((listen(sockfd, 5)) != 0) { 
+
+    int enable = 1;
+
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0){
+        fprintf(stderr, "socket opt failed\n"); 
+        return -1; 
+    }
+
+    if ((listen(sockfd, 1)) != 0) { 
         fprintf(stderr,"socket listen failed\n"); 
         return -1; 
     } 
@@ -329,18 +339,23 @@ int NCAT_listen_and_serve(){
 
         if(serve_content != NULL){
 
-            uint32_t contentlen = sizeof(uint32_t) + strlen(serve_content);
+            uint32_t contentlen = strlen(serve_content);
 
             comms.datalen = htonl(contentlen);
-            comms.data = (uint8_t*)serve_content;
+            comms.data = (uint8_t*)malloc(sizeof(uint32_t) + contentlen);
 
-            valwrite = write(connfd, &comms, contentlen);
+            memcpy(comms.data, &comms.datalen, sizeof(uint32_t));
+            memcpy(comms.data + sizeof(uint32_t), serve_content, contentlen);
+
+            valwrite = write(connfd, comms.data, sizeof(uint32_t) + contentlen);
 
             if(valwrite <= 0){
 
                 fprintf(stderr,"write: %d\n", valwrite);
 
             }
+
+            free(comms.data);
         }
 
         int keepalive = 1;
@@ -358,6 +373,7 @@ int NCAT_listen_and_serve(){
 
                 int rb = read(connfd, &rhead + valread, sizeof(uint32_t) - valread);
 
+
                 if (rb <= 0){
 
                     keepalive = 0;
@@ -369,15 +385,22 @@ int NCAT_listen_and_serve(){
 
             }
 
+            if(keepalive == 0){
+                continue;
+            }
+
             comms.datalen = ntohl(rhead);
 
-            comms.data = (uint8_t*)malloc(comms.datalen);
+            comms.data = (uint8_t*)malloc(comms.datalen + 1);
+
+            comms.data[comms.datalen] = 0;
 
             valread = 0;
 
+
             while(valread < comms.datalen){
 
-                int rb = read(connfd, &comms.data + valread, comms.datalen - valread);
+                int rb = read(connfd, comms.data + valread, comms.datalen - valread);
 
                 if (rb <= 0){
 
@@ -392,6 +415,9 @@ int NCAT_listen_and_serve(){
 
             }
 
+            if(keepalive == 0){
+                continue;
+            }
             fprintf(stdout, "%s\n", comms.data);
 
             free(comms.data);
@@ -417,15 +443,15 @@ void* NCAT_get_thread(){
 
         memset(&comms, 0, sizeof(NCAT_COMMS));
 
-        for(;;){
+        int _exit_prog = 0;
+
+        while(_exit_prog != 1){
 
             if(ncat_opts._client_sock_ready){
 
                 int valread = 0;
 
                 uint8_t rhead = 0;
-
-                int _exit_prog=0;
                 
                 while(valread < sizeof(uint32_t)){
 
@@ -441,6 +467,11 @@ void* NCAT_get_thread(){
 
                     valread += rb;
                 }
+
+                if(_exit_prog == 1){
+
+                    continue;
+                }
                
                 comms.datalen = ntohl(rhead);
 
@@ -450,7 +481,7 @@ void* NCAT_get_thread(){
 
                 while(valread < comms.datalen){
 
-                    int rb = read(ncat_opts._client_sockfd, &comms.data + valread, comms.datalen - valread);
+                    int rb = read(ncat_opts._client_sockfd, comms.data + valread, comms.datalen - valread);
 
                     if(rb <= 0){
                         
@@ -465,7 +496,12 @@ void* NCAT_get_thread(){
                     valread += rb;
                 }
 
-                fprintf(stdout, "%s \n", comms.data);
+                if(_exit_prog == 1){
+
+                    continue;
+                }
+
+                fprintf(stdout, "%s\n", comms.data);
 
                 free(comms.data);
                 
