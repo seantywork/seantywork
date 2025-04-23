@@ -76,6 +76,8 @@ int NCAT_runner(){
 
     pthread_t thread_id;
 
+    int flags_org = 0;
+
     if(ncat_opts.mode_listen == 1){
 
         int flags = 0;
@@ -95,6 +97,15 @@ int NCAT_runner(){
             printf("failed to setup server sig\n");
 
             return -2;
+        }
+
+        flags_org = fcntl(STDIN_FILENO,F_GETFL,0);
+
+        if (fcntl(STDIN_FILENO, F_SETFL, flags) != 0){
+
+            printf("failed to setup server stdin\n");
+
+            return -3;
         }
 
     }
@@ -141,8 +152,6 @@ int NCAT_runner(){
 
         if(strcmp(SERVER_SIG_DONE, sig_result) != 0){
 
-            pthread_kill(thread_id, SIGKILL);
-
             if(serve_content != NULL){
 
                 free(serve_content);
@@ -151,6 +160,13 @@ int NCAT_runner(){
         }
 
         close(ncat_opts._server_sig[0]);
+
+        if (fcntl(STDIN_FILENO, F_SETFL, flags_org) != 0){
+
+            printf("failed to setup server stdin to original\n");
+
+            return -3;
+        }
 
         status = NCAT_listen_and_serve();
 
@@ -466,6 +482,8 @@ void* NCAT_get_thread(){
 
     } else if (ncat_opts.mode_listen){
 
+        struct pollfd sig_wait = {.fd = STDIN_FILENO, .events = POLLIN};
+
         int chunk = 1;
 
         int content_len = 0;
@@ -478,25 +496,43 @@ void* NCAT_get_thread(){
 
         char c = 0;
 
-        while(c = fgetc(stdin)){
+        for(int count = 0; count < 1; count++){
 
-            *content_ptr = c; 
+            switch(poll(&sig_wait, 1, SERVER_SIG_TIMEOUT_MS)){
 
-            content_len += 1;
+                case 1:
+                    
+                    while((c = fgetc(stdin)) != EOF){
 
-            if(content_len == (INPUT_BUFF_CHUNK * chunk)){
 
-                chunk += 1;
+                        *content_ptr = c; 
+            
+                        content_len += 1;
+            
+                        if(content_len == (INPUT_BUFF_CHUNK * chunk)){
+            
+                            chunk += 1;
+            
+                            serve_content = (char*)realloc(serve_content, INPUT_BUFF_CHUNK * chunk);
+            
+                        }
+            
+                        content_ptr = serve_content + content_len;
+                        
+                    }
+        
+                default:
 
-                serve_content = (char*)realloc(serve_content, INPUT_BUFF_CHUNK * chunk);
+                    count += 1;
 
             }
 
-            content_ptr = serve_content + content_len;
-            
         }
 
-        write(ncat_opts._server_sig[1], SERVER_SIG_DONE, SERVER_SIG_LEN);
+        if(content_len != 0){
+            printf("loaded server text: \n%s\n", serve_content);
+            write(ncat_opts._server_sig[1], SERVER_SIG_DONE, SERVER_SIG_LEN);
+        }
 
     }
 
