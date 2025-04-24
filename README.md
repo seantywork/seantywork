@@ -2088,7 +2088,7 @@ sudo apt install libnetfilter-queue-dev
 ```
 ```shell
 
-# gateway port-forwarding, lan routing scenario
+# gateway to NAT scenario
 
 # 192.168.122.87 being external ip on ens3
 
