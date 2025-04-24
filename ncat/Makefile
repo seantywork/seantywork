@@ -1,4 +1,4 @@
-GCC_FLAGS := -std=gnu99 -g -Wall
+GCC_FLAGS := -g -Wall -O2
 
 
 all: ncat.o

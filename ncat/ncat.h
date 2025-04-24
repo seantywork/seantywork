@@ -23,6 +23,7 @@
 #define SERVER_SIG_LEN     4
 #define SERVER_SIG_TIMEOUT_COUNT 5
 #define SERVER_SIG_TIMEOUT_MS 100
+#define CLIENT_EXIT     "exit"
 
 typedef struct NCAT_OPTIONS {
 

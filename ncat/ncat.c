@@ -189,12 +189,16 @@ int NCAT_client(){
 
     int sockfd;
     struct sockaddr_in servaddr;
-
-
     in_addr_t s_addr = inet_addr(ncat_opts.host);
-
     int addr_port = atoi(ncat_opts.port);
+    int keepalive = 1;
+    NCAT_COMMS comms; 
+    int chunk = 0;
+    int content_len = 0;
 
+    int header_size = sizeof(uint32_t);
+
+    memset(&comms, 0, sizeof(comms));
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
@@ -214,21 +218,16 @@ int NCAT_client(){
     ncat_opts._client_sockfd = sockfd;
     ncat_opts._client_sock_ready = 1;
 
-    int keepalive = 1;
-
-    NCAT_COMMS comms; 
-
-    memset(&comms, 0, sizeof(comms));
 
     while(keepalive){
 
-        int chunk = 1;
+        chunk = 1;
 
-        int content_len = sizeof(uint32_t) + 0;
+        content_len = header_size + 0;
 
-        comms.data = (uint8_t*)malloc(sizeof(uint32_t) + (INPUT_BUFF_CHUNK * chunk));
+        comms.data = (uint8_t*)malloc(header_size + (INPUT_BUFF_CHUNK * chunk));
 
-        memset(comms.data, 0, sizeof(uint32_t) + (INPUT_BUFF_CHUNK * chunk));
+        memset(comms.data, 0, header_size + (INPUT_BUFF_CHUNK * chunk));
 
         char* content_ptr = (char*)(comms.data + content_len);
 
@@ -240,11 +239,11 @@ int NCAT_client(){
 
             content_len += 1;
 
-            if(content_len == sizeof(uint32_t) + (INPUT_BUFF_CHUNK * chunk)){
+            if(content_len == header_size + (INPUT_BUFF_CHUNK * chunk)){
 
                 chunk += 1;
 
-                comms.data = (uint8_t*)realloc(comms.data, sizeof(uint32_t) + (INPUT_BUFF_CHUNK * chunk));
+                comms.data = (uint8_t*)realloc(comms.data, header_size + (INPUT_BUFF_CHUNK * chunk));
 
             }
 
@@ -252,9 +251,15 @@ int NCAT_client(){
             
         }
 
+        if(strcmp(CLIENT_EXIT, (char*)(comms.data + header_size)) == 0){
 
-        comms.datalen = htonl(content_len - sizeof(uint32_t));
-        memcpy(comms.data, &comms.datalen, sizeof(uint32_t));
+            keepalive = 0;
+            free(comms.data);
+            continue;
+        }
+
+        comms.datalen = htonl(content_len - header_size);
+        memcpy(comms.data, &comms.datalen, header_size);
 
         int wb = write(sockfd, comms.data, content_len);
 
@@ -290,6 +295,14 @@ int NCAT_listen_and_serve(){
     
     int addr_port = atoi(ncat_opts.port);
 
+    int enable = 1;
+        
+    int clilen = sizeof(cli); 
+
+    NCAT_COMMS comms;
+
+    memset(&comms, 0, sizeof(comms));
+
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
     if (sockfd == -1) { 
         fprintf(stderr,"socket creation failed...\n"); 
@@ -306,8 +319,6 @@ int NCAT_listen_and_serve(){
     } 
    
 
-    int enable = 1;
-
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0){
         fprintf(stderr, "socket opt failed\n"); 
         return -1; 
@@ -318,12 +329,6 @@ int NCAT_listen_and_serve(){
         return -1; 
     } 
     
-    
-    int clilen = sizeof(cli); 
-
-    NCAT_COMMS comms;
-
-    memset(&comms, 0, sizeof(comms));
 
     while(_exit_prog != 1){
 
