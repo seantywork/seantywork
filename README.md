@@ -1967,11 +1967,18 @@ ip route flush cache
 
 # rule 
 
+# all 
+
+ip rule add preference 100 from all lookup 5
+
 # fwmark
 # ex) lookup table 5 if marked 5 
 
 ip rule add preference 100 fwmark 5 table 5
 
+# by source 
+
+ip rule add preference 100 from 192.168.0.0/24 lookup 100
 
 ```
 
@@ -2003,7 +2010,7 @@ sudo sysctl --system
 
 # routing steps
 
-# incoming mangle prerouting 
+# incoming mangle prerouting, fwmark
 
 sudo iptables -t mangle -A PREROUTING -p udp -s 192.168.10.5 -j MARK --set-mark 5
 
