@@ -2212,6 +2212,39 @@ sudo ip netns exec net2 nc 192.168.62.6 9999
 ```
 
 ```shell
+# NAT default gateway redirect scenario 
+
+
+# 10.168.0.29 being NAT 
+
+# 10.168.0.26 being default gateway 
+
+# 10.168.0.100 being default gateway's default gateway
+
+# on NAT 
+
+sudo ip netns add vnet 
+
+sudo ip link set enp7s0 netns vnet 
+
+sudo ip netns exec vnet ip addr add 10.168.0.29/24 dev enp7s0
+
+sudo ip netns exec vnet ip link set up dev enp7s0 
+
+sudo ip netns exec vnet ip route add default via 10.168.0.26
+ 
+# on default gateway 
+
+sudo ip rule add preference 221 from 10.168.0.0/24 lookup 221
+
+sudo ip route add default via 10.168.0.100 dev enp7s0 table 221
+
+echo 0 | tee /proc/sys/net/ipv4/conf/*/send_redirects
+
+
+```
+
+```shell
 
 # network namespace
 
