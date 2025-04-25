@@ -2246,6 +2246,73 @@ echo 0 | tee /proc/sys/net/ipv4/conf/*/send_redirects
 
 ```shell
 
+# host to different NAT with same ip scenario
+
+# nat1
+sudo ip netns add net0
+
+sudo ip link add dev veth01 type veth peer name veth02 netns net0
+
+sudo ip link set up veth01
+
+sudo ip netns exec net0 ip link set up veth02
+
+sudo ip addr add 192.168.10.20/24 dev veth01
+
+sudo ip netns exec net0 ip addr add 192.168.10.2/24 dev veth02
+
+# nat2
+
+sudo ip netns add net1
+
+sudo ip link add dev veth11 type veth peer name veth12 netns net1
+
+sudo ip link set up veth11
+
+sudo ip netns exec net1 ip link set up veth12
+
+sudo ip addr add 192.168.10.30/24 dev veth11
+
+sudo ip netns exec net1 ip addr add 192.168.10.2/24 dev veth12
+
+sudo ip rule add preference 100 from all lookup local
+
+sudo ip rule del preference 0
+
+sudo ip rule add preference 92 fwmark 2 table 92
+sudo ip rule add preference 93 fwmark 3 table 93
+
+sudo ip route add default via 192.168.10.20 dev veth01 table 92
+sudo ip route add default via 192.168.10.30 dev veth11 table 93
+
+
+sudo iptables -t nat -A INPUT -p tcp -i veth02 -j SNAT --to-source 192.168.10.3
+sudo iptables -t mangle -A OUTPUT -p tcp -d 192.168.10.2 -j MARK --set-mark 2
+sudo iptables -t mangle -A OUTPUT -p tcp -d 192.168.10.3 -j MARK --set-mark 3
+sudo iptables -t nat -A OUTPUT -p tcp -d 192.168.10.3 -j DNAT --to-destination 192.168.10.2
+
+sudo ip route flush cache
+
+
+# test
+
+# in net0
+sudo ip netns exec net0 nc -l 192.168.10.2 9999
+
+# in net1 
+sudo ip netns exec net1 nc -l 192.168.10.2 9999
+
+# on host
+nc 192.168.10.2 9999 
+
+# on host
+nc 192.168.10.3 9999
+
+
+```
+
+```shell
+
 # network namespace
 
 sudo ip netns add net1
