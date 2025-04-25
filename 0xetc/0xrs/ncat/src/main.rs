@@ -1,11 +1,7 @@
 mod ncat;
 
 use std::{
-    env, 
-    fs, 
-    net::{TcpListener, TcpStream}, 
-    process::{self, ExitCode}, 
-    thread
+    env, fs, net::{TcpListener, TcpStream}, ops::Deref, process::{self, ExitCode}, thread
 };
 
 use ncat::ncat::{self as NCAT, NcatOptions};
@@ -15,7 +11,7 @@ fn main() -> process::ExitCode {
     
     let args: Vec<String> = env::args().collect();
 
-    let ncat_opts: &mut NCAT::NcatOptions;
+    let mut ncat_opts = NCAT::NcatOptions::new();
 
     if args.len() < 2 {
 
@@ -54,9 +50,9 @@ fn main() -> process::ExitCode {
 
     match args_result {
 
-        Ok(mut boxno) => {
+        Ok(mut arcno) => {
 
-            ncat_opts = boxno.as_mut();
+            ncat_opts = arcno.as_ref().clone();
 
         }
 

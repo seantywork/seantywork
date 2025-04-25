@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 ctrlc = "3.4"
+pipe = "0.4.0"
