@@ -1,13 +1,15 @@
 mod ncat;
 
 use std::{
-    env, fs, net::{TcpListener, TcpStream}, ops::Deref, process::{self, ExitCode}, thread
+    env, ops::Deref, process::{self, ExitCode}, thread
 };
+
+use tokio;
 
 use ncat::ncat::{self as NCAT, NcatOptions};
 
-
-fn main() -> process::ExitCode {
+#[tokio::main]
+async fn main() -> process::ExitCode {
     
     let args: Vec<String> = env::args().collect();
 
@@ -62,8 +64,11 @@ fn main() -> process::ExitCode {
         }
     }
 
+    tokio::spawn(NCAT::runner(ncat_opts.clone()));
 
+    loop {
 
+    }
 
     return process::ExitCode::from(0u8);
 }
