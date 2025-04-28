@@ -104,7 +104,7 @@ pub fn parse_args(args: &Vec<String>) -> Result<Arc<NcatOptions>, String>{
     
 }
 
-pub async fn runner(mut ncat_opts: NcatOptions) -> Result<(), String> {
+pub fn runner(mut ncat_opts: Arc<NcatOptions>) -> Result<(), String> {
 
     let (tx, rx) = mpsc::channel::<NcatOptions>();
 
@@ -136,18 +136,21 @@ pub async fn runner(mut ncat_opts: NcatOptions) -> Result<(), String> {
 
                 ncat_opts_updated = received;
 
+                let result = listen_and_serve(ncat_opts_updated.clone());
+
+                return result;
             }
 
             Err(e) => {
 
-                ncat_opts_updated = ncat_opts.clone();
+                ncat_opts_updated = ncat_opts.as_ref().clone();
+
+                let result = listen_and_serve(ncat_opts_updated.clone());
+            
+                return result;
             }
         };
 
-
-        let result = listen_and_serve(ncat_opts_updated.clone());
-        
-        return result;
 
     }
 
@@ -156,7 +159,7 @@ pub async fn runner(mut ncat_opts: NcatOptions) -> Result<(), String> {
 }
 
 
-fn client(mut ncat_opts: NcatOptions, tx: Sender<TcpStream>) -> Result<(), String> {
+fn client(mut ncat_opts: Arc<NcatOptions>, tx: Sender<TcpStream>) -> Result<(), String> {
 
     let mut stream = TcpStream::connect((ncat_opts.host.as_str(), ncat_opts.port.to_string().parse::<u16>().unwrap())).unwrap();
 
@@ -184,7 +187,7 @@ fn client(mut ncat_opts: NcatOptions, tx: Sender<TcpStream>) -> Result<(), Strin
         
         let message = line.unwrap();
         
-        if message == "exit".to_string() {
+        if message.trim() == "exit" {
 
             break;
 
@@ -204,8 +207,6 @@ fn client(mut ncat_opts: NcatOptions, tx: Sender<TcpStream>) -> Result<(), Strin
 
         wbuff_vec.append(&mut message_vec);
 
-        //let wbuff = wbuff_vec.as_slice();
-
         let wsize = io_stream.write(&wbuff_vec).unwrap();
 
         if wsize <= 0 {
@@ -213,6 +214,8 @@ fn client(mut ncat_opts: NcatOptions, tx: Sender<TcpStream>) -> Result<(), Strin
             println!("failed to write: {}", wsize);
         }
     }
+
+    println!("return");
 
     return Ok(());
 }
@@ -235,6 +238,8 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
             Ok(mut io_stream) =>{
 
                 let mut header = [0u8; 4];
+
+                let mut count = 0u32;
 
                 loop {
             
@@ -261,12 +266,10 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
                     }
             
             
-                    let mut datalen = LittleEndian::read_u32(&mut header);
-                    
-                    println!("datalen: {}", datalen);
+                    let mut datalen = BigEndian::read_u32(&mut header);
 
-                    let mut data = Vec::<u8>::with_capacity(datalen as usize);
-            
+                    let mut data = vec![0; datalen as usize];;
+        
                     valread = 0;
             
                     loop {
@@ -289,7 +292,10 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
             
                     }
             
+
                     println!("{}", String::from_utf8(data).unwrap());
+            
+                    count += 1;
                 }
             
 
@@ -306,7 +312,7 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
 }
 
 
-async fn get_thread(mut ncat_opts: NcatOptions, tx: Sender<NcatOptions>, rx: Receiver<TcpStream>) {
+async fn get_thread(mut ncat_opts: Arc<NcatOptions>, tx: Sender<NcatOptions>, rx: Receiver<TcpStream>) {
 
     if(ncat_opts.mode_client) {
 

@@ -1,7 +1,7 @@
 mod ncat;
 
 use std::{
-    env, ops::Deref, process::{self, ExitCode}, thread
+    env, ops::Deref, process::{self, ExitCode}, thread, sync::Arc
 };
 
 use tokio;
@@ -12,8 +12,6 @@ use ncat::ncat::{self as NCAT, NcatOptions};
 async fn main() -> process::ExitCode {
     
     let args: Vec<String> = env::args().collect();
-
-    let mut ncat_opts = NCAT::NcatOptions::new();
 
     if args.len() < 2 {
 
@@ -54,7 +52,22 @@ async fn main() -> process::ExitCode {
 
         Ok(mut arcno) => {
 
-            ncat_opts = arcno.as_ref().clone();
+            let mut ncat_opts = arcno.clone();
+
+            match NCAT::runner(ncat_opts.clone()) {
+
+                Ok(()) => {
+
+                    return process::ExitCode::from(0u8);
+
+                }
+
+                Err(e) => {
+
+                    println!("error: {}", e);
+                }
+            }
+
 
         }
 
@@ -62,12 +75,6 @@ async fn main() -> process::ExitCode {
 
             println!("failed to parse args: {}", reason);
         }
-    }
-
-    tokio::spawn(NCAT::runner(ncat_opts.clone()));
-
-    loop {
-
     }
 
     return process::ExitCode::from(0u8);
