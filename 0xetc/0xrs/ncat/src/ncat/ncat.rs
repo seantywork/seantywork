@@ -113,9 +113,12 @@ pub fn runner(mut ncat_opts: Arc<NcatOptions>) -> Result<(), String> {
 
     if ncat_opts.mode_client {
 
-        tokio::spawn(get_thread(ncat_opts.clone(), tx, rxStream));
+        let mut nncat_opts = ncat_opts.clone();
+
+        thread::spawn(move || get_thread(nncat_opts.clone(), tx, rxStream));
 
         let result = client(ncat_opts.clone(), txStream);
+
 
         return result;
 
@@ -124,7 +127,9 @@ pub fn runner(mut ncat_opts: Arc<NcatOptions>) -> Result<(), String> {
 
     if ncat_opts.mode_listen {
 
-        tokio::spawn(get_thread(ncat_opts.clone(), tx, rxStream));
+        let mut nncat_opts  = ncat_opts.clone(); 
+
+        thread::spawn(move || get_thread(nncat_opts.clone(), tx, rxStream));
 
         let mut ncat_opts_updated: NcatOptions = NcatOptions::new();
 

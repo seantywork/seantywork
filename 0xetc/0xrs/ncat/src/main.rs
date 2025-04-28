@@ -8,8 +8,7 @@ use tokio;
 
 use ncat::ncat::{self as NCAT, NcatOptions};
 
-#[tokio::main]
-async fn main() -> process::ExitCode {
+fn main() -> process::ExitCode {
     
     let args: Vec<String> = env::args().collect();
 

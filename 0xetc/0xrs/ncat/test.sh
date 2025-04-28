@@ -26,7 +26,7 @@ do
 done
 echo "exit" >> test.txt
 
-sudo ip netns exec net1 ./ncat.out -l 192.168.62.6 9999 
+sudo ip netns exec net1 ./ncat.out -l 192.168.62.6 9999 > /dev/null 2>&1 &
 
 sleep 1
 
