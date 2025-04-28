@@ -195,6 +195,7 @@ int NCAT_client(){
     NCAT_COMMS comms; 
     int chunk = 0;
     int content_len = 0;
+    int message_len = 0;
 
     int header_size = sizeof(uint32_t);
 
@@ -221,35 +222,21 @@ int NCAT_client(){
 
     while(keepalive){
 
-        chunk = 1;
-
         content_len = header_size + 0;
 
-        comms.data = (uint8_t*)malloc(header_size + (INPUT_BUFF_CHUNK * chunk));
+        comms.data = (uint8_t*)malloc(header_size + (INPUT_BUFF_CHUNK));
 
-        memset(comms.data, 0, header_size + (INPUT_BUFF_CHUNK * chunk));
+        memset(comms.data, 0, header_size + (INPUT_BUFF_CHUNK));
 
-        char* content_ptr = (char*)(comms.data + content_len);
+        fgets(comms.data + header_size, INPUT_BUFF_CHUNK - header_size, stdin);
 
-        char c = 0;
+        message_len = strlen(comms.data + header_size);
 
-        while((c = fgetc(stdin)) != '\n'){
+        content_len += message_len - 1;
 
-            *content_ptr = c; 
+        comms.data[content_len] = 0;
 
-            content_len += 1;
-
-            if(content_len == header_size + (INPUT_BUFF_CHUNK * chunk)){
-
-                chunk += 1;
-
-                comms.data = (uint8_t*)realloc(comms.data, header_size + (INPUT_BUFF_CHUNK * chunk));
-
-            }
-
-            content_ptr = (char*)(comms.data + content_len);
-            
-        }
+        comms.data = (uint8_t*)realloc(comms.data, content_len);
 
         if(strcmp(CLIENT_EXIT, (char*)(comms.data + header_size)) == 0){
 
@@ -271,8 +258,9 @@ int NCAT_client(){
 
             continue;
         }
-    
+
         free(comms.data);
+
 
     }   
 
@@ -456,7 +444,7 @@ void* NCAT_get_thread(){
 
                 int valread = 0;
 
-                uint8_t rhead = 0;
+                uint32_t rhead = 0;
                 
                 while(valread < sizeof(uint32_t)){
 
@@ -492,8 +480,6 @@ void* NCAT_get_thread(){
                         
                         _exit_prog = 1;
 
-                        free(comms.data);
-
                         break;
 
                     }
@@ -502,6 +488,8 @@ void* NCAT_get_thread(){
                 }
 
                 if(_exit_prog == 1){
+
+                   free(comms.data);   
 
                     continue;
                 }

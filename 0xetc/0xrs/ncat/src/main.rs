@@ -51,7 +51,7 @@ fn main() -> process::ExitCode {
 
         Ok(mut arcno) => {
 
-            let mut ncat_opts = arcno.clone();
+            let mut ncat_opts = arcno.as_ref().clone();
 
             match NCAT::runner(ncat_opts.clone()) {
 

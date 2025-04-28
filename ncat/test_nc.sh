@@ -31,18 +31,18 @@ else
     echo "test.txt exists"
 fi
 
-sudo ip netns exec net1 ./ncat.out -l 192.168.62.6 9999 > /dev/null 2>&1 &
+sudo ip netns exec net1 nc -l 192.168.62.6 9999 > /dev/null 2>&1 &
 
 sleep 1
 
 echo "running test..."
 
-time ./ncat.out 192.168.62.6 9999 < test.txt
+time nc 192.168.62.6 9999 < test.txt
 
 echo "test completed"
 
 sleep 1
 
-sudo pkill ncat.out 
+sudo pkill nc
 
 sudo ip netns del net1

@@ -1,6 +1,6 @@
 
 use std::{
-    fs, io::{self, BufRead, Read, Write}, net::{TcpListener, TcpStream}, process, sync::{mpsc::{self, Receiver, Sender}, Arc}, thread, time::Duration
+    fs, io::{self, BufRead, Read, Write}, net::{TcpListener, TcpStream}, process, sync::{Mutex, mpsc::{self, Receiver, SyncSender}, Arc}, thread, time::Duration
 };
 
 use byteorder::{LittleEndian, BigEndian, ByteOrder, ReadBytesExt};
@@ -104,20 +104,20 @@ pub fn parse_args(args: &Vec<String>) -> Result<Arc<NcatOptions>, String>{
     
 }
 
-pub fn runner(mut ncat_opts: Arc<NcatOptions>) -> Result<(), String> {
+pub fn runner(mut ncat_opts: NcatOptions) -> Result<(), String> {
 
-    let (tx, rx) = mpsc::channel::<NcatOptions>();
+    let (tx, rx) = mpsc::sync_channel::<NcatOptions>(1);
 
-    let (txStream, rxStream) = mpsc::channel::<TcpStream>();
+    let (txStream, rxStream) = mpsc::sync_channel::<TcpStream>(1);
 
 
     if ncat_opts.mode_client {
 
         let mut nncat_opts = ncat_opts.clone();
 
-        thread::spawn(move || get_thread(nncat_opts.clone(), tx, rxStream));
+        thread::spawn(move || get_thread(nncat_opts.clone(), Arc::new(tx), Arc::new(Mutex::new(rxStream))));
 
-        let result = client(ncat_opts.clone(), txStream);
+        let result = client(ncat_opts.clone(), Arc::new(txStream));
 
 
         return result;
@@ -129,7 +129,7 @@ pub fn runner(mut ncat_opts: Arc<NcatOptions>) -> Result<(), String> {
 
         let mut nncat_opts  = ncat_opts.clone(); 
 
-        thread::spawn(move || get_thread(nncat_opts.clone(), tx, rxStream));
+        thread::spawn(move || get_thread(nncat_opts.clone(), Arc::new(tx), Arc::new(Mutex::new(rxStream))));
 
         let mut ncat_opts_updated: NcatOptions = NcatOptions::new();
 
@@ -148,7 +148,7 @@ pub fn runner(mut ncat_opts: Arc<NcatOptions>) -> Result<(), String> {
 
             Err(e) => {
 
-                ncat_opts_updated = ncat_opts.as_ref().clone();
+                ncat_opts_updated = ncat_opts.clone();
 
                 let result = listen_and_serve(ncat_opts_updated.clone());
             
@@ -164,7 +164,7 @@ pub fn runner(mut ncat_opts: Arc<NcatOptions>) -> Result<(), String> {
 }
 
 
-fn client(mut ncat_opts: Arc<NcatOptions>, tx: Sender<TcpStream>) -> Result<(), String> {
+fn client(mut ncat_opts: NcatOptions, tx: Arc<SyncSender<TcpStream>>) -> Result<(), String> {
 
     let mut stream = TcpStream::connect((ncat_opts.host.as_str(), ncat_opts.port.to_string().parse::<u16>().unwrap())).unwrap();
 
@@ -242,6 +242,32 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
 
             Ok(mut io_stream) =>{
 
+                if ncat_opts.serve_content != "" {
+
+                    let mut header = [0u8; 4];
+
+                    let mut message_size = [0u32];
+
+                    message_size[0] = ncat_opts.serve_content.len() as u32;
+
+                    BigEndian::write_u32_into(&message_size, &mut header);
+
+                    let mut wbuff_vec = header.to_vec();
+
+                    let mut message_vec = ncat_opts.serve_content.as_bytes().to_vec();
+
+                    wbuff_vec.append(&mut message_vec);
+
+                    let wsize = io_stream.write(&wbuff_vec).unwrap();
+
+                    if wsize <= 0 {
+
+                        println!("failed to write serve content: {}", wsize);
+                    }
+
+
+                }
+
                 let mut header = [0u8; 4];
 
                 let mut count = 0u32;
@@ -250,6 +276,7 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
             
                     let mut valread = 0;
             
+                    let mut sout = 0;
             
                     loop {
             
@@ -258,7 +285,9 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
                         if n == 0 {
             
                             println!("read header error");
-            
+                            
+                            sout = -1;
+
                             break;
                         }
             
@@ -269,7 +298,11 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
                             break;
                         }
                     }
-            
+
+                    if sout < 0 {
+
+                        break;
+                    }
             
                     let mut datalen = BigEndian::read_u32(&mut header);
 
@@ -285,6 +318,8 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
             
                             println!("read data error");
             
+                            sout = -1;
+
                             break;
                         }
             
@@ -297,10 +332,13 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
             
                     }
             
+                    if sout < 0 {
+
+                        break;
+                    }
 
                     println!("{}", String::from_utf8(data).unwrap());
-            
-                    count += 1;
+
                 }
             
 
@@ -317,11 +355,11 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
 }
 
 
-async fn get_thread(mut ncat_opts: Arc<NcatOptions>, tx: Sender<NcatOptions>, rx: Receiver<TcpStream>) {
+fn get_thread(mut ncat_opts: NcatOptions, tx: Arc<SyncSender<NcatOptions>>, rx: Arc<Mutex<Receiver<TcpStream>>>) {
 
     if(ncat_opts.mode_client) {
 
-        let mut io_stream = rx.recv().unwrap();
+        let mut io_stream = rx.lock().unwrap().recv().unwrap();
 
         let mut header = [0u8; 4];
 
@@ -329,6 +367,7 @@ async fn get_thread(mut ncat_opts: Arc<NcatOptions>, tx: Sender<NcatOptions>, rx
 
             let mut valread = 0;
 
+            let mut sout = 0;
 
             loop {
 
@@ -337,7 +376,9 @@ async fn get_thread(mut ncat_opts: Arc<NcatOptions>, tx: Sender<NcatOptions>, rx
                 if n == 0 {
     
                     println!("read header error");
-    
+                    
+                    sout = -1;
+
                     break;
                 }
 
@@ -347,6 +388,11 @@ async fn get_thread(mut ncat_opts: Arc<NcatOptions>, tx: Sender<NcatOptions>, rx
 
                     break;
                 }
+            }
+
+            if sout < 0 {
+
+                break;
             }
 
 
@@ -364,6 +410,8 @@ async fn get_thread(mut ncat_opts: Arc<NcatOptions>, tx: Sender<NcatOptions>, rx
     
                     println!("read data error");
     
+                    sout = -1;
+
                     break;
                 }
 
@@ -376,15 +424,45 @@ async fn get_thread(mut ncat_opts: Arc<NcatOptions>, tx: Sender<NcatOptions>, rx
 
             }
 
+            if sout < 0 {
+
+                break;
+            }
+
             println!("{}", String::from_utf8(data).unwrap());
 
         }
 
     } else if (ncat_opts.mode_listen) {
 
+        let mut retstr = String::new();
+
+        let stdin = io::stdin();
+        for line in stdin.lock().lines() {
+
+            match line {
+
+                Ok(s) =>{
+
+                    retstr += s.as_str();
+
+                }
+    
+                Err(e) => {
+                    
+                    break;
+    
+                }
+            }
 
 
+        }
 
+        println!("loaded: {}", retstr);
+
+        ncat_opts.serve_content = retstr.clone();
+
+        tx.send(ncat_opts.clone());
 
     }
 
