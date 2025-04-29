@@ -451,7 +451,7 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 			printk("ivc: %02X%02X%02X%02X\n", auth_start[0], auth_start[1], auth_start[2], auth_start[3]);
 
 			memcpy(buffer_src, esph, esp_headerlen + esp_ivlen); // assoc len
-			//memset(buffer_src + esp_headerlen, 0, esp_ivlen);
+			memset(buffer_src + esp_headerlen, 0, esp_ivlen);
 			memcpy(buffer_src + esp_headerlen + esp_ivlen, esph + esp_headerlen + esp_ivlen, payloadlen); // cipher 	
 			memcpy(buffer_src + esp_headerlen + esp_ivlen + payloadlen, esph + esp_headerlen + esp_ivlen + payloadlen, esp_taglen); // tag
 			
@@ -496,7 +496,7 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 			sg_init_one(&sg_dst, buffer_dst, buffer_size);
 			sg_init_one(&sg_final, buffer_final, buffer_size);
 
-			aead_request_set_crypt(req, &sg_src, &sg_dst, esp_headerlen + payloadlen + esp_ivlen, nonce + nonce_saltlen);
+			aead_request_set_crypt(req, &sg_src, &sg_dst, payloadlen + esp_taglen, nonce + nonce_saltlen);
 			aead_request_set_ad(req, esp_headerlen + esp_ivlen); // assoc len		
 
 			memcpy(nonce, nonce_org, 12);
@@ -511,8 +511,8 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 			}
 
 			printk("kxfrm: decrypt success\n");
-/*
-			ih_dec = (struct iphdr*)buffer_dst;
+
+			ih_dec = (struct iphdr*)(buffer_dst + esp_headerlen + esp_ivlen);
 
 			int pkt_len = ntohs(ih_dec->tot_len);
 
@@ -521,7 +521,7 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 			printk("decap ip dst: %08x\n",ntohl(ih_dec->daddr));
 
 			printk("decap ip data len: %d\n", pkt_len);		
-			
+/*
 			int padtest = ((pkt_len + 2) % 16);
 			int padlen = 0;
 
@@ -545,26 +545,31 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 			pkt_len += 1;
 			printk("next header: %d\n", buffer_dst[pkt_len]);
 			pkt_len += 1;
-
 			printk("decap ip padded data len: %d\n", pkt_len);	
+*/			
 
 			if(ih_dec->protocol == IPPROTO_UDP){
 
-				uh_dec = (struct udphdr*)(buffer_dst + sizeof(struct iphdr));
+				uh_dec = (struct udphdr*)(buffer_dst + esp_headerlen + esp_ivlen + sizeof(struct iphdr));
 
 				printk("dec ip proto udp: dst port: %05i\n", ntohs(uh_dec->dest));
 
-				data_dec = (u8*)(buffer_dst + sizeof(struct iphdr) + sizeof(struct udphdr));
+				data_dec = (u8*)(buffer_dst + esp_headerlen + esp_ivlen + sizeof(struct iphdr) + sizeof(struct udphdr));
 
 				if(ntohs(uh_dec->dest) == 9999){
 
 					printk("9999: data: %s\n", data_dec);
 				}
 
-				memcpy(nonce, nonce_org, 16);
-				skcipher_request_set_crypt(req, &sg_dst, &sg_final, pkt_len, nonce);
+				memcpy(nonce, nonce_org, 12);
 
-				err = crypto_wait_req(crypto_skcipher_encrypt(req), &wait);
+				memcpy(buffer_dst, buffer_src, esp_headerlen + esp_ivlen);
+
+				aead_request_set_crypt(req, &sg_dst, &sg_final, payloadlen, nonce + nonce_saltlen);
+				aead_request_set_ad(req, esp_headerlen + esp_ivlen); // assoc len		
+	
+
+				err = crypto_wait_req(crypto_aead_encrypt(req), &wait);
 
 				if(err != 0){
 
@@ -577,21 +582,25 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 
 			if(ih_dec->protocol == IPPROTO_TCP){
 
-				th_dec = (struct tcphdr*)(buffer_dst + sizeof(struct iphdr));
+				th_dec = (struct tcphdr*)(buffer_dst + esp_headerlen + esp_ivlen + sizeof(struct iphdr));
 
 				printk("dec ip proto tcp: dst port: %05i\n", ntohs(th_dec->dest));
 
-				data_dec = (u8*)(buffer_dst + sizeof(struct iphdr) + sizeof(struct tcphdr));
+				data_dec = (u8*)(buffer_dst + esp_headerlen + esp_ivlen + sizeof(struct iphdr) + sizeof(struct tcphdr));
 			
 				if(ntohs(th_dec->dest) == 9999){
 
 					printk("9999: data: %s\n", data_dec);
 				}
 
-				memcpy(nonce, nonce_org, 16);
-				skcipher_request_set_crypt(req, &sg_dst, &sg_final, pkt_len, nonce);
+				memcpy(nonce, nonce_org, 12);
+				memcpy(buffer_dst, buffer_src, esp_headerlen + esp_ivlen);
 
-				err = crypto_wait_req(crypto_skcipher_encrypt(req), &wait);
+				aead_request_set_crypt(req, &sg_dst, &sg_final, payloadlen, nonce + nonce_saltlen);
+				aead_request_set_ad(req, esp_headerlen + esp_ivlen); // assoc len		
+	
+
+				err = crypto_wait_req(crypto_aead_encrypt(req), &wait);
 
 				if(err != 0){
 
@@ -605,7 +614,7 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 
 			printk("kxfrm: reencrpyted\n");
 
-			if(memcmp(buffer_src, buffer_final, 16) == 0){
+			if(memcmp(buffer_src + esp_headerlen + esp_ivlen, buffer_final + esp_headerlen + esp_ivlen, 16) == 0){
 
 				printk("kxfrm: reencrypted result match\n");
 
@@ -616,25 +625,20 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 				goto esp_end;
 			}
 
-			memcpy(buffer_src, esph, 8);
-			memcpy(buffer_src + 8, nonce_org, esp_ivlen);
-			memcpy(buffer_src + 8 + esp_ivlen, buffer_final, payloadlen);
+			if(memcmp(buffer_src + esp_headerlen + esp_ivlen + payloadlen, buffer_final + esp_headerlen + esp_ivlen + payloadlen, esp_taglen) == 0){
 
-			err = hmac_sha256(auth_key, 32, buffer_src, 8 + esp_ivlen + payloadlen, buffer_dst, 32);
+				printk("kxfrm: reencrypted result tag match\n");
 
-			if(err != 0){
+			} else {
 
-				printk("kxfrm: hmac failed: %d\n", err);
+				printk("kxfrm: reencrypted result tag doesn't match\n");
 
 				goto esp_end;
 			}
-
-
-			printk("kxfrm: hmac recalculated\n");
-
+		
 			
-			memcpy(esph + 8 + esp_ivlen, buffer_final, payloadlen);
-			memcpy(esph + 8 + esp_ivlen + payloadlen, buffer_dst, 16);
+			memcpy(esph + 8 + esp_ivlen, buffer_final + esp_headerlen + esp_ivlen, payloadlen);
+			memcpy(esph + 8 + esp_ivlen + payloadlen, buffer_final + esp_headerlen + esp_ivlen + payloadlen, esp_taglen);
 
 			printk("kxfrm: copied generated values\n");
 
@@ -647,7 +651,6 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 
 			printk("kxfrm: success\n");
 
-*/
 
 esp_end:
 			if (skcipher != NULL){

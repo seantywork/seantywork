@@ -19,16 +19,19 @@ static int run_kcrypt(void) {
 
     char *test_data = "this is test data for kcrypt";
     int test_datalen = 0;
+    int aes_gcm_assoclen = 16;
     int aes_gcm_taglen = 16;
-
+    int nonce_saltlen = 4;
     test_datalen = strlen(test_data);
 
     struct crypto_aead *tfm = NULL;
     struct aead_request *req = NULL;
     u8 *buffer = NULL;
+    u8 *buffer2 = NULL;
     size_t buffer_size = 1024;
     u8 *bp = NULL, *bp_end = NULL;
     struct scatterlist sg = { 0 };
+    struct scatterlist sg2 = { 0 };
     DECLARE_CRYPTO_WAIT(wait);
 
     u8 nonce[12] = { 
@@ -94,8 +97,16 @@ static int run_kcrypt(void) {
         goto kcrypt_end;
     }
 
-    memcpy(buffer, test_data, test_datalen);
-    bp = buffer;
+    buffer2 = kmalloc(buffer_size, GFP_KERNEL);
+    if (buffer2 == NULL) {
+        err = -ENOMEM;
+        printk("kcrypt: buffer alloc failed \n");
+        goto kcrypt_end;
+    }
+    
+    memset(buffer, 0, aes_gcm_assoclen);
+    memcpy(buffer + aes_gcm_assoclen, test_data, test_datalen);
+    bp = buffer + aes_gcm_assoclen;
     bp_end = bp + test_datalen;
 
     printk("original data: ");
@@ -106,11 +117,12 @@ static int run_kcrypt(void) {
 
 
     sg_init_one(&sg, buffer, buffer_size);
+    sg_init_one(&sg2, buffer2, buffer_size);
     aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
                                    CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
 
 
-    aead_request_set_crypt(req, &sg, &sg, test_datalen, nonce);
+    aead_request_set_crypt(req, &sg, &sg2, test_datalen, nonce + nonce_saltlen);
     aead_request_set_ad(req, aes_gcm_taglen);
 
     // aead_request_set_ad(req, 0);
@@ -123,7 +135,7 @@ static int run_kcrypt(void) {
 
     printk("cryptogram: ");
 
-    bp = buffer;
+    bp = buffer2 + aes_gcm_assoclen;
     bp_end = bp + test_datalen - aes_gcm_taglen;
     while (bp != bp_end) {
         printk("%c\n", isprint(*bp) ? *bp : '.');
@@ -138,7 +150,8 @@ static int run_kcrypt(void) {
         bp++;
     }
 
-    aead_request_set_crypt(req, &sg, &sg, test_datalen + aes_gcm_taglen, nonce);
+    aead_request_set_crypt(req, &sg2, &sg, test_datalen + aes_gcm_taglen, nonce + nonce_saltlen);
+    aead_request_set_ad(req, aes_gcm_taglen);
 
     /*
     err = crypto_aead_setkey(tfm, key, 36);
@@ -156,7 +169,7 @@ static int run_kcrypt(void) {
 
 
     printk("authenticated plaintext: ");
-    bp = buffer;
+    bp = buffer + aes_gcm_assoclen;
     bp_end = bp + test_datalen;
  
     while (bp != bp_end) {
@@ -177,6 +190,10 @@ kcrypt_end:
 
     if (buffer != NULL) {
         kfree(buffer);
+    }
+
+    if (buffer2 != NULL) {
+        kfree(buffer2);
     }
 
     return err;

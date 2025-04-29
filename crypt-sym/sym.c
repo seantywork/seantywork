@@ -172,6 +172,7 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
     unsigned char* gcm_iv;
 
+    unsigned char gcm_aad[8] = {0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,};
 
 
     fp = fopen(key_path, "r");
@@ -200,7 +201,8 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
     EVP_EncryptInit(ctx, NULL, gcm_key, gcm_iv);
 
-    // EVP_EncryptUpdate(ctx, NULL, &outlen, gcm_aad, sizeof(gcm_aad));
+    
+    // EVP_EncryptUpdate(ctx, NULL, &outlen, gcm_aad, 8);
 
     EVP_EncryptUpdate(ctx, outbuf, &outlen, enc_msg, enc_len);
 
@@ -343,6 +345,9 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
 
     unsigned char* gcm_tag;
 
+    unsigned char gcm_aad[8] = {0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,};
+
+
     fp = fopen(key_path, "r");
 
     fgets(gcm_key_hex, KEYLEN * 2 + 1, fp);
@@ -387,7 +392,7 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
 
     EVP_DecryptInit(ctx, NULL, gcm_key, gcm_iv);
 
-    //EVP_DecryptUpdate(ctx, NULL, &bin_outlen, gcm_aad, sizeof(gcm_aad));
+    //EVP_DecryptUpdate(ctx, NULL, &outlen, gcm_aad, 8);
 
     printf("%d\n", bin_outlen);
 
