@@ -213,8 +213,6 @@ fn client(mut ncat_opts: Arc<Mutex<NcatOptions>>, tx: Arc<SyncSender<TcpStream>>
         }
     }
 
-    println!("return");
-
     return Ok(());
 }
 
