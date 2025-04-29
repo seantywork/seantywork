@@ -12,7 +12,7 @@
 #include <openssl/hmac.h>
 #include <time.h>
 
-#define CBC 0
+#define CBC 1
 #define KEYBIT 256
 #define KEYLEN KEYBIT / 8
 #if CBC

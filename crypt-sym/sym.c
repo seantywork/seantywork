@@ -68,7 +68,9 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
 #if CBC
 
-    unsigned char inbuf[MAX_IN] = {0};
+    int aes_blocklen = 16;
+
+    unsigned char* inbuf = NULL;
 
     char cbc_key_hex[KEYLEN * 2 + 1];
     char cbc_iv_hex[IVLEN * 2 + 1];
@@ -86,9 +88,25 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
     int ciphertext_len;
 
-    enc_len = MAX_IN;
+    int padtest = enc_len % aes_blocklen;
+    int padlen = 0;
     
-    strcpy(inbuf, enc_msg);
+    if(padlen != 0){
+
+        padlen = aes_blocklen - padtest;
+    }
+
+    printf("padlen: %d\n", padlen);
+
+    enc_len += padlen;
+
+    inbuf = (unsigned char*)malloc(enc_len);
+
+    memset(inbuf, 0, enc_len);
+
+    memcpy(inbuf, enc_msg, enc_len - padlen);
+
+    //strcpy(inbuf, enc_msg);
 
     fp = fopen(key_path, "r");
 
@@ -143,6 +161,14 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
     result = HMAC(EVP_sha256(), cbc_auth, KEYLEN, outbuf, outlen, result, &resultlen);
 
+    if(result == NULL){
+
+        printf("hmac failed\n");
+    } else {
+
+        printf("hmac success\n");
+    }
+
     unsigned char* auth_result_hex = char2hex(resultlen, result);
 
     fp = fopen("./auth.data", "w");
@@ -151,7 +177,7 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
     fclose(fp);
 
-
+    free(inbuf);
 
     EVP_CIPHER_CTX_free(ctx);
     free(cbc_key);
@@ -267,9 +293,17 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
 
     char cbc_key_hex[KEYLEN * 2 + 1];
     char cbc_iv_hex[IVLEN * 2 + 1];
+    char cbc_auth_hex[KEYLEN * 2 + 1];
+    char cbc_auth_val_hex[1024 + 1];
+
 
     unsigned char* cbc_key;
     unsigned char* cbc_iv;
+    unsigned char* cbc_auth;
+    unsigned char* cbc_auth_val;
+
+    unsigned char *result = NULL;
+    unsigned int resultlen = -1;
 
     int plaintext_len;
 
@@ -286,9 +320,25 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
 
     fclose(fp);
 
+    fp = fopen("./auth_key.data", "r");
+
+    fgets(cbc_auth_hex, KEYLEN * 2 + 1, fp);
+
+    fclose(fp);
+
+    fp = fopen("./auth.data", "r");
+
+    fgets(cbc_auth_val_hex, 1024 + 1, fp);
+
+    fclose(fp);
+
     cbc_key = hex2char(&bin_outlen, (unsigned char*)cbc_key_hex);
 
     cbc_iv = hex2char(&bin_outlen, (unsigned char*)cbc_iv_hex);
+
+    cbc_auth = hex2char(&bin_outlen, (unsigned char*)cbc_auth_hex);
+
+    cbc_auth_val = hex2char(&bin_outlen, (unsigned char*)cbc_auth_val_hex);
 
     fp = fopen(enc_path, "r");
 
@@ -297,6 +347,27 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
     fclose(fp);
 
     unsigned char* inbuf_bin = hex2char(&bin_outlen, (unsigned char*)inbuf);
+
+    result = HMAC(EVP_sha256(), cbc_auth, KEYLEN, inbuf_bin, bin_outlen, result, &resultlen);
+
+    if(result == NULL){
+
+        printf("hmac failed\n");
+
+    } else {
+
+        printf("hmac success\n");
+
+    }
+
+    if(memcmp(result, cbc_auth_val, 32) == 0){
+
+        printf("authenticated\n");
+    } else {
+        printf("authentication failed\n");
+    }
+
+
 
     ctx = EVP_CIPHER_CTX_new();
 
