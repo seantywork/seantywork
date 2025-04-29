@@ -42,6 +42,7 @@ typedef struct __attribute__((packed)) NCAT_COMMS {
     uint8_t* data;
 } NCAT_COMMS;
 
+extern pthread_mutex_t no_locker;
 extern NCAT_OPTIONS ncat_opts;
 extern char* serve_content;
 extern int _exit_prog;

@@ -1,6 +1,6 @@
 
 use std::{
-    fs, io::{self, BufRead, Read, Write}, net::{TcpListener, TcpStream}, process, sync::{Mutex, mpsc::{self, Receiver, SyncSender}, Arc}, thread, time::Duration
+    fs, io::{self, BufRead, Read, Write}, mem, net::{TcpListener, TcpStream}, ops::Deref, process, sync::{mpsc::{self, Receiver, SyncSender}, Arc, Mutex}, thread, time::Duration
 };
 
 use byteorder::{LittleEndian, BigEndian, ByteOrder, ReadBytesExt};
@@ -63,7 +63,7 @@ pub fn keyboard_interrupt(){
 }
 
 
-pub fn parse_args(args: &Vec<String>) -> Result<Arc<NcatOptions>, String>{
+pub fn parse_args(args: &Vec<String>) -> Result<Arc<Mutex<NcatOptions>>, String>{
 
     let mut no = NcatOptions::new();
 
@@ -98,64 +98,55 @@ pub fn parse_args(args: &Vec<String>) -> Result<Arc<NcatOptions>, String>{
     no.port = args[arglen_nohp + 1].clone();
 
 
-    let retno = Arc::new(no);
+    let retno = Arc::new(Mutex::new(no));
 
     return Ok(retno);
     
 }
 
-pub fn runner(mut ncat_opts: NcatOptions) -> Result<(), String> {
+pub fn runner(mut ncat_opts: Arc<Mutex<NcatOptions>>) -> Result<(), String> {
 
-    let (tx, rx) = mpsc::sync_channel::<NcatOptions>(1);
+    let (txString, rxString) = mpsc::sync_channel::<String>(1);
 
     let (txStream, rxStream) = mpsc::sync_channel::<TcpStream>(1);
 
+    let mut nolock = ncat_opts.lock().unwrap();
 
-    if ncat_opts.mode_client {
+    let mut nopts = ncat_opts.clone();
 
-        let mut nncat_opts = ncat_opts.clone();
+    if nolock.mode_client {
 
-        thread::spawn(move || get_thread(nncat_opts.clone(), Arc::new(tx), Arc::new(Mutex::new(rxStream))));
+        mem::drop(nolock);
+
+        thread::spawn(move || get_thread(nopts.clone(), Arc::new(Mutex::new(rxStream)), Arc::new(txString)));
 
         let result = client(ncat_opts.clone(), Arc::new(txStream));
-
 
         return result;
 
     }
 
 
-    if ncat_opts.mode_listen {
+    if nolock.mode_listen {
 
-        let mut nncat_opts  = ncat_opts.clone(); 
+        mem::drop(nolock);
 
-        thread::spawn(move || get_thread(nncat_opts.clone(), Arc::new(tx), Arc::new(Mutex::new(rxStream))));
-
-        let mut ncat_opts_updated: NcatOptions = NcatOptions::new();
+        thread::spawn(move || get_thread(nopts.clone(), Arc::new(Mutex::new(rxStream)), Arc::new(txString)));
 
         let timeout = Duration::new(0, 500000000);
 
-        match rx.recv_timeout(timeout) {
+        let done = rxString.recv_timeout(timeout).unwrap();
 
-            Ok(received) => {
+        if done.as_str() == "done" {
 
-                ncat_opts_updated = received;
+            //let mut tmp = ncat_opts.lock().unwrap().serve_content.clone();
 
-                let result = listen_and_serve(ncat_opts_updated.clone());
+            //println!("done: {}", tmp);
+        }
 
-                return result;
-            }
+        let result = listen_and_serve(ncat_opts.clone());
 
-            Err(e) => {
-
-                ncat_opts_updated = ncat_opts.clone();
-
-                let result = listen_and_serve(ncat_opts_updated.clone());
-            
-                return result;
-            }
-        };
-
+        return result;
 
     }
 
@@ -164,9 +155,11 @@ pub fn runner(mut ncat_opts: NcatOptions) -> Result<(), String> {
 }
 
 
-fn client(mut ncat_opts: NcatOptions, tx: Arc<SyncSender<TcpStream>>) -> Result<(), String> {
+fn client(mut ncat_opts: Arc<Mutex<NcatOptions>>, tx: Arc<SyncSender<TcpStream>>) -> Result<(), String> {
 
-    let mut stream = TcpStream::connect((ncat_opts.host.as_str(), ncat_opts.port.to_string().parse::<u16>().unwrap())).unwrap();
+    let mut nolock = ncat_opts.lock().unwrap();
+
+    let mut stream = TcpStream::connect((nolock.host.as_str(), nolock.port.to_string().parse::<u16>().unwrap())).unwrap();
 
     let mut io_stream = stream.try_clone().unwrap();
 
@@ -226,13 +219,15 @@ fn client(mut ncat_opts: NcatOptions, tx: Arc<SyncSender<TcpStream>>) -> Result<
 }
 
 
-fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
+fn listen_and_serve(mut ncat_opts: Arc<Mutex<NcatOptions>>) -> Result<(), String> {
 
-    let mut listenaddr = ncat_opts.host.clone();
+    let mut nolock = ncat_opts.lock().unwrap();
+
+    let mut listenaddr = nolock.host.clone();
 
     listenaddr += &":";
 
-    listenaddr += ncat_opts.port.as_str();
+    listenaddr += nolock.port.as_str();
 
     let listener = TcpListener::bind(listenaddr).unwrap();
 
@@ -242,19 +237,19 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
 
             Ok(mut io_stream) =>{
 
-                if ncat_opts.serve_content != "" {
+                if nolock.serve_content != "" {
 
                     let mut header = [0u8; 4];
 
                     let mut message_size = [0u32];
 
-                    message_size[0] = ncat_opts.serve_content.len() as u32;
+                    message_size[0] = nolock.serve_content.len() as u32;
 
                     BigEndian::write_u32_into(&message_size, &mut header);
 
                     let mut wbuff_vec = header.to_vec();
 
-                    let mut message_vec = ncat_opts.serve_content.as_bytes().to_vec();
+                    let mut message_vec = nolock.serve_content.as_bytes().to_vec();
 
                     wbuff_vec.append(&mut message_vec);
 
@@ -269,8 +264,6 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
                 }
 
                 let mut header = [0u8; 4];
-
-                let mut count = 0u32;
 
                 loop {
             
@@ -355,9 +348,13 @@ fn listen_and_serve(mut ncat_opts: NcatOptions) -> Result<(), String> {
 }
 
 
-fn get_thread(mut ncat_opts: NcatOptions, tx: Arc<SyncSender<NcatOptions>>, rx: Arc<Mutex<Receiver<TcpStream>>>) {
+fn get_thread(mut ncat_opts: Arc<Mutex<NcatOptions>>, rx: Arc<Mutex<Receiver<TcpStream>>>, tx: Arc<SyncSender<String>>) {
 
-    if(ncat_opts.mode_client) {
+    let mut nolock = ncat_opts.lock().unwrap();
+
+    if(nolock.mode_client) {
+
+        mem::drop(nolock);
 
         let mut io_stream = rx.lock().unwrap().recv().unwrap();
 
@@ -433,7 +430,7 @@ fn get_thread(mut ncat_opts: NcatOptions, tx: Arc<SyncSender<NcatOptions>>, rx: 
 
         }
 
-    } else if (ncat_opts.mode_listen) {
+    } else if (nolock.mode_listen) {
 
         let mut retstr = String::new();
 
@@ -460,9 +457,9 @@ fn get_thread(mut ncat_opts: NcatOptions, tx: Arc<SyncSender<NcatOptions>>, rx: 
 
         println!("loaded: {}", retstr);
 
-        ncat_opts.serve_content = retstr.clone();
+        nolock.serve_content = retstr.clone();
 
-        tx.send(ncat_opts.clone());
+        tx.send("done".to_string());
 
     }
 

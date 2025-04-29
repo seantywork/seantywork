@@ -1,11 +1,12 @@
 #include "ncat.h"
 
-
+pthread_mutex_t no_locker;
 NCAT_OPTIONS ncat_opts;
 char* serve_content = NULL;
 int _exit_prog = 0;
 
 int main(int argc, char** argv){
+
 
 
     if(argc < 2){
@@ -20,7 +21,7 @@ int main(int argc, char** argv){
 
     }
 
-  
+    pthread_mutex_init(&no_locker, NULL);
 
     int parsed = NCAT_parse_args(argc - 1, &argv[1]);
 

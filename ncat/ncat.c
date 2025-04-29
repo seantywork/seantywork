@@ -186,8 +186,9 @@ int NCAT_runner(){
 
 int NCAT_client(){
 
+    int result = 0;
 
-    int sockfd;
+    int sockfd = -1;
     struct sockaddr_in servaddr;
     in_addr_t s_addr = inet_addr(ncat_opts.host);
     int addr_port = atoi(ncat_opts.port);
@@ -201,10 +202,13 @@ int NCAT_client(){
 
     memset(&comms, 0, sizeof(comms));
 
+    pthread_mutex_lock(&no_locker);
+
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
         fprintf(stderr, "socket creation failed\n");
-        return -1;
+        result = -1;
+        goto cli_out;
     }
  
     servaddr.sin_family = AF_INET;
@@ -213,7 +217,8 @@ int NCAT_client(){
 
     if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr))!= 0) {
         fprintf(stderr, "connection failed\n");
-        return -1;
+        result = -1;
+        goto cli_out;
     }
 
     ncat_opts._client_sockfd = sockfd;
@@ -241,7 +246,6 @@ int NCAT_client(){
         if(strcmp(CLIENT_EXIT, (char*)(comms.data + header_size)) == 0){
 
             keepalive = 0;
-            free(comms.data);
             continue;
         }
 
@@ -252,10 +256,7 @@ int NCAT_client(){
 
         if(wb <= 0){
 
-            free(comms.data);
-
             keepalive = 0;
-
             continue;
         }
 
@@ -266,17 +267,30 @@ int NCAT_client(){
 
     ncat_opts._client_sock_ready = 0;
 
-    close(sockfd);
+cli_out:
+
+
+    pthread_mutex_unlock(&no_locker);
+
+    if(sockfd != -1){
+
+        close(sockfd);
+    }
+
+    if(comms.data != NULL){
+
+        free(comms.data);
+    }
 
  
-    return 0;
+    return result;
 }
 
 
 int NCAT_listen_and_serve(){
-
     
-    int sockfd, connfd; 
+    int result = 0;
+    int sockfd, connfd = -1; 
     struct sockaddr_in servaddr, cli; 
 
     in_addr_t s_addr = inet_addr(ncat_opts.host);
@@ -294,7 +308,8 @@ int NCAT_listen_and_serve(){
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
     if (sockfd == -1) { 
         fprintf(stderr,"socket creation failed...\n"); 
-        return -1;
+        result = -1;
+        goto srv_out;
     } 
 
     servaddr.sin_family = AF_INET; 
@@ -303,18 +318,21 @@ int NCAT_listen_and_serve(){
    
     if ((bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr))) != 0) { 
         fprintf(stderr, "socket bind failed\n"); 
-        return -1; 
+        result = -1;
+        goto srv_out;
     } 
    
 
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0){
         fprintf(stderr, "socket opt failed\n"); 
-        return -1; 
+        result = -1;
+        goto srv_out; 
     }
 
     if ((listen(sockfd, 1)) != 0) { 
         fprintf(stderr,"socket listen failed\n"); 
-        return -1; 
+        result = -1;
+        goto srv_out;
     } 
     
 
@@ -324,7 +342,8 @@ int NCAT_listen_and_serve(){
         connfd = accept(sockfd, (struct sockaddr*)&cli, (socklen_t*)&clilen); 
         if (connfd < 0) { 
             fprintf(stderr, "server accept failed\n"); 
-            return -1; 
+            result = -1;
+            goto srv_out; 
         } 
     
 
@@ -397,8 +416,6 @@ int NCAT_listen_and_serve(){
 
                 if (rb <= 0){
 
-                    free(comms.data);
-
                     keepalive = 0;
                     break;
 
@@ -421,7 +438,20 @@ int NCAT_listen_and_serve(){
 
     }
 
-    close(sockfd);
+srv_out:
+
+    pthread_mutex_lock(&no_locker);
+
+    if(sockfd < -1){
+
+        close(sockfd);
+    }
+
+    if(comms.data != NULL){
+
+        free(comms.data);
+    }
+
 
     return 0;
 }
@@ -430,7 +460,11 @@ int NCAT_listen_and_serve(){
 
 void* NCAT_get_thread(){
 
+    pthread_mutex_lock(&no_locker);
+
     if(ncat_opts.mode_client){
+
+        pthread_mutex_unlock(&no_locker);
 
         NCAT_COMMS comms;
 
@@ -562,6 +596,8 @@ void* NCAT_get_thread(){
             printf("loaded server text: \n%s\n", serve_content);
             write(ncat_opts._server_sig[1], SERVER_SIG_DONE, SERVER_SIG_LEN);
         }
+
+        pthread_mutex_unlock(&no_locker);
 
     }
 
