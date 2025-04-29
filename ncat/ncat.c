@@ -150,14 +150,14 @@ int NCAT_runner(){
 
         }
 
-        if(strcmp(SERVER_SIG_DONE, sig_result) != 0){
+        if(strncmp(SERVER_SIG_DONE, sig_result, SERVER_SIG_LEN) != 0){
 
             if(serve_content != NULL){
 
                 free(serve_content);
                 serve_content = NULL;
             }
-        }
+        } 
 
         close(ncat_opts._server_sig[0]);
 
@@ -225,6 +225,8 @@ int NCAT_client(){
     ncat_opts._client_sock_ready = 1;
 
 
+    pthread_mutex_unlock(&no_locker);
+
     while(keepalive){
 
         content_len = header_size + 0;
@@ -269,9 +271,6 @@ int NCAT_client(){
 
 cli_out:
 
-
-    pthread_mutex_unlock(&no_locker);
-
     if(sockfd != -1){
 
         close(sockfd);
@@ -306,6 +305,9 @@ int NCAT_listen_and_serve(){
     memset(&comms, 0, sizeof(comms));
 
     pthread_mutex_lock(&no_locker);
+
+    pthread_mutex_unlock(&no_locker);
+
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
     if (sockfd == -1) { 
@@ -344,11 +346,10 @@ int NCAT_listen_and_serve(){
         connfd = accept(sockfd, (struct sockaddr*)&cli, (socklen_t*)&clilen); 
         if (connfd < 0) { 
             fprintf(stderr, "server accept failed\n"); 
-            result = -1;
-            goto srv_out; 
+            continue;
         } 
     
-
+        
         int valwrite =0;
 
         if(serve_content != NULL){
@@ -368,6 +369,7 @@ int NCAT_listen_and_serve(){
                 fprintf(stderr,"write: %d\n", valwrite);
 
             }
+
 
             free(comms.data);
         }
@@ -441,8 +443,6 @@ int NCAT_listen_and_serve(){
     }
 
 srv_out:
-
-    pthread_mutex_unlock(&no_locker);
 
     if(sockfd < -1){
 

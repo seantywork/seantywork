@@ -180,6 +180,8 @@ fn client(mut ncat_opts: Arc<Mutex<NcatOptions>>, tx: Arc<SyncSender<TcpStream>>
 
     };
 
+    mem::drop(nolock);
+
     let stdin = io::stdin();
     for line in stdin.lock().lines() {
         
@@ -223,11 +225,15 @@ fn listen_and_serve(mut ncat_opts: Arc<Mutex<NcatOptions>>) -> Result<(), String
 
     let mut listenaddr = nolock.host.clone();
 
+    let mut serve_content = nolock.serve_content.clone();
+
     listenaddr += &":";
 
     listenaddr += nolock.port.as_str();
 
     let listener = TcpListener::bind(listenaddr).unwrap();
+
+    mem::drop(nolock);
 
     for stream in listener.incoming() {
 
@@ -235,19 +241,19 @@ fn listen_and_serve(mut ncat_opts: Arc<Mutex<NcatOptions>>) -> Result<(), String
 
             Ok(mut io_stream) =>{
 
-                if nolock.serve_content != "" {
+                if serve_content != "" {
 
                     let mut header = [0u8; 4];
 
                     let mut message_size = [0u32];
 
-                    message_size[0] = nolock.serve_content.len() as u32;
+                    message_size[0] = serve_content.len() as u32;
 
                     BigEndian::write_u32_into(&message_size, &mut header);
 
                     let mut wbuff_vec = header.to_vec();
 
-                    let mut message_vec = nolock.serve_content.as_bytes().to_vec();
+                    let mut message_vec = serve_content.as_bytes().to_vec();
 
                     wbuff_vec.append(&mut message_vec);
 
@@ -297,7 +303,7 @@ fn listen_and_serve(mut ncat_opts: Arc<Mutex<NcatOptions>>) -> Result<(), String
             
                     let mut datalen = BigEndian::read_u32(&mut header);
 
-                    let mut data = vec![0; datalen as usize];;
+                    let mut data = vec![0; datalen as usize];
         
                     valread = 0;
             
@@ -393,7 +399,7 @@ fn get_thread(mut ncat_opts: Arc<Mutex<NcatOptions>>, rx: Arc<Mutex<Receiver<Tcp
 
             let mut datalen = BigEndian::read_u32(&mut header);
 
-            let mut data = Vec::<u8>::with_capacity(datalen as usize);
+            let mut data = vec![0; datalen as usize];
 
             valread = 0;
 
