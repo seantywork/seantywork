@@ -305,6 +305,8 @@ int NCAT_listen_and_serve(){
 
     memset(&comms, 0, sizeof(comms));
 
+    pthread_mutex_lock(&no_locker);
+
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
     if (sockfd == -1) { 
         fprintf(stderr,"socket creation failed...\n"); 
@@ -440,7 +442,7 @@ int NCAT_listen_and_serve(){
 
 srv_out:
 
-    pthread_mutex_lock(&no_locker);
+    pthread_mutex_unlock(&no_locker);
 
     if(sockfd < -1){
 
