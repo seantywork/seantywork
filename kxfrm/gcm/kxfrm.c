@@ -521,32 +521,35 @@ void kxfrm_hw_tx(char *buf, int len, struct net_device *dev){
 			printk("decap ip dst: %08x\n",ntohl(ih_dec->daddr));
 
 			printk("decap ip data len: %d\n", pkt_len);		
-/*
-			int padtest = ((pkt_len + 2) % 16);
-			int padlen = 0;
 
-			if(padtest != 0){
+			int pad_len = buffer_dst[esp_headerlen + esp_ivlen + payloadlen - 2];
+			int next_header = buffer_dst[esp_headerlen + esp_ivlen + payloadlen - 1];
 
-				padlen = 16 - padtest;
-				printk("decap pad exists: \n");
+			printk("total padlen: %d\n", pad_len);
+			printk("next header: %d\n", next_header);
 
-				printk("==========PAD START==========\n");
-				for(int k = 0 ; k < padlen; k++){
+			printk("==========PAD START==========\n");
+			for(int k = 0 ; k < pad_len; k++){
 
-					printk("%d\n", buffer_dst[pkt_len]);
+				printk("%d\n", buffer_dst[esp_headerlen + esp_ivlen + pkt_len + k]);
 
-					pkt_len += 1;
-				}
-				printk("==========PAD END==========\n");
-
+				pkt_len += 1;
 			}
+			printk("==========PAD END==========\n");
+
+			pkt_len += 1;
+			pkt_len += 1;
 			
-			printk("total padlen: %d\n", buffer_dst[pkt_len]);
-			pkt_len += 1;
-			printk("next header: %d\n", buffer_dst[pkt_len]);
-			pkt_len += 1;
 			printk("decap ip padded data len: %d\n", pkt_len);	
-*/			
+
+			if(pkt_len == payloadlen) {
+
+				printk("decap: payloadlen correct: %d\n", pkt_len);
+			} else {
+
+				printk("decap: payloadlen incorrect: %d != %d\n", pkt_len, payloadlen);
+			}
+	
 
 			if(ih_dec->protocol == IPPROTO_UDP){
 
