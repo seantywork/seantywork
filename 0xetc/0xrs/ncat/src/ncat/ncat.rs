@@ -135,7 +135,7 @@ pub fn runner(mut ncat_opts: Arc<Mutex<NcatOptions>>) -> Result<(), String> {
 
         let timeout = Duration::new(0, 50000000);
 
-        let done = rxString.recv_timeout(timeout).unwrap();
+        let done = rxString.recv_timeout(timeout).unwrap_or("".to_string());
 
         if done.as_str() == "done" {
 
@@ -194,19 +194,18 @@ fn client(mut ncat_opts: Arc<Mutex<NcatOptions>>, tx: Arc<SyncSender<TcpStream>>
 
         }
 
-        let mut header = [0u8; 4];
-
         let mut message_size = [0u32];
 
         message_size[0] = message.len() as u32;
+        let mut totalsize = 4 + message_size[0];
 
-        BigEndian::write_u32_into(&message_size, &mut header);
+        let mut wbuff_vec = vec![0u8; totalsize as usize];
 
-        let mut wbuff_vec = header.to_vec();
+        BigEndian::write_u32_into(&message_size, &mut wbuff_vec[..4]);
 
-        let mut message_vec = message.as_bytes().to_vec();
+        //wbuff_vec.append(&mut message.as_bytes().to_vec());
 
-        wbuff_vec.append(&mut message_vec);
+        wbuff_vec[4..].copy_from_slice(message.as_bytes());
 
         let wsize = io_stream.write(&wbuff_vec).unwrap();
 
@@ -236,6 +235,7 @@ fn listen_and_serve(mut ncat_opts: Arc<Mutex<NcatOptions>>) -> Result<(), String
     let listener = TcpListener::bind(listenaddr).unwrap();
 
     mem::drop(nolock);
+
 
     for stream in listener.incoming() {
 
@@ -438,6 +438,8 @@ fn get_thread(mut ncat_opts: Arc<Mutex<NcatOptions>>, rx: Arc<Mutex<Receiver<Tcp
 
     } else if (nolock.mode_listen) {
 
+        mem::drop(nolock);
+
         let mut retstr = String::new();
 
         let stdin = io::stdin();
@@ -463,7 +465,7 @@ fn get_thread(mut ncat_opts: Arc<Mutex<NcatOptions>>, rx: Arc<Mutex<Receiver<Tcp
 
         println!("loaded: {}", retstr);
 
-        nolock.serve_content = retstr.clone();
+        ncat_opts.lock().unwrap().serve_content = retstr.clone();
 
         tx.send("done".to_string());
 
