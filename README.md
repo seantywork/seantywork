@@ -13011,6 +13011,12 @@ jdbc:mysql://localhost:3306/db?allowPublicKeyRetrieval=true
 iftop
 
 ```
+# PERF
+
+```shell
+
+perf stat -d command
+```
 
 # IPERF
 
