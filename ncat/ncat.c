@@ -247,7 +247,7 @@ int NCAT_client(){
 
         message_len = strlen(comms.data + header_size);
 
-        content_len += message_len - 1;
+        content_len += message_len - 1; // because of newline
 
         comms.data[content_len] = 0;
 
