@@ -37,7 +37,7 @@ sleep 1
 
 echo "running test..."
 
-time ./ncat.out 192.168.62.6 9999 < test.txt
+sudo perf stat -d ./ncat.out 192.168.62.6 9999 < test.txt
 
 echo "test completed"
 

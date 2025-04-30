@@ -133,7 +133,7 @@ pub fn runner(mut ncat_opts: Arc<Mutex<NcatOptions>>) -> Result<(), String> {
 
         thread::spawn(move || get_thread(nopts.clone(), Arc::new(Mutex::new(rxStream)), Arc::new(txString)));
 
-        let timeout = Duration::new(0, 500000000);
+        let timeout = Duration::new(0, 50000000);
 
         let done = rxString.recv_timeout(timeout).unwrap();
 
@@ -143,6 +143,7 @@ pub fn runner(mut ncat_opts: Arc<Mutex<NcatOptions>>) -> Result<(), String> {
 
             //println!("done: {}", tmp);
         }
+
 
         let result = listen_and_serve(ncat_opts.clone());
 
@@ -213,6 +214,7 @@ fn client(mut ncat_opts: Arc<Mutex<NcatOptions>>, tx: Arc<SyncSender<TcpStream>>
 
             println!("failed to write: {}", wsize);
         }
+
     }
 
     return Ok(());

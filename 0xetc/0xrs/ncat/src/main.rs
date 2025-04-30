@@ -25,7 +25,7 @@ fn main() -> process::ExitCode {
         return process::ExitCode::from(1u8);
     }
 
-
+    
     match ctrlc::set_handler(move || {
         NCAT::keyboard_interrupt();
     }) {

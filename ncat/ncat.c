@@ -198,11 +198,14 @@ int NCAT_client(){
     int content_len = 0;
     int message_len = 0;
 
+    pthread_mutex_t stdlock;
+
+    pthread_mutex_init(&stdlock, NULL);
+
     int header_size = sizeof(uint32_t);
 
     memset(&comms, 0, sizeof(comms));
 
-    pthread_mutex_lock(&no_locker);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
@@ -224,8 +227,7 @@ int NCAT_client(){
     ncat_opts._client_sockfd = sockfd;
     ncat_opts._client_sock_ready = 1;
 
-
-    pthread_mutex_unlock(&no_locker);
+    //uint8_t data_static[4 + INPUT_BUFF_CHUNK] = {0};
 
     while(keepalive){
 
@@ -233,9 +235,15 @@ int NCAT_client(){
 
         comms.data = (uint8_t*)malloc(header_size + (INPUT_BUFF_CHUNK));
 
+//      comms.data = data_static;
+
         memset(comms.data, 0, header_size + (INPUT_BUFF_CHUNK));
 
+        pthread_mutex_lock(&stdlock);
+
         fgets(comms.data + header_size, INPUT_BUFF_CHUNK - header_size, stdin);
+
+        pthread_mutex_unlock(&stdlock);
 
         message_len = strlen(comms.data + header_size);
 
@@ -248,8 +256,10 @@ int NCAT_client(){
         if(strcmp(CLIENT_EXIT, (char*)(comms.data + header_size)) == 0){
 
             keepalive = 0;
+//            comms.data = NULL;
             continue;
         }
+
 
         comms.datalen = htonl(content_len - header_size);
         memcpy(comms.data, &comms.datalen, header_size);
@@ -304,9 +314,6 @@ int NCAT_listen_and_serve(){
 
     memset(&comms, 0, sizeof(comms));
 
-    pthread_mutex_lock(&no_locker);
-
-    pthread_mutex_unlock(&no_locker);
 
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
@@ -462,11 +469,7 @@ srv_out:
 
 void* NCAT_get_thread(){
 
-    pthread_mutex_lock(&no_locker);
-
     if(ncat_opts.mode_client){
-
-        pthread_mutex_unlock(&no_locker);
 
         NCAT_COMMS comms;
 
@@ -599,7 +602,6 @@ void* NCAT_get_thread(){
             write(ncat_opts._server_sig[1], SERVER_SIG_DONE, SERVER_SIG_LEN);
         }
 
-        pthread_mutex_unlock(&no_locker);
 
     }
 

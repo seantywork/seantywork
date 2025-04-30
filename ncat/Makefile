@@ -1,4 +1,4 @@
-GCC_FLAGS := -Wall -O2
+GCC_FLAGS := -Wall -O2 -static
 
 
 all: ncat.o

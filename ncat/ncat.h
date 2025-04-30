@@ -18,11 +18,11 @@
 #include <fcntl.h>
 #include <poll.h>
 
-#define INPUT_BUFF_CHUNK 1024
+#define INPUT_BUFF_CHUNK 1024 * 8
 #define SERVER_SIG_DONE "done"
 #define SERVER_SIG_LEN     4
 #define SERVER_SIG_TIMEOUT_COUNT 5
-#define SERVER_SIG_TIMEOUT_MS 100
+#define SERVER_SIG_TIMEOUT_MS 10
 #define CLIENT_EXIT     "exit"
 
 typedef struct NCAT_OPTIONS {
@@ -42,7 +42,7 @@ typedef struct __attribute__((packed)) NCAT_COMMS {
     uint8_t* data;
 } NCAT_COMMS;
 
-extern pthread_mutex_t no_locker;
+
 extern NCAT_OPTIONS ncat_opts;
 extern char* serve_content;
 extern int _exit_prog;
