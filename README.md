@@ -2093,83 +2093,11 @@ sudo iptables -I FORWARD -p tcp -j NFQUEUE --queue-num 100
 sudo apt install libnetfilter-queue-dev
 
 ```
-```shell
-
-# gateway - NAT scenario
-
-# 192.168.122.87 being external ip on ens3
-
-sudo ip netns add net1
-
-sudo ip link add dev veth1 type veth peer name veth2 netns net1
-
-sudo ip link set up veth1
-
-sudo ip netns exec net1 ip link set up veth2
-
-sudo ip addr add 192.168.62.5/24 dev veth1
-
-sudo ip netns exec net1 ip addr add 192.168.62.6/24 dev veth2
-
-sudo ip netns exec net1 ip route add default via 192.168.62.5 dev veth2
-
-
-sudo sysctl -w net.ipv4.ip_forward=1
-
-#tcp
-
-sudo iptables -t nat -I PREROUTING -p tcp --dport 8888 -j DNAT --to-destination 192.168.62.6:8000
-
-
-sudo iptables -I FORWARD -p tcp --syn -i ens3 -m conntrack --ctstate NEW -j ACCEPT
-
-sudo iptables -I FORWARD -p tcp -i ens3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-sudo iptables -I FORWARD -p tcp --syn -o ens3 -m conntrack --ctstate NEW -j ACCEPT
-
-sudo iptables -I FORWARD -p tcp -o ens3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-
-sudo iptables -P FORWARD DROP
-
-# for lan out
-
-#sudo iptables -t nat -I POSTROUTING -p tcp -o ens3 -j SNAT --to-source 192.168.122.87
-
-# or
-
-sudo iptables -t nat -I POSTROUTING -p tcp -o ens3 -j MASQUERADE
-
-
-
-#udp
-
-sudo iptables -t nat -I PREROUTING -p udp --dport 8888 -j DNAT --to-destination 192.168.62.6:8000
-
-sudo iptables -I FORWARD -p udp -i ens3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-sudo iptables -I FORWARD -p udp -i ens3 -m conntrack --ctstate NEW -j ACCEPT
-
-sudo iptables -I FORWARD -p udp -o ens3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-sudo iptables -I FORWARD -p udp -o ens3 -m conntrack --ctstate NEW -j ACCEPT
-
-
-# for lan out
-
-#sudo iptables -t nat -I POSTROUTING -p udp -o ens3 -j SNAT --to-source 192.168.122.87
-
-# or
-
-sudo iptables -t nat -I POSTROUTING -p udp -o ens3 -j MASQUERADE
-
-```
 
 
 ```shell
 
-# gateway - NAT to NAT scenario
-
+# gateway - route scenario
 sudo ip netns add net1
 
 sudo ip link add dev veth1 type veth peer name veth2 netns net1
@@ -2197,27 +2125,17 @@ sudo ip netns exec net2 ip addr add 192.168.26.6/24 dev veth22
 
 sudo sysctl -w net.ipv4.ip_forward=1
 
+sudo iptables -P FORWARD ACCEPT
 
 sudo ip netns exec net1 ip route add 192.168.26.0/24 via 192.168.62.5 dev veth2
 
 sudo ip netns exec net2 ip route add 192.168.62.0/24 via 192.168.26.5 dev veth22
 
-
-# test with
-
-sudo ip netns exec net1 nc -l 192.168.62.6 9999
-
-sudo ip netns exec net2 nc 192.168.62.6 9999
-
 ```
 
 ```shell
 
-# gateway - NAT in NAT inline scenario
-
-# resource using the same default gateway
-
-# namespace net1 is virtual gateway (inline, NAT in gateway)
+# gateway - forward scenario
 
 sudo ip netns add net1
 
@@ -2226,6 +2144,79 @@ sudo ip link add dev veth1 type veth peer name veth2 netns net1
 sudo ip link set up veth1
 
 sudo ip netns exec net1 ip link set up veth2
+
+sudo ip netns exec net1 ip link set up lo
+
+sudo ip addr add 192.168.62.5/24 dev veth1
+
+sudo ip netns exec net1 ip addr add 192.168.62.6/24 dev veth2
+
+sudo ip netns exec net1 ip route add default via 192.168.62.5 dev veth2
+
+# sudo ip route add 192.168.64.0/24 via 192.168.62.6 dev veth1
+
+sudo ip netns add net2
+
+sudo ip link add dev veth3 type veth peer name veth4 netns net2
+
+sudo ip link set veth3 netns net1
+
+sudo ip netns exec net1 ip link set up veth3
+
+sudo ip netns exec net2 ip link set up veth4
+
+sudo ip netns exec net1 ip addr add 192.168.64.1/24 dev veth3
+
+sudo ip netns exec net2 ip addr add 192.168.64.6/24 dev veth4
+
+sudo ip netns exec net2 ip route add default via 192.168.64.6 dev veth4
+
+sudo ip netns exec net1 ip route add 192.168.64.0/24 via 192.168.64.1 dev veth3
+
+sudo ip netns exec net1 sysctl -w net.ipv4.ip_forward=1
+
+
+#tcp
+
+sudo ip netns exec net1 iptables -t nat -I PREROUTING -p tcp --dport 8888 -j DNAT --to-destination 192.168.64.6:8000
+
+
+sudo ip netns exec net1 iptables -I FORWARD -p tcp --syn -i veth3 -m conntrack --ctstate NEW -j ACCEPT
+
+sudo ip netns exec net1 iptables -I FORWARD -p tcp -i veth3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+sudo ip netns exec net1 iptables -I FORWARD -p tcp --syn -o veth3 -m conntrack --ctstate NEW -j ACCEPT
+
+sudo ip netns exec net1 iptables -I FORWARD -p tcp -o veth3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+
+sudo ip netns exec net1 iptables -P FORWARD DROP
+
+#sudo ip netns exec net1 iptables -t nat -I POSTROUTING -p tcp -o veth3 -j SNAT --to-source 192.168.64.1
+
+# or
+
+sudo ip netns exec net1 iptables -t nat -I POSTROUTING -p tcp -o veth2 -j MASQUERADE
+
+sudo ip netns exec net1 iptables -t nat -I POSTROUTING -p tcp -o veth3 -j MASQUERADE
+
+```
+
+
+
+```shell
+
+# gateway - NAT scenario
+
+sudo ip netns add net1
+
+sudo ip link add dev veth1 type veth peer name veth2 netns net1
+
+sudo ip link set up veth1
+
+sudo ip netns exec net1 ip link set up veth2
+
+sudo ip netns exec net1 ip link set up lo
 
 sudo ip addr add 192.168.62.5/24 dev veth1
 
@@ -2245,13 +2236,13 @@ sudo ip netns exec net1 ip link set up veth3
 
 sudo ip netns exec net2 ip link set up veth4
 
-sudo ip netns exec net1 ip addr add 192.168.122.1/24 dev veth3
+sudo ip netns exec net1 ip addr add 192.168.64.1/24 dev veth3
 
 sudo ip netns exec net2 ip addr add 192.168.64.6/24 dev veth4
 
 sudo ip netns exec net2 ip route add default via 192.168.64.6 dev veth4
 
-sudo ip netns exec net1 ip route add 192.168.64.0/24 via 192.168.122.1 dev veth3
+sudo ip netns exec net1 ip route add 192.168.64.0/24 via 192.168.64.1 dev veth3
 
 sudo ip netns exec net1 sysctl -w net.ipv4.ip_forward=1
 
@@ -2271,13 +2262,28 @@ sudo ip netns exec net1 iptables -t nat -I POSTROUTING -p tcp -o veth3 -j MASQUE
 sudo ip netns exec net1 iptables -t nat -I POSTROUTING -p tcp -o veth2 -j MASQUERADE
 
 
-sudo ip netns exec net1 iptables -P FORWARD DROP
+#all
 
+
+#sudo ip netns exec net1 iptables -I FORWARD -p all -i veth2 -m conntrack --ctstate NEW -j ACCEPT
+
+#sudo ip netns exec net1 iptables -I FORWARD -p all -i veth2 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+#sudo ip netns exec net1 iptables -I FORWARD -p all -o veth2 -m conntrack --ctstate NEW -j ACCEPT
+
+#sudo ip netns exec net1 iptables -I FORWARD -p all -o veth2 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+#sudo ip netns exec net1 iptables -t nat -I POSTROUTING -p all -o veth3 -j MASQUERADE
+
+#sudo ip netns exec net1 iptables -t nat -I POSTROUTING -p all -o veth2 -j MASQUERADE
+
+
+sudo ip netns exec net1 iptables -P FORWARD DROP
 
 ```
 
 ```shell
-# NAT default gateway redirect scenario 
+# gateway redirect scenario 
 
 
 # 10.168.0.29 being NAT 
