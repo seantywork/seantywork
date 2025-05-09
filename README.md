@@ -2195,7 +2195,7 @@ sudo iptables -P FORWARD DROP
 
 sudo ip rule add preference 200 from all lookup 200 
 
-sudo ip route add 192.168.122.6/32 via 192.168.62.6
+sudo ip route add 192.168.122.6/32 via 192.168.62.6 dev veth1 table 200
 
 ```
 
