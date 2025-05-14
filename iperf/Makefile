@@ -1,8 +1,8 @@
-GCC_FLAGS := -Wall -O2
+GCC_FLAGS := -Wall -O2 -g
 
 all: iperf_s.o
 
-	gcc $(GCC_FLAGS) -I. -o iperf_s.out main.c iperf_s.o 
+	gcc $(GCC_FLAGS) -I. -o iperf_s.out main.c iperf_s.o -lpthread
 
 
 iperf_s.o: 
