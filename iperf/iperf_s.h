@@ -25,6 +25,7 @@
 extern char mode;
 extern unsigned short port;
 extern int client_num;
+extern int timeout;
 extern uint8_t client_buff[MAXCLIENT][MAXBUFFLEN];
 
 int make_socket_non_blocking (int sfd);

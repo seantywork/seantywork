@@ -3,11 +3,13 @@
 
 static uint8_t ctl_hello[37] = {0};
 static uint8_t ctl_hellow_answer[1] = {0x09};
-static uint8_t ctl_info_size[4] = {0};
+static uint32_t ctl_info_size = 0;
 static uint8_t* ctl_info = NULL;
 static uint8_t ctl_info_answer[1] = {0x0a};
 static uint8_t ctl_start_1[1] = {0x01};
 static uint8_t ctl_start_2[1] = {0x02};
+static uint8_t ctl_end_1[1] = {0x0d};
+static uint8_t ctl_end_2[1] = {0x0e};
 
 static uint8_t hello[37] = {0};
 
@@ -33,24 +35,27 @@ void* ctl_runner(void* varg){
 
     int ctl_fd = *(int*)varg;
 
-    uint8_t end[1] = {0x0d};
-
-    sleep(3);
-    write(ctl_fd, end, 1);
-    read(ctl_fd, ctl_info_size, 4);
-    printf("%02x%02x%02x%02x\n", ctl_info_size[0], ctl_info_size[1], ctl_info_size[2], ctl_info_size[3]);
-    uint32_t isize = 276;
-    printf("size: %zu\n", isize);
+    sleep(timeout);
+    write(ctl_fd, ctl_end_1, 1);
+    read(ctl_fd, &ctl_info_size, 4);
+    
+    uint32_t isize = ntohl(ctl_info_size);
     ctl_info = (uint8_t*)malloc(isize * sizeof(uint8_t));
     read(ctl_fd, ctl_info, isize);
     printf("%s\n",ctl_info);
+    write(ctl_fd, &ctl_info_size, 4);
+    write(ctl_fd, ctl_info, isize);
+    write(ctl_fd, ctl_end_2, 1);
     free(ctl_info);
-    close(ctl_fd);
+    
+    //close(ctl_fd);
 
 
 }
 
 int run_select(int fd, struct sockaddr_in* servaddr){
+
+    int connections = 0;
 
     pthread_t tid;
 
@@ -74,8 +79,9 @@ int run_select(int fd, struct sockaddr_in* servaddr){
         FD_SET(fd, &readfds);
         max_fd = fd;
 
-        for(int i = 0; i < MAXCLIENT; i++){
+        for(int i = 0; i < client_num; i++){
             client_fd = client_fds[i];
+
             if(client_fd > 0){
                 FD_SET(client_fd, &readfds);
             }
@@ -86,6 +92,8 @@ int run_select(int fd, struct sockaddr_in* servaddr){
         }
 
         event = select(max_fd + 1, &readfds, NULL, NULL, NULL);
+
+
 
         if ((event < 0 ) && (errno != EINTR)){
             printf("select error\n");
@@ -102,7 +110,7 @@ int run_select(int fd, struct sockaddr_in* servaddr){
 
                     read(ctl_fd, ctl_hello, 37);
                     write(ctl_fd, ctl_hellow_answer, 1);
-                    read(ctl_fd, ctl_info_size, 4);
+                    read(ctl_fd, &ctl_info_size, 4);
 
                     uint32_t isize = ntohl(ctl_info_size);
                     ctl_info = (uint8_t*)malloc(isize * sizeof(uint8_t));
@@ -118,8 +126,12 @@ int run_select(int fd, struct sockaddr_in* servaddr){
                 } else {
 
                     read(client_fd, hello, 37);
-                    write(ctl_fd, ctl_start_1, 1);
-                    write(ctl_fd, ctl_start_2, 1);
+                    connections += 1;
+
+                    if(connections == client_num){
+                        write(ctl_fd, ctl_start_1, 1);
+                        write(ctl_fd, ctl_start_2, 1);
+                    }
 
                 }
                 if(client_fd < 0){
@@ -130,7 +142,7 @@ int run_select(int fd, struct sockaddr_in* servaddr){
                     printf("accept non-blocking failed\n");
                     break;
                 }
-                for(int i = 0; i < MAXCLIENT; i++){
+                for(int i = 0; i < client_num; i++){
                     if(client_fds[i] == 0){
                         client_fds[i] = client_fd;
                         added = 1;
@@ -145,7 +157,7 @@ int run_select(int fd, struct sockaddr_in* servaddr){
             }
         } while(0);
 
-        for(int i = 0; i < MAXCLIENT; i++){
+        for(int i = 0; i < client_num; i++){
             if(event == 0){
                 break;
             }
@@ -162,7 +174,8 @@ int run_select(int fd, struct sockaddr_in* servaddr){
                         client_fds[i] = 0;
                         break;
                     } else {
-                        continue;
+
+                        break;
                     }
                     valread += n;
                 }

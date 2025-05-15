@@ -4,11 +4,13 @@
 char mode = 's';
 unsigned short port = 5001;
 int client_num = 1;
+int timeout = 5;
+
 uint8_t client_buff[MAXCLIENT][MAXBUFFLEN];
 
 static void help(){
 
-    printf("arguments: mode port client_num\n");
+    printf("arguments: mode port client_num timeout\n");
         
     printf("mode: s - select, p - poll, e - epoll\n");
 }
@@ -21,7 +23,7 @@ int main(int argc, char** argv){
     int opt = 1;
     struct sockaddr_in servaddr;
 
-    if(argc != 4){
+    if(argc != 5){
 
         help();
 
@@ -61,6 +63,10 @@ int main(int argc, char** argv){
 
         return -1;
     }
+
+    sscanf(argv[4], "%d", &timeout);
+
+    printf("timeout: %d\n", timeout);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
     if (sockfd == -1) { 
