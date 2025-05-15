@@ -2353,6 +2353,7 @@ sudo ip netns exec net1 iptables -P FORWARD DROP
 # gateway - bridge scenario
 
 
+
 sudo ip netns add net1
 
 sudo ip link add dev veth1 type veth peer name veth2 netns net1
