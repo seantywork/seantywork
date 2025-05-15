@@ -31,7 +31,7 @@ int make_socket_non_blocking(int sfd){
     return 0;
 }
 
-void* ctl_runner(void* varg){
+void* ctl_thread(void* varg){
 
     int ctl_fd = *(int*)varg;
 
@@ -53,11 +53,28 @@ void* ctl_runner(void* varg){
 
 }
 
+void ctl_runner(int ctl_fd){
+
+    pthread_t tid;
+
+    read(ctl_fd, ctl_hello, 37);
+    write(ctl_fd, ctl_hellow_answer, 1);
+    read(ctl_fd, &ctl_info_size, 4);
+
+    uint32_t isize = ntohl(ctl_info_size);
+    ctl_info = (uint8_t*)malloc(isize * sizeof(uint8_t));
+    read(ctl_fd, ctl_info, isize);
+    write(ctl_fd, ctl_info_answer, 1);
+
+    pthread_create(&tid, NULL, ctl_thread, (void*)&ctl_fd);
+
+    free(ctl_info);
+
+}
+
 int run_select(int fd, struct sockaddr_in* servaddr){
 
     int connections = 0;
-
-    pthread_t tid;
 
     int ctl_fd = 0;
     int max_fd = 0;
@@ -108,18 +125,7 @@ int run_select(int fd, struct sockaddr_in* servaddr){
 
                     ctl_fd = client_fd;
 
-                    read(ctl_fd, ctl_hello, 37);
-                    write(ctl_fd, ctl_hellow_answer, 1);
-                    read(ctl_fd, &ctl_info_size, 4);
-
-                    uint32_t isize = ntohl(ctl_info_size);
-                    ctl_info = (uint8_t*)malloc(isize * sizeof(uint8_t));
-                    read(ctl_fd, ctl_info, isize);
-                    write(ctl_fd, ctl_info_answer, 1);
-
-                    pthread_create(&tid, NULL, ctl_runner, (void*)&ctl_fd);
-
-                    free(ctl_info);
+                    ctl_runner(ctl_fd);
 
                     break;
 

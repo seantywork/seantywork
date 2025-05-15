@@ -30,7 +30,9 @@ extern uint8_t client_buff[MAXCLIENT][MAXBUFFLEN];
 
 int make_socket_non_blocking (int sfd);
 
-void* ctl_runner(void* varg);
+void* ctl_thread(void* varg);
+
+void ctl_runner(int ctl_fd);
 
 int run_select(int fd, struct sockaddr_in* servaddr);
 
