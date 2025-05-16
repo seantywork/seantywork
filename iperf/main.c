@@ -6,6 +6,7 @@ unsigned short port = 5001;
 int client_num = 1;
 int timeout = 5;
 
+int ctl_fd = 0;
 uint8_t client_buff[MAXCLIENT][MAXBUFFLEN];
 
 static void help(){

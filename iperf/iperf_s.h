@@ -17,6 +17,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <sys/epoll.h>
 #include <errno.h>
 
 #define MAXCLIENT 32
@@ -26,13 +27,14 @@ extern char mode;
 extern unsigned short port;
 extern int client_num;
 extern int timeout;
+extern int ctl_fd;
 extern uint8_t client_buff[MAXCLIENT][MAXBUFFLEN];
 
 int make_socket_non_blocking (int sfd);
 
 void* ctl_thread(void* varg);
 
-void ctl_runner(int ctl_fd);
+void ctl_runner();
 
 int run_select(int fd, struct sockaddr_in* servaddr);
 

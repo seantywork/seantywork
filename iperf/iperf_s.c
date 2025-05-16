@@ -33,12 +33,9 @@ int make_socket_non_blocking(int sfd){
 
 void* ctl_thread(void* varg){
 
-    int ctl_fd = *(int*)varg;
-
     sleep(timeout);
     write(ctl_fd, ctl_end_1, 1);
     read(ctl_fd, &ctl_info_size, 4);
-    
     uint32_t isize = ntohl(ctl_info_size);
     ctl_info = (uint8_t*)malloc(isize * sizeof(uint8_t));
     read(ctl_fd, ctl_info, isize);
@@ -50,10 +47,11 @@ void* ctl_thread(void* varg){
     
     //close(ctl_fd);
 
+    pthread_exit(NULL);
 
 }
 
-void ctl_runner(int ctl_fd){
+void ctl_runner(){
 
     pthread_t tid;
 
@@ -66,7 +64,7 @@ void ctl_runner(int ctl_fd){
     read(ctl_fd, ctl_info, isize);
     write(ctl_fd, ctl_info_answer, 1);
 
-    pthread_create(&tid, NULL, ctl_thread, (void*)&ctl_fd);
+    pthread_create(&tid, NULL, ctl_thread, NULL);
 
     free(ctl_info);
 
@@ -76,7 +74,6 @@ int run_select(int fd, struct sockaddr_in* servaddr){
 
     int connections = 0;
 
-    int ctl_fd = 0;
     int max_fd = 0;
     int event = 0;
     fd_set readfds;
@@ -110,8 +107,6 @@ int run_select(int fd, struct sockaddr_in* servaddr){
 
         event = select(max_fd + 1, &readfds, NULL, NULL, NULL);
 
-
-
         if ((event < 0 ) && (errno != EINTR)){
             printf("select error\n");
             break;
@@ -120,7 +115,9 @@ int run_select(int fd, struct sockaddr_in* servaddr){
         do {
             if(FD_ISSET(fd, &readfds)){
                 int added = 0;
-                int client_fd = accept(fd, (struct sockaddr*)servaddr, (socklen_t*)&servlen);
+                event -= 1;
+                client_fd = accept(fd, (struct sockaddr*)servaddr, (socklen_t*)&servlen);
+
                 if(ctl_fd == 0){
 
                     ctl_fd = client_fd;
@@ -174,20 +171,17 @@ int run_select(int fd, struct sockaddr_in* servaddr){
             if(FD_ISSET(client_fd, &readfds)){
                 valread = 0;
                 n = 0;
+                event -= 1;
                 while(valread < MAXBUFFLEN){
                     n = read(client_fd, client_buff[i] + valread, MAXBUFFLEN - valread);
                     if(n <= 0 && errno != EAGAIN){
                         client_fds[i] = 0;
                         break;
-                    } else {
-
-                        break;
-                    }
+                    } 
                     valread += n;
                 }
                 
             }
-            event -= 1;
         }
 
     }
@@ -199,6 +193,130 @@ int run_select(int fd, struct sockaddr_in* servaddr){
 int run_poll(int fd, struct sockaddr_in* servaddr){
 
 
+    int connections = 0;
+
+    int event = 0;
+    struct pollfd* pollfds = NULL;
+    int servlen;
+    int valread;
+    int n;
+    int client_fd;
+
+    servlen = sizeof(*servaddr);   
+
+    pollfds = (struct pollfd*)malloc((client_num + 1) * sizeof(struct pollfd));
+
+    memset(pollfds, 0, (client_num + 1) * sizeof(struct pollfd));
+
+    pollfds[0].fd = fd;
+    pollfds[0].events = POLLIN | POLLPRI;
+
+    for(int i = 1; i < client_num + 1; i++){
+
+        pollfds[i].fd = 0;
+        pollfds[i].events = POLLIN | POLLPRI;
+
+    }
+
+    while(1){
+
+        event = poll(pollfds, client_num + 1, -1);
+
+        if ((event < 0 ) && (errno != EINTR)){
+            printf("poll error\n");
+            break;
+        }
+
+        do {
+
+            if(pollfds[0].revents & POLLIN){
+
+                int added = 0;
+
+                event -= 1;
+
+                client_fd = accept(fd, (struct sockaddr*)servaddr, (socklen_t*)&servlen);
+
+                if(ctl_fd == 0){
+
+                    ctl_fd = client_fd;
+
+                    ctl_runner(ctl_fd);
+
+                    break;
+
+                } else {
+
+                    read(client_fd, hello, 37);
+                    connections += 1;
+
+                    if(connections == client_num){
+                        write(ctl_fd, ctl_start_1, 1);
+                        write(ctl_fd, ctl_start_2, 1);
+                    }
+
+                }
+                if(client_fd < 0){
+                    printf("failed to accept\n");
+                    break;
+                }
+                if(make_socket_non_blocking(client_fd) < 0){
+                    printf("accept non-blocking failed\n");
+                    break;
+                }
+
+                for(int i = 1; i < client_num + 1; i++){
+                    if(pollfds[i].fd == 0){
+                        pollfds[i].fd = client_fd;
+                        added = 1;
+                        break;
+                    }
+                }
+                if(added != 1){
+                    printf("accept slot full\n");
+                    break;
+                }
+
+            }
+
+        } while(0);
+
+        for(int i = 1; i < client_num + 1; i++){
+
+            if(event == 0){
+                break;
+            }
+            client_fd = pollfds[i].fd;
+            if(client_fd == 0){
+                continue;
+            }
+
+            if(pollfds[i].revents & POLLIN){
+
+                valread = 0;
+                n = 0;
+                event -= 1;
+                while(valread < MAXBUFFLEN){
+                    n = read(client_fd, client_buff[i] + valread, MAXBUFFLEN - valread);
+                    if(n <= 0 && errno != EAGAIN){
+                        pollfds[i].fd = 0;
+                        break;
+                    } else {
+
+                        break;
+                    }
+                    valread += n;
+                }
+
+            }
+
+        }
+
+    }
+
+poll_out:
+
+    free(pollfds);
 
     return 0;
 }
@@ -206,6 +324,112 @@ int run_poll(int fd, struct sockaddr_in* servaddr){
 
 int run_epoll(int fd, struct sockaddr_in* servaddr){
 
+    int connections = 0;
+
+    struct epoll_event ev; 
+    struct epoll_event* evs = NULL;
+    int servlen;
+    int valread;
+    int n;
+    int client_fd;
+
+    int eplfd = 0;
+
+    servlen = sizeof(*servaddr);   
+
+    eplfd = epoll_create1(0);
+
+    if(eplfd == -1){
+        printf("failed to create epoll fd\n");
+        return -1;
+    }
+
+    evs = (struct epoll_event*)malloc((client_num + 1) * sizeof(struct epoll_event));
+
+    memset(evs, 0, (client_num + 1) * sizeof(struct epoll_event));
+
+    ev.data.fd = fd;
+    ev.events = EPOLLIN | EPOLLET;
+
+    if(epoll_ctl(eplfd, EPOLL_CTL_ADD, fd, &ev) < 0){
+        printf("epoll add failed\n");
+        return -1;
+    }
+
+    while(1){
+
+
+        event = epoll_wait(eplfd, evs, client_num + 1, -1);
+
+        for(int i = 0 ; i < event; i++){
+
+            if(evs[i].events & EPOLLIN){
+
+                if(evs[i].data.fd == fd){
+
+                    int added = 0;
+    
+                    client_fd = accept(fd, (struct sockaddr*)servaddr, (socklen_t*)&servlen);
+    
+                    if(ctl_fd == 0){
+    
+                        ctl_fd = client_fd;
+    
+                        ctl_runner(ctl_fd);
+    
+                        break;
+    
+                    } else {
+    
+                        read(client_fd, hello, 37);
+                        connections += 1;
+    
+                        if(connections == client_num){
+                            write(ctl_fd, ctl_start_1, 1);
+                            write(ctl_fd, ctl_start_2, 1);
+                        }
+    
+                    }
+                    if(client_fd < 0){
+                        printf("failed to accept\n");
+                        break;
+                    }
+                    if(make_socket_non_blocking(client_fd) < 0){
+                        printf("accept non-blocking failed\n");
+                        break;
+                    }
+    
+                    for(int i = 1; i < client_num + 1; i++){
+                        if(pollfds[i].fd == 0){
+                            pollfds[i].fd = client_fd;
+                            added = 1;
+                            break;
+                        }
+                    }
+                    if(added != 1){
+                        printf("accept slot full\n");
+                        break;
+                    }
+
+
+
+                } else {
+
+
+
+
+
+
+                }
+
+
+            }
+
+        }
+
+    }
+
+    free(evs);
 
     return 0;
 }
