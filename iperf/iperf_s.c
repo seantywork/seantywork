@@ -174,8 +174,8 @@ int run_select(int fd, struct sockaddr_in* servaddr){
                 event -= 1;
                 while(valread < MAXBUFFLEN){
                     n = read(client_fd, client_buff[i] + valread, MAXBUFFLEN - valread);
-                    if(n <= 0 && errno != EAGAIN){
-                        client_fds[i] = 0;
+                    if(n < 0){
+
                         break;
                     } 
                     valread += n;
@@ -298,13 +298,10 @@ int run_poll(int fd, struct sockaddr_in* servaddr){
                 event -= 1;
                 while(valread < MAXBUFFLEN){
                     n = read(client_fd, client_buff[i] + valread, MAXBUFFLEN - valread);
-                    if(n <= 0 && errno != EAGAIN){
-                        pollfds[i].fd = 0;
-                        break;
-                    } else {
+                    if(n < 0){
 
                         break;
-                    }
+                    } 
                     valread += n;
                 }
 
@@ -326,6 +323,7 @@ int run_epoll(int fd, struct sockaddr_in* servaddr){
 
     int connections = 0;
 
+    int event;
     struct epoll_event ev; 
     struct epoll_event* evs = NULL;
     int servlen;
@@ -358,76 +356,85 @@ int run_epoll(int fd, struct sockaddr_in* servaddr){
 
     while(1){
 
-
         event = epoll_wait(eplfd, evs, client_num + 1, -1);
+
+        printf("event: %d cn: %d\n", event, client_num);
 
         for(int i = 0 ; i < event; i++){
 
-            if(evs[i].events & EPOLLIN){
+            if (
+                (evs[i].events & EPOLLERR) ||
+                (evs[i].events & EPOLLHUP) ||
+                (!(evs[i].events & EPOLLIN)
+            ) 
+            ){
+                continue;
+            }
 
-                if(evs[i].data.fd == fd){
+            if(evs[i].data.fd == fd){
 
-                    int added = 0;
-    
-                    client_fd = accept(fd, (struct sockaddr*)servaddr, (socklen_t*)&servlen);
-    
-                    if(ctl_fd == 0){
-    
-                        ctl_fd = client_fd;
-    
-                        ctl_runner(ctl_fd);
-    
-                        break;
-    
-                    } else {
-    
-                        read(client_fd, hello, 37);
-                        connections += 1;
-    
-                        if(connections == client_num){
-                            write(ctl_fd, ctl_start_1, 1);
-                            write(ctl_fd, ctl_start_2, 1);
-                        }
-    
-                    }
-                    if(client_fd < 0){
-                        printf("failed to accept\n");
-                        break;
-                    }
-                    if(make_socket_non_blocking(client_fd) < 0){
-                        printf("accept non-blocking failed\n");
-                        break;
-                    }
-    
-                    for(int i = 1; i < client_num + 1; i++){
-                        if(pollfds[i].fd == 0){
-                            pollfds[i].fd = client_fd;
-                            added = 1;
-                            break;
-                        }
-                    }
-                    if(added != 1){
-                        printf("accept slot full\n");
-                        break;
-                    }
+                int added = 0;
 
+                client_fd = accept(fd, (struct sockaddr*)servaddr, (socklen_t*)&servlen);
 
+                if(ctl_fd == 0){
+
+                    ctl_fd = client_fd;
+
+                    ctl_runner(ctl_fd);
+
+                    continue;
 
                 } else {
 
+                    read(client_fd, hello, 37);
+                    connections += 1;
 
+                    if(connections == client_num){
 
-
-
+                        write(ctl_fd, ctl_start_1, 1);
+                        write(ctl_fd, ctl_start_2, 1);
+                    }
 
                 }
+                if(client_fd < 0){
+                    printf("failed to accept\n");
+                    continue;
+                }
+                if(make_socket_non_blocking(client_fd) < 0){
+                    printf("accept non-blocking failed\n");
+                    continue;
+                }
 
+
+                ev.data.fd = client_fd;
+                ev.events = EPOLLIN | EPOLLET;
+
+                if(epoll_ctl(eplfd, EPOLL_CTL_ADD, client_fd, &ev) < 0){
+                    printf("epoll add client failed\n");
+                    continue;
+                }
+
+            } else {
+
+                valread = 0;
+                n = 0;
+                while(valread < MAXBUFFLEN){
+                    n = read(evs[i].data.fd, client_buff[i] + valread, MAXBUFFLEN - valread);
+                    if(n < 0){
+                        break;
+                    } 
+
+                    valread += n;
+                }
 
             }
 
         }
 
     }
+
+epoll_out:
 
     free(evs);
 
