@@ -2353,7 +2353,6 @@ sudo ip netns exec net1 iptables -P FORWARD DROP
 # gateway - bridge scenario
 
 
-
 sudo ip netns add net1
 
 sudo ip link add dev veth1 type veth peer name veth2 netns net1
@@ -2401,7 +2400,7 @@ sudo ip netns exec net1 ip route add default via 192.168.64.1 dev br0
 
 sudo ip netns exec net1 ip route add 192.168.64.0/24 via 192.168.64.2 dev br0 proto static
 
-sudo iptables -t nat -I POSTROUTING -p all -o br0 -j MASQUERADE
+
 ```
 
 

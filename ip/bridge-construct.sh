@@ -48,4 +48,3 @@ sudo ip netns exec net1 ip route add default via 192.168.64.1 dev br0
 
 sudo ip netns exec net1 ip route add 192.168.64.0/24 via 192.168.64.2 dev br0 proto static
 
-sudo iptables -t nat -I POSTROUTING -p all -o br0 -j MASQUERADE
