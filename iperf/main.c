@@ -9,6 +9,8 @@ int timeout = 5;
 int ctl_fd = 0;
 uint8_t client_buff[MAXCLIENT][MAXBUFFLEN];
 
+pthread_mutex_t lock;
+
 static void help(){
 
     printf("arguments: mode port client_num timeout\n");
@@ -68,6 +70,8 @@ int main(int argc, char** argv){
     sscanf(argv[4], "%d", &timeout);
 
     printf("timeout: %d\n", timeout);
+
+    pthread_mutex_init(&lock, NULL);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
     if (sockfd == -1) { 

@@ -20,7 +20,7 @@
 #include <sys/epoll.h>
 #include <errno.h>
 
-#define MAXCLIENT 32
+#define MAXCLIENT 129
 #define MAXBUFFLEN 65536
 
 extern char mode;
@@ -29,6 +29,8 @@ extern int client_num;
 extern int timeout;
 extern int ctl_fd;
 extern uint8_t client_buff[MAXCLIENT][MAXBUFFLEN];
+
+extern pthread_mutex_t lock;
 
 int make_socket_non_blocking (int sfd);
 
