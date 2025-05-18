@@ -1,17 +1,53 @@
-#include "iperf_s.h"
+#include "tenk.h"
 
 
-static uint8_t ctl_hello[37] = {0};
-static uint8_t ctl_hellow_answer[1] = {0x09};
-static uint32_t ctl_info_size = 0;
-static uint8_t* ctl_info = NULL;
-static uint8_t ctl_info_answer[1] = {0x0a};
-static uint8_t ctl_start_1[1] = {0x01};
-static uint8_t ctl_start_2[1] = {0x02};
-static uint8_t ctl_end_1[1] = {0x0d};
-static uint8_t ctl_end_2[1] = {0x0e};
 
-static uint8_t hello[37] = {0};
+void* run_client_thread(void* varg){
+
+    int tid = *(int*)varg;
+
+    int fdstart = tid * CLIENTS_PER_THREAD;
+
+    int fdend = tid + CLIENTS_PER_THREAD;
+
+    int count = 0;
+    
+    int n = 0;
+
+    while(count < THREAD_ITER){
+
+        if(getrandom(wbuff[tid], MAXBUFFLEN, 0) < 0){
+
+            printf("getrandom failed\n");
+
+            continue;
+        }
+
+        for(int i = fdstart; i < fdend; i++){
+
+            n = write(wfds[i], wbuff[tid], MAXBUFFLEN);
+
+            if(n <= 0){
+
+                printf("failed to write: %d\n", i);
+
+                continue;
+
+            }
+
+        }
+
+        count += 1;
+
+    }
+
+    wdones[tid] = 1;
+
+    pthread_exit(NULL);
+
+}
+
+
 
 int make_socket_non_blocking(int sfd){
     int flags, s;
@@ -31,52 +67,13 @@ int make_socket_non_blocking(int sfd){
     return 0;
 }
 
-void* ctl_thread(void* varg){
-
-    pthread_mutex_unlock(&lock);
-    sleep(timeout);
-    write(ctl_fd, ctl_end_1, 1);
-    read(ctl_fd, &ctl_info_size, 4);
-    uint32_t isize = ntohl(ctl_info_size);
-    ctl_info = (uint8_t*)malloc(isize * sizeof(uint8_t));
-    read(ctl_fd, ctl_info, isize);
-    printf("%s\n",ctl_info);
-    write(ctl_fd, &ctl_info_size, 4);
-    write(ctl_fd, ctl_info, isize);
-    write(ctl_fd, ctl_end_2, 1);
-    free(ctl_info);
-    
-    //close(ctl_fd);
-
-    pthread_exit(NULL);
-
-}
-
-void ctl_runner(){
-
-
-    pthread_t tid;
-
-    pthread_mutex_lock(&lock);
-
-    read(ctl_fd, ctl_hello, 37);
-    write(ctl_fd, ctl_hellow_answer, 1);
-    read(ctl_fd, &ctl_info_size, 4);
-
-    uint32_t isize = ntohl(ctl_info_size);
-    ctl_info = (uint8_t*)malloc(isize * sizeof(uint8_t));
-    read(ctl_fd, ctl_info, isize);
-    write(ctl_fd, ctl_info_answer, 1);
-
-    pthread_create(&tid, NULL, ctl_thread, NULL);
-
-    free(ctl_info);
-
-}
 
 int run_select(int fd, struct sockaddr_in* servaddr){
 
+    printf("server mode: select\n");
+
     int connections = 0;
+    int connections_printed = 0;
 
     int max_fd = 0;
     int event = 0;
@@ -123,31 +120,10 @@ int run_select(int fd, struct sockaddr_in* servaddr){
                 client_fd = accept(fd, (struct sockaddr*)servaddr, (socklen_t*)&servlen);
 
                 if(client_fd < 0){
-                    printf("failed to accept\n");
+
                     break;
                 }
 
-                if(ctl_fd == 0){
-
-                    ctl_fd = client_fd;
-
-                    ctl_runner(ctl_fd);
-
-                    break;
-
-                } else {
-
-                    read(client_fd, hello, 37);
-                    connections += 1;
-
-                    if(connections == client_num){
-                        pthread_mutex_lock(&lock);
-                        write(ctl_fd, ctl_start_1, 1);
-                        write(ctl_fd, ctl_start_2, 1);
-                        pthread_mutex_unlock(&lock);
-                    }
-
-                }
 
                 if(make_socket_non_blocking(client_fd) < 0){
                     printf("accept non-blocking failed\n");
@@ -165,8 +141,22 @@ int run_select(int fd, struct sockaddr_in* servaddr){
                     break;
                 }
 
+                connections += 1;
+
             }
         } while(0);
+
+        if(connections != MAXCLIENT){
+
+            continue;
+        } else {
+
+            if(connections_printed == 0){
+
+                printf("connection reached: %d\n", connections);
+                connections_printed = 1;
+            }
+        }
 
         for(int i = 0; i < client_num; i++){
             if(event == 0){
@@ -206,8 +196,11 @@ int run_select(int fd, struct sockaddr_in* servaddr){
 
 int run_poll(int fd, struct sockaddr_in* servaddr){
 
+    printf("server mode: poll\n");
+
 
     int connections = 0;
+    int connections_printed = 0;
 
     int event = 0;
     struct pollfd* pollfds = NULL;
@@ -215,6 +208,8 @@ int run_poll(int fd, struct sockaddr_in* servaddr){
     int valread;
     int n;
     int client_fd;
+
+    int idx;
 
     int keep = 1;
 
@@ -238,10 +233,6 @@ int run_poll(int fd, struct sockaddr_in* servaddr){
 
         event = poll(pollfds, client_num + 1, -1);
 
-        if ((event < 0 ) && (errno != EINTR)){
-            printf("poll error\n");
-            break;
-        }
 
         do {
 
@@ -253,30 +244,8 @@ int run_poll(int fd, struct sockaddr_in* servaddr){
 
                 client_fd = accept(fd, (struct sockaddr*)servaddr, (socklen_t*)&servlen);
                 if(client_fd < 0){
-                    printf("failed to accept\n");
-                    break;
-                }
-
-                if(ctl_fd == 0){
-
-                    ctl_fd = client_fd;
-
-                    ctl_runner(ctl_fd);
 
                     break;
-
-                } else {
-
-                    read(client_fd, hello, 37);
-                    connections += 1;
-
-                    if(connections == client_num){
-                        pthread_mutex_lock(&lock);
-                        write(ctl_fd, ctl_start_1, 1);
-                        write(ctl_fd, ctl_start_2, 1);
-                        pthread_mutex_unlock(&lock);
-                    }
-
                 }
 
                 if(make_socket_non_blocking(client_fd) < 0){
@@ -296,11 +265,28 @@ int run_poll(int fd, struct sockaddr_in* servaddr){
                     break;
                 }
 
+                connections += 1;
+
             }
 
         } while(0);
 
+        if(connections != MAXCLIENT){
+
+            continue;
+        } else {
+
+            if(connections_printed == 0){
+
+                printf("connection reached: %d\n", connections);
+                connections_printed = 1;
+            }
+        }
+
+
         for(int i = 1; i < client_num + 1; i++){
+
+            idx = i - 1;
 
             if(event == 0){
                 break;
@@ -316,7 +302,7 @@ int run_poll(int fd, struct sockaddr_in* servaddr){
                 n = 0;
                 event -= 1;
                 while(valread < MAXBUFFLEN){
-                    n = read(pollfds[i].fd, client_buff[i] + valread, MAXBUFFLEN - valread);
+                    n = read(pollfds[i].fd, client_buff[idx] + valread, MAXBUFFLEN - valread);
                     if(n < 0 && errno != EAGAIN){
 
                         printf("fatal\n");
@@ -343,10 +329,75 @@ poll_out:
     return 0;
 }
 
+static inline int epoll_add_idx(int* client_fds, int fd){
+
+    int done = 0;
+    int idx = fd % MAXCLIENT;
+    int start_idx = idx;
+
+    while(done == 0){
+
+        if(client_fds[idx] == 0){
+
+            client_fds[idx] = fd;
+
+            done = idx;
+
+            break;
+        } else {
+            idx += 1;
+        }
+
+        if(idx == MAXCLIENT){
+            idx = 0;
+        }
+
+        if(idx == start_idx){
+            done = -1;
+        }
+
+    }
+
+    return done;
+}
+
+static inline int epoll_get_idx(int* client_fds, int fd){
+
+    int done = 0;
+    int idx = fd % MAXCLIENT;
+    int start_idx = idx;
+
+    while(done == 0){
+
+        if(client_fds[idx] == fd){
+
+            done = idx;
+
+            break;
+        } else {
+            idx += 1;
+        }
+
+        if(idx == MAXCLIENT){
+            idx = 0;
+        }
+
+        if(idx == start_idx){
+            done = -1;
+        }
+
+    }
+
+    return done;
+}
 
 int run_epoll(int fd, struct sockaddr_in* servaddr){
 
+    printf("server mode: epoll\n");
+
+
     int connections = 0;
+    int connections_printed = 0;
 
     int event;
     struct epoll_event ev; 
@@ -355,6 +406,10 @@ int run_epoll(int fd, struct sockaddr_in* servaddr){
     int valread;
     int n;
     int client_fd;
+
+    int client_fds[MAXCLIENT] = {0};
+
+    int idx;
 
     int keep = 1;
 
@@ -401,32 +456,10 @@ int run_epoll(int fd, struct sockaddr_in* servaddr){
 
                 client_fd = accept(fd, (struct sockaddr*)servaddr, (socklen_t*)&servlen);
                 if(client_fd < 0){
-                    printf("failed to accept\n");
-                    continue;
-                }
-                if(ctl_fd == 0){
-
-                    ctl_fd = client_fd;
-
-                    ctl_runner(ctl_fd);
 
                     continue;
-
-                } else {
-
-                    int nn = read(client_fd, hello, 37);
-
-                    connections += 1;
-
-                    if(connections == client_num){
-
-                        pthread_mutex_lock(&lock);
-                        write(ctl_fd, ctl_start_1, 1);
-                        write(ctl_fd, ctl_start_2, 1);
-                        pthread_mutex_unlock(&lock);
-                    }
-
                 }
+
 
                 if(make_socket_non_blocking(client_fd) < 0){
                     printf("accept non-blocking failed\n");
@@ -442,12 +475,40 @@ int run_epoll(int fd, struct sockaddr_in* servaddr){
                     continue;
                 }
 
+                idx = epoll_add_idx(client_fds, client_fd);
+
+                if(idx < 0){
+                    printf("epoll add slot full\n");
+                    continue;
+                }
+
+                connections += 1;
+
             } else {
+
+                if(connections != MAXCLIENT){
+
+                    continue;
+                } else {
+        
+                    if(connections_printed == 0){
+        
+                        printf("connection reached: %d\n", connections);
+                        connections_printed = 1;
+                    }
+                }
+        
+                idx = epoll_get_idx(client_fds, evs[i].data.fd);
+
+                if(idx < 0){
+                    printf("epoll get slot failed\n");
+                    continue;
+                }
 
                 valread = 0;
                 n = 0;
                 while(valread < MAXBUFFLEN){
-                    n = read(evs[i].data.fd, client_buff[i] + valread, MAXBUFFLEN - valread);
+                    n = read(evs[i].data.fd, client_buff[idx] + valread, MAXBUFFLEN - valread);
                     if(n < 0 && errno != EAGAIN){
 
                         printf("fatal\n");

@@ -15,4 +15,4 @@ sudo ip addr add 192.168.62.5/24 dev veth11
 
 sudo ip netns exec net1 ip addr add 192.168.62.6/24 dev veth12
 
-echo "creating interface!"
+echo "created interface!"

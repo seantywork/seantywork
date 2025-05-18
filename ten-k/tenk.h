@@ -1,5 +1,5 @@
-#ifndef _IPERF_S_H_
-#define _IPERF_S_H_
+#ifndef _TEN_K_H_
+#define _TEN_K_H_
 
 #include <stdio.h> 
 #include <netdb.h> 
@@ -19,24 +19,32 @@
 #include <poll.h>
 #include <sys/epoll.h>
 #include <errno.h>
+#include <stdatomic.h>
+#include <sys/time.h>
+#include <sys/random.h>
 
-#define MAXCLIENT 129
+#define MAXCLIENT 10000
+#define CLIENTS_PER_THREAD 100
+#define THREAD_ITER 100
 #define MAXBUFFLEN 65536
+#define PORT 9999
 
 extern char mode;
-extern unsigned short port;
-extern int client_num;
-extern int timeout;
-extern int ctl_fd;
-extern uint8_t client_buff[MAXCLIENT][MAXBUFFLEN];
+extern char server_mode;
 
-extern pthread_mutex_t lock;
+extern int client_num;
+extern uint8_t** client_buff;
+
+extern int wfds[MAXCLIENT];
+extern uint8_t wbuff[MAXCLIENT / CLIENTS_PER_THREAD][MAXBUFFLEN];
+extern atomic_uint_fast8_t wdones[MAXCLIENT / CLIENTS_PER_THREAD];
+
+
+void* run_client_thread(void* varg);
 
 int make_socket_non_blocking (int sfd);
 
-void* ctl_thread(void* varg);
 
-void ctl_runner();
 
 int run_select(int fd, struct sockaddr_in* servaddr);
 
