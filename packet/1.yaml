@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-wrk-1-ubuntu24
+  labels:
+    app: node-wrk-1-ubuntu24
+spec:
+  type: ClusterIP
+  ports:
+  - name: tcp-9999
+    port: 9999
+    targetPort: 9999
+    protocol: TCP
+  - name: udp-9999
+    port: 9999
+    targetPort: 9999
+    protocol: UDP
+  selector:
+    app: node-wrk-1-ubuntu24
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-wrk-1-ubuntu24
+spec:
+  selector:
+    matchLabels:
+      app: node-wrk-1-ubuntu24
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: node-wrk-1-ubuntu24
+    spec:
+      containers:
+        - name: node-wrk-1-ubuntu24
+          image: docker.io/seantywork/ubuntu24
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 9999
+            protocol: TCP
+          - containerPort: 9999
+            protocol: UDP
+      nodeSelector:
+        nodelabel: node-wrk-1
