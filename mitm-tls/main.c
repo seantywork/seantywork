@@ -26,6 +26,7 @@
 #include <linux/if_packet.h>
 #include <linux/if_ether.h>
 #include <linux/ip.h>
+#include <linux/tcp.h>
 
 #include <openssl/err.h>
 #include <openssl/rsa.h>
@@ -40,6 +41,7 @@
 #define CONF_DEVICE "veth11"
 
 #define PRIVKEY_PATH "./certs/server_priv.pem"
+#define PUBKEY_PATH "./certs/server_pub.pem"
 
 #define SOCK_PROTOCOL(ringtype) htons(ETH_P_ALL)
 #define SOCKADDR_PROTOCOL htons(ETH_P_ALL)
@@ -47,37 +49,63 @@
 #define TX_DATA_OFFSET TPACKET_ALIGN(sizeof(struct tpacket2_hdr))
 #define RX_DATA_OFFSET TX_DATA_OFFSET + 34
 
+static uint8_t client_random[28] = {0};
+static uint8_t server_random[28] = {0};
+static uint8_t* server_pubkey = NULL;
+static uint8_t* client_pubkey = NULL;
+
+
 static EVP_PKEY* priv_key = NULL;
-static RSA* rsa_priv_key = NULL;
-static int priv_keylen = 0;
+
+size_t premaster_secretlen = 0;
+unsigned char *premaster_secret = NULL;
+
 
 static EVP_CIPHER* cipher;
-static unsigned char* gcm_key;
-static unsigned char* gcm_iv;
-static unsigned char* gcm_tag;
+static unsigned char gcm_key[32];
+static unsigned char gcm_iv[12];
+static unsigned char gcm_tag[16];
 
 #define IVLEN 12
 #define TAGLEN 128 / 8
 
-static int rsa_decrypt(uint8_t* enc_msg, uint8_t* plain_msg){
+static uint8_t stage = 0x01;
 
-    char* dec_msg = (char*)malloc(RSA_size(rsa_priv_key));
-    int dec_len = RSA_private_decrypt(
-                priv_keylen,
-                (unsigned char*)enc_msg,
-                (unsigned char*)dec_msg,
-                rsa_priv_key,
-                RSA_PKCS1_OAEP_PADDING
-                );
+static int hijack_premaster(){
 
+    const unsigned char *pd = client_pubkey;
+    EVP_PKEY *peer_pub_key = d2i_PUBKEY(NULL, &pd, 32);
+    EVP_PKEY_CTX *dctx = EVP_PKEY_CTX_new_from_pkey(NULL, priv_key, NULL);
 
-    printf("declen: %d\n", dec_len);
+    if(EVP_PKEY_derive_init(dctx) != 1){
+        printf("derive init failed\n");
+        return -1;
+    }
 
-    memcpy(plain_msg, (uint8_t*)dec_msg, dec_len);
+    if(EVP_PKEY_derive_set_peer(dctx, peer_pub_key) != 1){
+        printf("derive set peer failed\n");
+        return -1;
+    }
 
-    free(dec_msg);    
+    if(EVP_PKEY_derive(dctx, NULL, &premaster_secretlen) != 1){
+        printf("derive get len failed\n");
+        return -1;
+    }
+    for(int i = 0; i < 32; i++){
+        printf("%02x", pd[i]);
+    }
+    printf("\n");
 
-    return dec_len;
+    printf("premaster_secretlen: %d\n", premaster_secretlen);
+
+    premaster_secret = OPENSSL_zalloc(premaster_secretlen);
+
+    if(EVP_PKEY_derive(dctx, premaster_secret, &premaster_secretlen) != 1){
+        printf("derive failed\n");
+        return -1;
+    }
+    EVP_PKEY_CTX_free(dctx);
+    return 0;
 }
 
 static int gcm256_384_decrypt(uint8_t* enc_msg, int enclen, uint8_t* plain_msg){
@@ -100,6 +128,125 @@ static int gcm256_384_decrypt(uint8_t* enc_msg, int enclen, uint8_t* plain_msg){
 }
 
 
+static void sniff_action(uint8_t* dataraw){
+
+    struct tcphdr* tcp_header = (struct tcphdr*)dataraw;
+
+    uint8_t* tcp_data = dataraw + 32;
+
+    if(tcp_header->psh){
+
+        switch(stage){
+
+            case 0x01:
+    
+                if((*tcp_data & 0x16) && (*(tcp_data + 5) & stage)){
+    
+                    printf("handshake: client hello\n");
+                } else {
+                    break;
+                }
+
+                memcpy(client_random, tcp_data + 15, 28);
+    
+                stage = 0x02;
+    
+                break;
+    
+            case 0x02:
+    
+                if((*tcp_data & 0x16) && (*(tcp_data + 5) & stage)){
+    
+                    printf("handshake: server hello\n");
+                } else {
+                    break;
+                }
+
+
+                memcpy(server_random, tcp_data + 15, 28);
+
+                uint16_t tmp = 0;
+                uint16_t hellolen = 0;
+                uint16_t certlen = 0;
+
+                memcpy(&tmp, tcp_data + 3, 2);
+
+                hellolen = ntohs(tmp);
+
+                memcpy(&tmp, tcp_data + 5 + hellolen + 3, 2);
+
+                certlen = ntohs(tmp);
+                
+                if(*(tcp_data + 5 + hellolen + 5 + certlen + 5) & 0x0C){
+
+                    uint8_t pubkeylen = *(tcp_data + 5 + hellolen + 5 + certlen + 12);
+
+                    printf("server pubkey len: %02x\n", pubkeylen);
+
+                    server_pubkey = (uint8_t*)malloc(pubkeylen);
+    
+                    memcpy(server_pubkey, tcp_data + 3 + hellolen + 3 + certlen + 13, pubkeylen);
+
+                } else {
+
+                    printf("server hello offset invalid\n");
+
+                    break;
+
+                }
+
+                stage = 0x10;
+    
+                break;
+    
+            case 0x10:
+    
+                if((*tcp_data & 0x16) && (*(tcp_data + 5) & stage)){
+    
+                    printf("handshake: client key exchange\n");
+                } else {
+                    break;
+                }
+
+                uint8_t pubkeylen = *(tcp_data + 9);
+
+                printf("client pubkey len: %02x\n", pubkeylen);
+
+                client_pubkey = (uint8_t*)malloc(pubkeylen);
+
+                memcpy(client_pubkey, tcp_data + 10, pubkeylen);
+    
+                hijack_premaster();
+
+                stage = 0x04;
+    
+                break;
+    
+            case 0x04:
+        
+                if((*tcp_data & 0x16) && (*(tcp_data + 5) & stage)){
+    
+                    printf("handshake: new session ticket\n");
+                } else {
+                    break;
+                }
+    
+                stage = 0x00;
+    
+                break;
+    
+            default:
+                
+                printf("message: \n");
+    
+                break;
+        }
+
+    }
+
+
+}
+
 static void sniff_packet(void* packet){
 
     struct ethhdr *eth_header;
@@ -107,13 +254,9 @@ static void sniff_packet(void* packet){
     uint8_t* data;
     struct in_addr ip_addr;
 
-
     eth_header = packet;
-
     ip_header = packet + sizeof(*eth_header);
-
     data = packet + sizeof(*eth_header) + sizeof(*ip_header);
-
     printf("dst mac: %02x:%02x:%02x:%02x:%02x:%02x\n", 
                 eth_header->h_dest[0], 
                 eth_header->h_dest[1], 
@@ -127,12 +270,16 @@ static void sniff_packet(void* packet){
 
     printf("dst address: %s\n", inet_ntoa(ip_addr));
 
-    printf("data: %s\n", data);
+    if(ip_header->protocol == IPPROTO_TCP){
+
+        sniff_action(data);
+
+    } 
+
+    return;
 
 
 }
-
-
 
 
 static int init_ring_daddr(int fd, const char* ringdev, const int ringtype, struct sockaddr_ll* dest_daddr){
@@ -344,15 +491,20 @@ int main(){
     fp = fopen(PRIVKEY_PATH, "r");
     priv_key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
     fclose(fp);
-    rsa_priv_key = EVP_PKEY_get1_RSA(priv_key);
-    priv_keylen = RSA_size(rsa_priv_key);
 
     cipher = EVP_aes_256_gcm();
 
     do_serve();
 
-    RSA_free(rsa_priv_key);
-    EVP_PKEY_free(priv_key);
+    if(client_pubkey != NULL){
+        free(client_pubkey);
+    }
+    if(server_pubkey != NULL){
+        free(server_pubkey);
+    }
+    if(premaster_secret != NULL){
+        OPENSSL_clear_free(premaster_secret, premaster_secretlen);
+    }
 
     return 0;
 }
