@@ -4520,11 +4520,11 @@ openssl x509 -req -in dilithium3_srv.csr -out dilithium3_srv.crt -CA dilithium3_
 
 # server test
 
-openssl s_server -cert dilithium3_srv.crt -key dilithium3_srv.key -www -tls1_3 -groups frodo640shake
+openssl s_server -port 9999 -cert dilithium3_srv.crt -key dilithium3_srv.key -tls1_3 -groups frodo640shake
 
 # client test 
 
-openssl s_client -groups frodo640shake -CAfile certs/dilithium3_ca.crt 
+openssl s_client -connect 192.168.64.6:9999 -CAfile certs/dilithium3_ca.crt -groups frodo640shake
 ```
 
 

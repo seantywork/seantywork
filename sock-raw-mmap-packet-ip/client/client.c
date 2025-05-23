@@ -150,8 +150,8 @@ static uint8_t* make_ip_packet(int* newlen, int msglen, char* msg){
     ip_header->id = 0;
     ip_header->frag_off = htons(0x4000);
     ip_header->ttl = IPDEFTTL;
-    ip_header->saddr = htonl(inet_addr("192.168.10.2"));
-    ip_header->daddr = htonl(inet_addr("192.168.10.1"));
+    ip_header->saddr = inet_addr("192.168.10.2");
+    ip_header->daddr = inet_addr("192.168.10.1");
     ip_header->protocol = 0xFD; // experiment
     ip_header->check = 0;
 
@@ -213,7 +213,7 @@ static int init_ring_daddr(int fd, const char* ringdev, const int ringtype, stru
 //    ring_daddr.sll_halen	  = ETH_ALEN;  
     //memcpy(&ring_daddr.sll_addr, hw_daddr, ETH_ALEN);
 
-    memcpy(dest_daddr, &ring_daddr, sizeof(dest_daddr));
+    memcpy(dest_daddr, &ring_daddr, sizeof(struct sockaddr_ll));
 
     return 0;
 }

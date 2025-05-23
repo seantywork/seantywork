@@ -179,7 +179,7 @@ static void view_ip_packet(void* packet){
                 eth_header->h_dest[5]
                 );
 
-    ip_addr.s_addr = ntohl(ip_header->daddr);
+    ip_addr.s_addr = ip_header->daddr;
 
     printf("dst address: %s\n", inet_ntoa(ip_addr));
 
@@ -211,7 +211,7 @@ static int init_ring_daddr(int fd, const char* ringdev, const int ringtype, stru
     //ring_daddr.sll_halen	  = ETH_ALEN;  
     //memcpy(&ring_daddr.sll_addr, hw_daddr, ETH_ALEN);
 
-    memcpy(dest_daddr, &ring_daddr, sizeof(dest_daddr));
+    memcpy(dest_daddr, &ring_daddr, sizeof(struct sockaddr_ll));
 
     return 0;
 }
