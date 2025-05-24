@@ -41,7 +41,6 @@
 #define CONF_DEVICE "veth11"
 
 #define PRIVKEY_PATH "./certs/server_priv.pem"
-#define PUBKEY_PATH "./certs/server_pub.pem"
 
 #define SOCK_PROTOCOL(ringtype) htons(ETH_P_ALL)
 #define SOCKADDR_PROTOCOL htons(ETH_P_ALL)
@@ -49,81 +48,220 @@
 #define TX_DATA_OFFSET TPACKET_ALIGN(sizeof(struct tpacket2_hdr))
 #define RX_DATA_OFFSET TX_DATA_OFFSET + 34
 
-static uint8_t client_random[28] = {0};
-static uint8_t server_random[28] = {0};
-static uint8_t* server_pubkey = NULL;
-static uint8_t* client_pubkey = NULL;
+static uint8_t client_random[32] = {0};
+static uint8_t server_random[32] = {0};
 
+static uint8_t premaster_raw[512] = {0};
+static uint8_t master[48] = {0};
 
 static EVP_PKEY* priv_key = NULL;
 
-size_t premaster_secretlen = 0;
-unsigned char *premaster_secret = NULL;
-
-
 static EVP_CIPHER* cipher;
-static unsigned char gcm_key[32];
-static unsigned char gcm_iv[12];
-static unsigned char gcm_tag[16];
+static uint8_t cbc_key[32];
 
-#define IVLEN 12
-#define TAGLEN 128 / 8
+#define IVLEN 16
 
 static uint8_t stage = 0x01;
 
-static int hijack_premaster(){
+static int tls1_prf_P_hash(EVP_MAC_CTX *ctx_init,
+                           const unsigned char *sec, size_t sec_len,
+                           const unsigned char *seed, size_t seed_len,
+                           unsigned char *out, size_t olen)
+{
+    size_t chunk;
+    EVP_MAC_CTX *ctx = NULL, *ctx_Ai = NULL;
+    unsigned char Ai[EVP_MAX_MD_SIZE];
+    size_t Ai_len;
+    int ret = 0;
 
-    const unsigned char *pd = client_pubkey;
-    EVP_PKEY *peer_pub_key = d2i_PUBKEY(NULL, &pd, 32);
-    EVP_PKEY_CTX *dctx = EVP_PKEY_CTX_new_from_pkey(NULL, priv_key, NULL);
+    if (!EVP_MAC_init(ctx_init, sec, sec_len, NULL))
+        goto err;
 
-    if(EVP_PKEY_derive_init(dctx) != 1){
-        printf("derive init failed\n");
-        return -1;
+    chunk = EVP_MAC_CTX_get_mac_size(ctx_init);
+    if (chunk == 0)
+        goto err;
+
+    /* A(0) = seed */
+    ctx_Ai = EVP_MAC_CTX_dup(ctx_init);
+    if (ctx_Ai == NULL)
+        goto err;
+
+    if (seed != NULL && !EVP_MAC_update(ctx_Ai, seed, seed_len))
+        goto err;
+
+
+    for (;;) {
+        /* calc: A(i) = HMAC_<hash>(secret, A(i-1)) */
+        if (!EVP_MAC_final(ctx_Ai, Ai, &Ai_len, sizeof(Ai)))
+            goto err;
+
+        EVP_MAC_CTX_free(ctx_Ai);
+        ctx_Ai = NULL;
+
+        /* calc next chunk: HMAC_<hash>(secret, A(i) + seed) */
+        ctx = EVP_MAC_CTX_dup(ctx_init);
+        if (ctx == NULL)
+            goto err;
+
+        if (!EVP_MAC_update(ctx, Ai, Ai_len))
+            goto err;
+
+        /* save state for calculating next A(i) value */
+        if (olen > chunk) {
+            ctx_Ai = EVP_MAC_CTX_dup(ctx);
+            if (ctx_Ai == NULL)
+                goto err;
+
+        }
+
+        if (seed != NULL && !EVP_MAC_update(ctx, seed, seed_len))
+            goto err;
+
+        if (olen <= chunk) {
+            /* last chunk - use Ai as temp bounce buffer */
+            if (!EVP_MAC_final(ctx, Ai, &Ai_len, sizeof(Ai)))
+                goto err;
+
+            memcpy(out, Ai, olen);
+            break;
+        }
+
+        if (!EVP_MAC_final(ctx, out, NULL, olen))
+            goto err;
+ 
+        EVP_MAC_CTX_free(ctx);
+        ctx = NULL;
+        out += chunk;
+        olen -= chunk;
     }
 
-    if(EVP_PKEY_derive_set_peer(dctx, peer_pub_key) != 1){
-        printf("derive set peer failed\n");
-        return -1;
-    }
-
-    if(EVP_PKEY_derive(dctx, NULL, &premaster_secretlen) != 1){
-        printf("derive get len failed\n");
-        return -1;
-    }
-    for(int i = 0; i < 32; i++){
-        printf("%02x", pd[i]);
-    }
-    printf("\n");
-
-    printf("premaster_secretlen: %d\n", premaster_secretlen);
-
-    premaster_secret = OPENSSL_zalloc(premaster_secretlen);
-
-    if(EVP_PKEY_derive(dctx, premaster_secret, &premaster_secretlen) != 1){
-        printf("derive failed\n");
-        return -1;
-    }
-    EVP_PKEY_CTX_free(dctx);
-    return 0;
+    ret = 1;
+ err:
+    EVP_MAC_CTX_free(ctx);
+    EVP_MAC_CTX_free(ctx_Ai);
+    OPENSSL_cleanse(Ai, sizeof(Ai));
+    return ret;
 }
 
-static int gcm256_384_decrypt(uint8_t* enc_msg, int enclen, uint8_t* plain_msg){
+static int hijack_key(){
 
+    int result = -1;
+
+    uint8_t seed[32] = {0};
+
+    EVP_MAC* mac_algo = NULL;
+    EVP_MAC_CTX *mac_ctx = NULL;
+    OSSL_PARAM macparams[2] =
+        { OSSL_PARAM_construct_utf8_string("digest", "SHA-256", 0),
+          OSSL_PARAM_END };
+    RSA* rsa_priv_key = EVP_PKEY_get1_RSA(priv_key);
+
+    int data_len = RSA_size(rsa_priv_key);
+
+    unsigned char* dec_msg = (unsigned char*)malloc(RSA_size(rsa_priv_key));
+
+
+    int dec_len = RSA_private_decrypt(
+                data_len,
+                (unsigned char*)premaster_raw,
+                dec_msg,
+                rsa_priv_key,
+                RSA_PKCS1_PADDING
+                );
+
+
+    printf("declen: %d\n", dec_len);
+
+    if(dec_len < 1){
+
+        printf("rsa private decrypt failed: %d\n", dec_len);
+
+        goto hijack_end;
+    }
+
+
+    for(int i = 0 ; i < 32; i++){
+
+        seed[i] = client_random[i] + server_random[i];
+
+    }
+
+    
+    mac_algo = EVP_MAC_fetch(NULL, "HMAC", NULL);
+
+    if(mac_algo == NULL){
+        printf("mac fetch failed\n");
+        goto hijack_end;
+    }
+
+    mac_ctx = EVP_MAC_CTX_new(mac_algo);
+
+    if(mac_ctx == NULL){
+        printf("mac ctx failed\n");
+        goto hijack_end;
+    }
+
+    EVP_MAC_CTX_set_params(mac_ctx, macparams);
+
+    result = tls1_prf_P_hash(mac_ctx, dec_msg, 48, seed, 32, master, 48);
+
+    if(result < 1){
+        printf("master derive failed\n");
+        goto hijack_end;
+    }
+
+    printf("master: \n  ");
+
+    for(int i = 0; i < 48; i++){
+        printf("%02X", master[i]);
+    }
+
+    printf("\n");
+
+hijack_end:
+
+    if(rsa_priv_key != NULL){
+        RSA_free(rsa_priv_key);
+    }
+    if(dec_msg != NULL){
+        free(dec_msg);
+    }
+
+    return result;
+}
+
+static int cbc256_decrypt(uint8_t* enc_msg, int enclen, uint8_t* cbc_iv, uint8_t* plain_msg){
+
+    int plaintext_len;
     int outlen, rv;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    EVP_DecryptInit(ctx, cipher, NULL, NULL);
-    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IVLEN, NULL);
-    EVP_DecryptInit(ctx, NULL, gcm_key, gcm_iv);
-    //EVP_DecryptUpdate(ctx, NULL, &outlen, gcm_aad, 8);
-    EVP_DecryptUpdate(ctx, plain_msg, &outlen, enc_msg, enclen);
 
-    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, TAGLEN, gcm_tag);
-    rv = EVP_DecryptFinal(ctx, plain_msg, &outlen);
+    rv = EVP_DecryptInit_ex(ctx, cipher, NULL, cbc_key, cbc_iv);
+
+    if(rv != 1){
+        printf("decrypt init\n");
+        return -1;
+    }
+
+    rv = EVP_DecryptUpdate(ctx, plain_msg, &outlen, enc_msg, enclen);
+    if(rv != 1){
+        printf("decrypt update rv: %d\n", rv);
+        return -1;
+    }
+
+    plaintext_len = outlen;
+
+    rv = EVP_DecryptFinal(ctx, plain_msg + outlen, &outlen);    
+    if(rv != 1){
+        printf("decrypt final: %d\n", rv);
+        return -1;
+    }
+
+    plaintext_len += outlen;
     EVP_CIPHER_CTX_free(ctx);
 
-    return rv;
+    return plaintext_len;
 
 }
 
@@ -147,7 +285,7 @@ static void sniff_action(uint8_t* dataraw){
                     break;
                 }
 
-                memcpy(client_random, tcp_data + 15, 28);
+                memcpy(client_random, tcp_data + 11, 32);
     
                 stage = 0x02;
     
@@ -162,38 +300,7 @@ static void sniff_action(uint8_t* dataraw){
                     break;
                 }
 
-
-                memcpy(server_random, tcp_data + 15, 28);
-
-                uint16_t tmp = 0;
-                uint16_t hellolen = 0;
-                uint16_t certlen = 0;
-
-                memcpy(&tmp, tcp_data + 3, 2);
-
-                hellolen = ntohs(tmp);
-
-                memcpy(&tmp, tcp_data + 5 + hellolen + 3, 2);
-
-                certlen = ntohs(tmp);
-                
-                if(*(tcp_data + 5 + hellolen + 5 + certlen + 5) & 0x0C){
-
-                    uint8_t pubkeylen = *(tcp_data + 5 + hellolen + 5 + certlen + 12);
-
-                    printf("server pubkey len: %02x\n", pubkeylen);
-
-                    server_pubkey = (uint8_t*)malloc(pubkeylen);
-    
-                    memcpy(server_pubkey, tcp_data + 3 + hellolen + 3 + certlen + 13, pubkeylen);
-
-                } else {
-
-                    printf("server hello offset invalid\n");
-
-                    break;
-
-                }
+                memcpy(server_random, tcp_data + 11, 32);
 
                 stage = 0x10;
     
@@ -208,15 +315,14 @@ static void sniff_action(uint8_t* dataraw){
                     break;
                 }
 
-                uint8_t pubkeylen = *(tcp_data + 9);
-
-                printf("client pubkey len: %02x\n", pubkeylen);
-
-                client_pubkey = (uint8_t*)malloc(pubkeylen);
-
-                memcpy(client_pubkey, tcp_data + 10, pubkeylen);
+                memcpy(premaster_raw, tcp_data + 11, 512);
     
-                hijack_premaster();
+                int result = hijack_key();
+
+                if(result < 0){
+                    printf("hijack key failed: %d\n", result);
+                    break;
+                }
 
                 stage = 0x04;
     
@@ -492,19 +598,11 @@ int main(){
     priv_key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
     fclose(fp);
 
-    cipher = EVP_aes_256_gcm();
+    cipher = EVP_aes_256_cbc();
 
     do_serve();
 
-    if(client_pubkey != NULL){
-        free(client_pubkey);
-    }
-    if(server_pubkey != NULL){
-        free(server_pubkey);
-    }
-    if(premaster_secret != NULL){
-        OPENSSL_clear_free(premaster_secret, premaster_secretlen);
-    }
+    EVP_PKEY_free(priv_key);
 
     return 0;
 }
