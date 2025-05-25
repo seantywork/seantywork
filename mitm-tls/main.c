@@ -34,7 +34,8 @@
 #include <openssl/evp.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
-
+#include <openssl/kdf.h>
+#include <openssl/core_names.h>
 
 #define CONF_RING_FRAMES 2
 #define FRAME_SIZE 2048
@@ -52,7 +53,7 @@ static uint8_t client_random[32] = {0};
 static uint8_t server_random[32] = {0};
 
 static uint8_t premaster_raw[512] = {0};
-static uint8_t master[48] = {0};
+static uint8_t master[128] = {0};
 
 static EVP_PKEY* priv_key = NULL;
 
@@ -63,97 +64,17 @@ static uint8_t cbc_key[32];
 
 static uint8_t stage = 0x01;
 
-static int tls1_prf_P_hash(EVP_MAC_CTX *ctx_init,
-                           const unsigned char *sec, size_t sec_len,
-                           const unsigned char *seed, size_t seed_len,
-                           unsigned char *out, size_t olen)
-{
-    size_t chunk;
-    EVP_MAC_CTX *ctx = NULL, *ctx_Ai = NULL;
-    unsigned char Ai[EVP_MAX_MD_SIZE];
-    size_t Ai_len;
-    int ret = 0;
-
-    if (!EVP_MAC_init(ctx_init, sec, sec_len, NULL))
-        goto err;
-
-    chunk = EVP_MAC_CTX_get_mac_size(ctx_init);
-    if (chunk == 0)
-        goto err;
-
-    /* A(0) = seed */
-    ctx_Ai = EVP_MAC_CTX_dup(ctx_init);
-    if (ctx_Ai == NULL)
-        goto err;
-
-    if (seed != NULL && !EVP_MAC_update(ctx_Ai, seed, seed_len))
-        goto err;
-
-
-    for (;;) {
-        /* calc: A(i) = HMAC_<hash>(secret, A(i-1)) */
-        if (!EVP_MAC_final(ctx_Ai, Ai, &Ai_len, sizeof(Ai)))
-            goto err;
-
-        EVP_MAC_CTX_free(ctx_Ai);
-        ctx_Ai = NULL;
-
-        /* calc next chunk: HMAC_<hash>(secret, A(i) + seed) */
-        ctx = EVP_MAC_CTX_dup(ctx_init);
-        if (ctx == NULL)
-            goto err;
-
-        if (!EVP_MAC_update(ctx, Ai, Ai_len))
-            goto err;
-
-        /* save state for calculating next A(i) value */
-        if (olen > chunk) {
-            ctx_Ai = EVP_MAC_CTX_dup(ctx);
-            if (ctx_Ai == NULL)
-                goto err;
-
-        }
-
-        if (seed != NULL && !EVP_MAC_update(ctx, seed, seed_len))
-            goto err;
-
-        if (olen <= chunk) {
-            /* last chunk - use Ai as temp bounce buffer */
-            if (!EVP_MAC_final(ctx, Ai, &Ai_len, sizeof(Ai)))
-                goto err;
-
-            memcpy(out, Ai, olen);
-            break;
-        }
-
-        if (!EVP_MAC_final(ctx, out, NULL, olen))
-            goto err;
- 
-        EVP_MAC_CTX_free(ctx);
-        ctx = NULL;
-        out += chunk;
-        olen -= chunk;
-    }
-
-    ret = 1;
- err:
-    EVP_MAC_CTX_free(ctx);
-    EVP_MAC_CTX_free(ctx_Ai);
-    OPENSSL_cleanse(Ai, sizeof(Ai));
-    return ret;
-}
 
 static int hijack_key(){
 
     int result = -1;
 
-    uint8_t seed[32] = {0};
+    uint8_t seed[128] = {0};
+    EVP_KDF_CTX *kctx = NULL;
 
-    EVP_MAC* mac_algo = NULL;
-    EVP_MAC_CTX *mac_ctx = NULL;
-    OSSL_PARAM macparams[2] =
-        { OSSL_PARAM_construct_utf8_string("digest", "SHA-256", 0),
-          OSSL_PARAM_END };
+    char* label = "Master-Key";
+    int label_len = 0;
+
     RSA* rsa_priv_key = EVP_PKEY_get1_RSA(priv_key);
 
     int data_len = RSA_size(rsa_priv_key);
@@ -179,34 +100,35 @@ static int hijack_key(){
         goto hijack_end;
     }
 
+    label_len = strlen(label);
 
-    for(int i = 0 ; i < 32; i++){
+    //strcpy(seed, label);
 
-        seed[i] = client_random[i] + server_random[i];
+    memcpy(seed, client_random, 32);
 
-    }
+    memcpy(seed + 32, server_random, 32);
 
-    
-    mac_algo = EVP_MAC_fetch(NULL, "HMAC", NULL);
+    int seed_len = 64;
 
-    if(mac_algo == NULL){
-        printf("mac fetch failed\n");
-        goto hijack_end;
-    }
 
-    mac_ctx = EVP_MAC_CTX_new(mac_algo);
+    EVP_KDF *kdf;
+    OSSL_PARAM params[5], *p = params;
 
-    if(mac_ctx == NULL){
-        printf("mac ctx failed\n");
-        goto hijack_end;
-    }
+    kdf = EVP_KDF_fetch(NULL, "TLS1-PRF", NULL);
+    kctx = EVP_KDF_CTX_new(kdf);
+    EVP_KDF_free(kdf);
 
-    EVP_MAC_CTX_set_params(mac_ctx, macparams);
-
-    result = tls1_prf_P_hash(mac_ctx, dec_msg, 48, seed, 32, master, 48);
-
-    if(result < 1){
-        printf("master derive failed\n");
+    *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST,
+                                            SN_sha256, strlen(SN_sha256));
+    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SECRET,
+                                            dec_msg, (size_t)dec_len);
+    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_LABEL,
+                                            label, (size_t)label_len);
+    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SEED,
+                                            seed, (size_t)seed_len);
+    *p = OSSL_PARAM_construct_end();
+    if (EVP_KDF_derive(kctx, master, 48, params) <= 0) {
+        error("EVP_KDF_derive");
         goto hijack_end;
     }
 
@@ -218,6 +140,8 @@ static int hijack_key(){
 
     printf("\n");
 
+    result = 1;
+
 hijack_end:
 
     if(rsa_priv_key != NULL){
@@ -225,6 +149,9 @@ hijack_end:
     }
     if(dec_msg != NULL){
         free(dec_msg);
+    }
+    if(kctx != NULL){
+        EVP_KDF_CTX_free(kctx);
     }
 
     return result;
