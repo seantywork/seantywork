@@ -1,12 +1,12 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include <linux/netfilter.h>
-#include <linux/netfilter_ipv4.h>
 #include <linux/ip.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
 #include <linux/string.h>
+#include <linux/gpio.h>
+#include <linux/interrupt.h>
 
 static int __init ksock_gpio_init(void) {
 
