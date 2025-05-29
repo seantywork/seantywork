@@ -40,6 +40,9 @@ static void job_handler(struct work_struct* work){
 
 		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
 
+		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_FALLING);
+
+
 		msleep(1000);
 	}
 
