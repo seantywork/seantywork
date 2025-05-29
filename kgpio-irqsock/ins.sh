@@ -1,10 +1,18 @@
 #!/bin/bash 
 
-source ./ins.conf
-
+CTLOUT="0"
+CTLIN="0"
 DEV="n"
 CTLOUT_LINE=""
 CTLIN_LINE=""
+
+if [ ! -f ./ins.conf ]
+then
+    echo "ins.con not found"
+    exit 1
+fi
+
+source ./ins.conf
 
 if [[ "$CTLOUT" == "0" ]]
 then 

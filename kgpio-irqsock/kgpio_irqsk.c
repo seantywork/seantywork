@@ -11,6 +11,7 @@
 #include <linux/sched.h>
 #include <linux/time.h>
 #include <linux/delay.h>
+#include <asm/atomic.h>
 
 static DECLARE_WAIT_QUEUE_HEAD(this_wq);
 
@@ -26,14 +27,21 @@ module_param(gpio_ctl_i, int, 0664);
 
 static unsigned int gpio_ctl_i_irq;
 
+static int comms_mode = 0;
+static int ctl_bits_count = 0;
+static int data_bits_count = 0;
+
 static void job_handler(struct work_struct* work){
 
 
     printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
 
-    msleep(5000);
+	for(int i = 0; i < 10; i++){
 
-	gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
+		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
+
+		msleep(1000);
+	}
 
     printk(KERN_INFO "up after 5000ms\n");
 
@@ -45,7 +53,9 @@ static void job_handler(struct work_struct* work){
 }
 
 static irqreturn_t gpio_irq_handler(int irq, void *dev_id) {
-	printk("gpio irqsk: interrupt was triggered and ISR was called\n");
+	printk("gpio irqsk: interrupt\n");
+	ctl_bits_count += 1;
+	printk("gpio irqsk: ctl bits count: %d\n", ctl_bits_count);
 	return IRQ_HANDLED;
 }
 
