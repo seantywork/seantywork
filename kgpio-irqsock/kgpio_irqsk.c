@@ -51,55 +51,79 @@ static irqreturn_t gpio_irq_handler(int irq, void *dev_id) {
 
 static int __init ksock_gpio_init(void) {
 
-	if(gpio_request(gpio_ctl_o, "gpio-ctl-o")) {
-		printk("gpio irqsk: can't allocate gpio_ctl_o: %d\n", gpio_ctl_o);
+	if(gpio_ctl_o == 0 && gpio_ctl_i == 0){
+
+		printk("gpio irqsk: at least one ctl should be set\n");
 		return -1;
+
 	}
 
+	if(gpio_ctl_o != 0){
 
-	if(gpio_request(gpio_ctl_i, "gpio-ctl-i")) {
-		printk("gpio irqsk: can't allocate gpio_ctl_i: %d\n", gpio_ctl_i);
-		gpio_free(gpio_ctl_o);
-		return -1;
+		if(gpio_request(gpio_ctl_o, "gpio-ctl-o")) {
+			printk("gpio irqsk: can't allocate gpio_ctl_o: %d\n", gpio_ctl_o);
+			return -1;
+		}		
+
+		if(gpio_direction_output(gpio_ctl_o, IRQF_TRIGGER_NONE)) {
+			printk("gpio irqsk: can't set gpio_ctl_o to output\n");
+			gpio_free(gpio_ctl_o);
+			return -1;
+		}
 	}
 
-	if(gpio_direction_output(gpio_ctl_o, IRQF_TRIGGER_NONE)) {
-		printk("gpio irqsk: can't set gpio_ctl_o to output\n");
-		gpio_free(gpio_ctl_o);
-		gpio_free(gpio_ctl_i);
-		return -1;
+	if(gpio_ctl_i != 0){
+
+		if(gpio_request(gpio_ctl_i, "gpio-ctl-i")) {
+			printk("gpio irqsk: can't allocate gpio_ctl_i: %d\n", gpio_ctl_i);
+			if(gpio_ctl_o != 0){
+				gpio_free(gpio_ctl_o);
+			}
+			return -1;
+		}
+
+
+		if(gpio_direction_input(gpio_ctl_i)) {
+			printk("gpio irqsk: can't set gpio_ctl_i to input\n");
+			if(gpio_ctl_o != 0){
+				gpio_free(gpio_ctl_o);
+			}
+			gpio_free(gpio_ctl_i);
+			return -1;
+		}
+
+		gpio_ctl_i_irq = gpio_to_irq(gpio_ctl_i);
+
+		if(request_irq(gpio_ctl_i_irq, gpio_irq_handler, IRQF_TRIGGER_RISING, "gpio_ctl_i_irq", NULL) != 0) {
+			printk("gpio irqsk: can't request interrupt\n");
+			if(gpio_ctl_o != 0){
+				gpio_free(gpio_ctl_o);
+			}
+			gpio_free(gpio_ctl_i);
+			return -1;
+		}
+
+		printk("gpio irqsk: gpio_ctl_i to IRQ %d\n", gpio_ctl_i_irq);
+
 	}
-
-	if(gpio_direction_input(gpio_ctl_i)) {
-		printk("gpio irqsk: can't set gpio_ctl_i to input\n");
-		gpio_free(gpio_ctl_o);
-		gpio_free(gpio_ctl_i);
-		return -1;
-	}
-
-	gpio_ctl_i_irq = gpio_to_irq(gpio_ctl_i);
-
-	if(request_irq(gpio_ctl_i_irq, gpio_irq_handler, IRQF_TRIGGER_RISING, "gpio_ctl_i_irq", NULL) != 0) {
-		printk("gpio irqsk: can't request interrupt\n");
-		gpio_free(gpio_ctl_o);
-		gpio_free(gpio_ctl_i);
-		return -1;
-	}
-
-
-	printk("gpio irqsk: gpio_ctl_i to IRQ %d\n", gpio_ctl_i_irq);
 
 	printk("gpio irqsk: module is initialized into the kernel\n");
 
-    INIT_WORK(&job, job_handler);
+	printk("gpio irqsk: ctl_o: %d ctl_i: %d\n", gpio_ctl_o, gpio_ctl_i);
 
-    schedule_work(&job);
+	if(gpio_ctl_o != 0 && gpio_ctl_i == 0){
 
-    printk(KERN_INFO "putting to sleep: %s\n", __FUNCTION__);
+		INIT_WORK(&job, job_handler);
 
-    wait_event_interruptible(this_wq, condition != 0);
+		schedule_work(&job);
 
-    printk(KERN_INFO "woken up\n");
+		printk(KERN_INFO "putting to sleep: %s\n", __FUNCTION__);
+
+		wait_event_interruptible(this_wq, condition != 0);
+
+		printk(KERN_INFO "woken up\n");
+
+	}
 
 
 	return 0;
@@ -108,9 +132,15 @@ static int __init ksock_gpio_init(void) {
 
 static void __exit ksock_gpio_exit(void) {
 
-	gpio_free(gpio_ctl_o);
-	gpio_free(gpio_ctl_i);
-	free_irq(gpio_ctl_i_irq, NULL);
+	if(gpio_ctl_o != 0){
+
+		gpio_free(gpio_ctl_o);
+	}
+	if(gpio_ctl_i != 0){
+		gpio_free(gpio_ctl_i);
+		free_irq(gpio_ctl_i_irq, NULL);
+	}
+
 	printk("gpio irqsk: module is removed from the kernel\n");
 }
 
