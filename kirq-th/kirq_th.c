@@ -2,10 +2,10 @@
 #include <linux/kernel.h>
 #include <linux/interrupt.h>
 
-#define DEV_NAME    "DEV_NAME IRQ_1"
-#define DEV_ID    	"DEV_ID"
-
-#define IRQ_1		1
+#define DEV_NAME    "kirq_key"
+#define DEV_ID    	"0001"
+// in vm, virtio
+#define IRQ_1		11
 
 MODULE_LICENSE("GPL");
 
