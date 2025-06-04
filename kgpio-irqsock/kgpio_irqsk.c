@@ -181,6 +181,8 @@ static irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
 
 	}
 
+	data_bits_count += 1;
+
 	printk("gpio irqsk: data bits count: %d\n", data_bits_count);
 	return IRQ_HANDLED;
 }
