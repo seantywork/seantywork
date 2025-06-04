@@ -48,7 +48,7 @@ static void job_handler(struct work_struct* work){
 
     printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
 
-	for (int i = 0 ; i < 15; i++){
+	for (int i = 0 ; i < 50; i++){
 
 		printk(KERN_INFO "waitqueue handler waiting for: %d...\n", i);
 
@@ -63,14 +63,14 @@ static void job_handler(struct work_struct* work){
 
 		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
 
-		msleep(100);
+		msleep(1);
 	}
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
 
-	msleep(100);
+	msleep(1);
 
 	for(int i = 0; i < 8; i++){
 
@@ -107,7 +107,7 @@ static void job_handler(struct work_struct* work){
 
 		}
 
-		msleep(100);
+		msleep(1);
 
 	}
 
@@ -119,14 +119,14 @@ static void job_handler(struct work_struct* work){
 
 		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
 
-		msleep(100);
+		msleep(1);
 	}
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
 
-	msleep(100);
+	msleep(1);
 
     printk(KERN_INFO "up\n");
 
