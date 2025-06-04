@@ -62,11 +62,15 @@ static void job_handler(struct work_struct* work){
 		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
 
 		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
+
+		msleep(100);
 	}
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
+
+	msleep(100);
 
 	for(int i = 0; i < 8; i++){
 
@@ -103,6 +107,8 @@ static void job_handler(struct work_struct* work){
 
 		}
 
+		msleep(100);
+
 	}
 
 	printk(KERN_INFO "sending ctl trailer\n");
@@ -112,12 +118,15 @@ static void job_handler(struct work_struct* work){
 		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
 
 		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
+
+		msleep(100);
 	}
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
 
+	msleep(100);
 
     printk(KERN_INFO "up\n");
 
