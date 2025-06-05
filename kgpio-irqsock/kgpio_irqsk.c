@@ -53,7 +53,7 @@ void job_handler(struct work_struct* work){
 
     printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
 
-	printk(KERN_INFO "waitqueue handler waiting for: %d...\n", i);
+	printk(KERN_INFO "waitqueue handler waiting...\n");
 
 	msleep(100);
 
