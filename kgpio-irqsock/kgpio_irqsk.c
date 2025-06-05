@@ -133,11 +133,16 @@ irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
 			return IRQ_HANDLED;
 		} else {
 			// skb
-			if(memcmp(o_value, i_value, MAX_PKTLEN) == 0){
-				printk("value matched\n");
-			} else {
-				printk("value not matched\n");
-			}
+			printk("value: %02x%02x%02x%02x...%02x%02x%02x%02x\n", 
+				i_value[0],
+				i_value[1],
+				i_value[2],
+				i_value[3],
+				i_value[MAX_PKTLEN-4],
+				i_value[MAX_PKTLEN-3],
+				i_value[MAX_PKTLEN-2],
+				i_value[MAX_PKTLEN-1]
+			);
 			data_bits_count = 0;
 			return IRQ_HANDLED;
 		}
@@ -309,8 +314,16 @@ int __init ksock_gpio_init(void) {
 
 		get_random_bytes(o_value, MAX_PKTLEN);
 
-		printk("gpio irqsk: test bytes: %02x%02x%02x%02x\n", o_value[0], o_value[1], o_value[2], o_value[3]);
-
+		printk("value: %02x%02x%02x%02x...%02x%02x%02x%02x\n", 
+			o_value[0],
+			o_value[1],
+			o_value[2],
+			o_value[3],
+			o_value[MAX_PKTLEN-4],
+			o_value[MAX_PKTLEN-3],
+			o_value[MAX_PKTLEN-2],
+			o_value[MAX_PKTLEN-1]
+		);
 		INIT_WORK(&job, job_handler);
 
 		schedule_work(&job);
