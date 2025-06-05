@@ -34,7 +34,7 @@ void gpio_ctl_on(void){
 
 	gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
 
-	udelay(8);
+	udelay(16);
 
 	gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
 }
@@ -43,7 +43,7 @@ void gpio_data_on(void){
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
 
-	udelay(8);
+	udelay(16);
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
 
@@ -326,13 +326,14 @@ int __init ksock_gpio_init(void) {
 		);
 		INIT_WORK(&job, job_handler);
 
-		schedule_work(&job);
+		for(int i = 0; i < 10; i++){
+			schedule_work(&job);
 
-		printk(KERN_INFO "putting to sleep: %s\n", __FUNCTION__);
+			wait_event_interruptible(this_wq, condition != 0);
 
-		wait_event_interruptible(this_wq, condition != 0);
+		}
 
-		printk(KERN_INFO "woken up\n");
+		printk(KERN_INFO "job done\n");
 
 	}
 
