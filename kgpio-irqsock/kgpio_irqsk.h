@@ -35,9 +35,6 @@
 
 #define MAX_PKTLEN 1500
 
-extern int condition;
-
-extern struct work_struct job;
 
 extern int gpio_ctl_o;
 extern int gpio_ctl_i;
@@ -60,5 +57,11 @@ extern u8 i_value[MAX_PKTLEN];
 void gpio_ctl_on(void);
 
 void gpio_data_on(void);
+
+void gpio_tx(u8* data, int datalen);
+
+irqreturn_t gpio_ctl_irq_handler(int irq, void *dev_id);
+
+irqreturn_t gpio_data_irq_handler(int irq, void *dev_id);
 
 #endif

@@ -1,12 +1,6 @@
 #include "kgpio_irqsk.h"
 
 
-DECLARE_WAIT_QUEUE_HEAD(this_wq);
-
-int condition = 0;
-
-struct work_struct job;
-
 int gpio_ctl_o;
 int gpio_ctl_i;
 int gpio_data_o;
@@ -49,15 +43,7 @@ void gpio_data_on(void){
 
 }
 
-void job_handler(struct work_struct* work){
-
-    printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
-
-	printk(KERN_INFO "waitqueue handler waiting...\n");
-
-	msleep(100);
-
-	printk(KERN_INFO "sending ctl start preamble\n");
+void gpio_tx(u8* data, int datalen){
 
 	for(int i = 0; i < 3; i++){
 
@@ -66,12 +52,11 @@ void job_handler(struct work_struct* work){
 
 	gpio_data_on();
 
-
-	for(int i = 0; i < MAX_PKTLEN; i++) {
+	for(int i = 0; i < datalen; i++) {
 
 		for(int j = 0; j < 8; j++){
 
-			if(CHECK_BIT(o_value[i], j)){
+			if(CHECK_BIT(data[i], j)){
 
 				if(!comms_mode_o){
 
@@ -99,8 +84,6 @@ void job_handler(struct work_struct* work){
 
 	}
 
-	printk(KERN_INFO "sending ctl trailer\n");
-
 	for(int i = 0; i < 3; i++){
 
 		gpio_ctl_on();
@@ -108,11 +91,8 @@ void job_handler(struct work_struct* work){
 	
 	gpio_data_on();
 
-    condition = 1;
-
-    wake_up_interruptible(&this_wq);
-
 }
+
 
 irqreturn_t gpio_ctl_irq_handler(int irq, void *dev_id) {
 	ctl_bits_count += 1;
@@ -172,7 +152,32 @@ irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
 	return IRQ_HANDLED;
 }
 
-int __init ksock_gpio_init(void) {
+static DECLARE_WAIT_QUEUE_HEAD(this_wq);
+
+static int condition;
+
+static struct work_struct job;
+
+static void job_handler(struct work_struct* work){
+
+    printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
+
+	printk(KERN_INFO "waitqueue handler waiting...\n");
+
+	msleep(100);
+
+	printk(KERN_INFO "sending ctl start preamble\n");
+
+	gpio_tx(o_value, MAX_PKTLEN);
+
+    condition = 1;
+
+    wake_up_interruptible(&this_wq);
+
+}
+
+
+static int __init ksock_gpio_init(void) {
 
 	if(gpio_ctl_o == 0 && gpio_ctl_i == 0){
 
@@ -340,7 +345,7 @@ int __init ksock_gpio_init(void) {
 
 }
 
-void __exit ksock_gpio_exit(void) {
+static void __exit ksock_gpio_exit(void) {
 
 	if(gpio_ctl_o != 0){
 
