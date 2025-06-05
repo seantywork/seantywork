@@ -1,161 +1,143 @@
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/ip.h>
-#include <linux/tcp.h>
-#include <linux/udp.h>
-#include <linux/string.h>
-#include <linux/gpio.h>
-#include <linux/interrupt.h>
-#include <linux/workqueue.h>
-#include <linux/sched.h>
-#include <linux/time.h>
-#include <linux/delay.h>
-#include <asm/atomic.h>
-#include <linux/types.h>
+#include "kgpio_irqsk.h"
 
-#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
-static DECLARE_WAIT_QUEUE_HEAD(this_wq);
+DECLARE_WAIT_QUEUE_HEAD(this_wq);
 
-static int condition = 0;
+int condition = 0;
 
-static struct work_struct job;
+struct work_struct job;
 
-static int gpio_ctl_o;
-static int gpio_ctl_i;
-static int gpio_data_o;
-static int gpio_data_i;
+int gpio_ctl_o;
+int gpio_ctl_i;
+int gpio_data_o;
+int gpio_data_i;
 
 module_param(gpio_ctl_o, int, 0664);
 module_param(gpio_ctl_i, int, 0664);
 module_param(gpio_data_o, int, 0664);
 module_param(gpio_data_i, int, 0664);
 
-static unsigned int gpio_ctl_i_irq;
-static unsigned int gpio_data_i_irq;
+unsigned int gpio_ctl_i_irq;
+unsigned int gpio_data_i_irq;
 
-static int comms_mode_o = 0;
+int comms_mode_o = 0;
 
-static int comms_mode_i = 0;
-static int ctl_bits_count = 0;
-static int data_bits_count = 0;
+int comms_mode_i = 0;
+int ctl_bits_count = 0;
+int data_bits_count = 0;
 
-static u8 o_value = 200;
-static u8 i_value = 0;
+u8 o_value[MAX_PKTLEN] = {0};
+u8 i_value[MAX_PKTLEN] = {0};
 
-static void job_handler(struct work_struct* work){
+
+void gpio_ctl_on(void){
+
+	gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
+
+	udelay(512);
+
+	gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
+}
+
+void gpio_data_on(void){
+
+	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
+
+	udelay(512);
+
+	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
+
+}
+
+void job_handler(struct work_struct* work){
 
     printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
 
-	for (int i = 0 ; i < 50; i++){
+	for (int i = 0 ; i < 5; i++){
 
 		printk(KERN_INFO "waitqueue handler waiting for: %d...\n", i);
 
-		msleep(100);
+		msleep(1000);
 	}
 
 	printk(KERN_INFO "sending ctl start preamble\n");
 
 	for(int i = 0; i < 3; i++){
 
-		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
-
-		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
-
-		udelay(512);
+		gpio_ctl_on();
 	}
 
-	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
+	gpio_data_on();
 
-	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
-	
-	udelay(512);
 
-	for(int i = 0; i < 8; i++){
+	for(int i = 0; i < MAX_PKTLEN; i++) {
 
-		if(CHECK_BIT(o_value, i)){
+		for(int j = 0; j < 8; j++){
 
-			if(!comms_mode_o){
+			if(CHECK_BIT(o_value[i], j)){
 
-				gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
+				if(!comms_mode_o){
 
-				gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
+					gpio_ctl_on();
 
-				comms_mode_o = 1;
+					comms_mode_o = 1;
+				}
+
+				gpio_data_on();
+
+			} else {
+
+				if(comms_mode_o){
+					
+					gpio_ctl_on();
+
+					comms_mode_o = 0;
+				}
+
+				gpio_data_on();
+
 			}
-
-			gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
-
-			gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
-
-
-		} else {
-
-			if(comms_mode_o){
-				
-				gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
-
-				gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
-
-				comms_mode_o = 0;
-			}
-
-			gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
-
-			gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
 
 		}
-		udelay(512);
+
 	}
 
 	printk(KERN_INFO "sending ctl trailer\n");
 
 	for(int i = 0; i < 3; i++){
 
-		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
-
-		gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
-
-		udelay(512);
+		gpio_ctl_on();
 	}
 	
-
-	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
-
-	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
-
-	udelay(512);
-
-    printk(KERN_INFO "up\n");
+	gpio_data_on();
 
     condition = 1;
 
     wake_up_interruptible(&this_wq);
 
-
 }
 
-static irqreturn_t gpio_ctl_irq_handler(int irq, void *dev_id) {
-	printk("gpio irqsk: ctl interrupt\n");
+irqreturn_t gpio_ctl_irq_handler(int irq, void *dev_id) {
 	ctl_bits_count += 1;
-	printk("gpio irqsk: ctl bits count: %d\n", ctl_bits_count);
-
 	return IRQ_HANDLED;
 }
 
-static irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
-	printk("gpio irqsk: data interrupt\n");
+irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
+
+	int pktidx = 0;
+	int bitidx = 0;
 
 	if(ctl_bits_count == 3){
 		ctl_bits_count = 0;
 		if(data_bits_count == 0){
-			printk("gpio irqsk: data preamble\n");
 			return IRQ_HANDLED;
 		} else {
-			printk("gpio irqsk: data trailer\n");
 			// skb
-			printk("gpio irqsk: read result: %u\n", i_value);
+			if(memcmp(o_value, i_value, MAX_PKTLEN) == 0){
+				printk("value matched\n");
+			} else {
+				printk("value not matched\n");
+			}
 			data_bits_count = 0;
 			return IRQ_HANDLED;
 		}
@@ -170,23 +152,25 @@ static irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
 		}
 	}
 
+	pktidx = data_bits_count / 8;
+	bitidx = data_bits_count % 8;
+
 	if(comms_mode_i){
 
-		i_value = i_value | (1 << data_bits_count);
+		i_value[pktidx] = i_value[pktidx] | (1 << bitidx);
 
 	} else {
 
-		i_value = i_value | (0 << data_bits_count);
+		i_value[pktidx] = i_value[pktidx] | (0 << bitidx);
 
 	}
 
 	data_bits_count += 1;
 
-	printk("gpio irqsk: data bits count: %d\n", data_bits_count);
 	return IRQ_HANDLED;
 }
 
-static int __init ksock_gpio_init(void) {
+int __init ksock_gpio_init(void) {
 
 	if(gpio_ctl_o == 0 && gpio_ctl_i == 0){
 
@@ -340,7 +324,7 @@ static int __init ksock_gpio_init(void) {
 
 }
 
-static void __exit ksock_gpio_exit(void) {
+void __exit ksock_gpio_exit(void) {
 
 	if(gpio_ctl_o != 0){
 
