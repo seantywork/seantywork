@@ -53,12 +53,9 @@ void job_handler(struct work_struct* work){
 
     printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
 
-	for (int i = 0 ; i < 5; i++){
+	printk(KERN_INFO "waitqueue handler waiting for: %d...\n", i);
 
-		printk(KERN_INFO "waitqueue handler waiting for: %d...\n", i);
-
-		msleep(1000);
-	}
+	msleep(100);
 
 	printk(KERN_INFO "sending ctl start preamble\n");
 
@@ -331,6 +328,7 @@ int __init ksock_gpio_init(void) {
 
 			wait_event_interruptible(this_wq, condition != 0);
 
+			condition = 0;
 		}
 
 		printk(KERN_INFO "job done\n");
