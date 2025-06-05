@@ -2832,9 +2832,12 @@ ip netns exec net1 ip link addr add 192.168.0.16 dev macvlan1
 
 # bond 
 
-ip link add bond1 type bond miimon 100 mode active-backup
+#ip link add bond1 type bond miimon 100 mode active-backup
+ip link add bond1 type bond miimon 100 mode balance-xor
+ip link addr add $ETH0_ADDR dev bond1 
 ip link set eth0 master bond1
 ip link set eth1 master bond1
+ip link set bond1 up
 ```
 
 ```shell
