@@ -307,6 +307,10 @@ int __init ksock_gpio_init(void) {
 
 		printk("gpio irqsk: test mode\n");
 
+		get_random_bytes(o_value, MAX_PKTLEN);
+
+		printk("gpio irqsk: test bytes: %02x%02x%02x%02x\n", o_value[0], o_value[1], o_value[2], o_value[3]);
+
 		INIT_WORK(&job, job_handler);
 
 		schedule_work(&job);
