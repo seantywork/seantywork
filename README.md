@@ -2927,6 +2927,21 @@ ip netns exec vnet ip xfrm policy add \
 
 ```
 
+
+```shell
+# gre
+
+
+sudo sysctl -w net.ipv4.ip_forward=1
+
+sudo ip tunnel add gre1 mode gre remote <HOST_B_IP> local <HOST_A_IP> ttl 25
+
+sudo ip addr add <HOST_A_PRIV_IP> dev gre1
+
+sudo ip link set gre1 up
+
+```
+
 # NFTABLES NFT
 
 
