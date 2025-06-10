@@ -3570,6 +3570,76 @@ zone "50.168.192.in-addr.arpa" {
 
 ```
 
+# BGP BIRD
+
+```shell
+
+sudo apt update
+sudo apt install bird
+
+# on machine1
+# /etc/bird/bird.conf 
+
+router id 10.168.0.29;
+
+protocol kernel {
+  metric 0;
+  import none;
+  learn;
+  export all;
+}
+
+protocol device {
+}
+
+protocol direct {
+}
+
+protocol bgp peer2 {
+  local as 64512;
+  neighbor 10.168.0.26 as 64513;
+  import all;
+  export all;
+}
+
+# on machine2
+# /etc/bird/bird.conf
+
+router id 10.168.0.26;
+
+
+protocol kernel {
+  metric 0;
+  import none;
+  learn;
+  export all;
+
+}
+
+protocol device {
+}
+
+protocol direct {
+}
+
+protocol bgp peer1 {
+  local as 64513;
+  neighbor 10.168.0.29 as 64512;
+  import all;
+  export all;
+}
+
+# check 
+
+birdc show protocols 
+
+birdc show protocols all peer2
+
+birdc show route
+
+
+
+```
 
 
 # GRPC
