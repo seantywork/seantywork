@@ -1965,6 +1965,12 @@ ip route add 192.168.10.0/24 dev enp3s0 table 5
 
 ip route flush cache
 
+# nexthop different network
+
+sudo ip route add 192.168.122.87 dev enp1s0
+
+sudo ip route add 10.0.2.0/24 via 192.168.122.87 dev enp1s0
+
 # rule 
 
 # all 
