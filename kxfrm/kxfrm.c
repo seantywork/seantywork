@@ -139,7 +139,7 @@ void kxfrm_teardown_pool(struct net_device *dev){
 }    
 
 
-struct kxfrm_packet *kxfrm_tx_cons_buffer(struct net_device *dev){
+struct kxfrm_packet *kxfrm_tx_reserve_buffer(struct net_device *dev){
 
 	struct kxfrm_priv *priv = netdev_priv(dev);
 	unsigned long flags;
@@ -794,7 +794,7 @@ esp_end:
 
 	priv = netdev_priv(dest);
 
-	tx_buffer = kxfrm_tx_cons_buffer(dev);
+	tx_buffer = kxfrm_tx_reserve_buffer(dev);
 
 	if(!tx_buffer) {
 		printk(KERN_INFO "out of tx buffer, len is %i\n",len);
