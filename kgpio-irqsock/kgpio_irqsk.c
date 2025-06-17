@@ -28,7 +28,7 @@ void gpio_ctl_on(void){
 
 	gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
 
-	udelay(16);
+	udelay(64);
 
 	gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
 }
@@ -37,7 +37,7 @@ void gpio_data_on(void){
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
 
-	udelay(16);
+	udelay(64);
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
 
