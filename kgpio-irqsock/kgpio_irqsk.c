@@ -1,6 +1,17 @@
 #include "kgpio_irqsk.h"
 
 
+struct net_device *geth_devs;
+struct geth_priv *geth_privs;
+
+
+int lockup = 0;
+int timeout = GETH_TIMEOUT;
+int pool_size = 8;
+
+
+void (*geth_interrupt)(int, void *, struct pt_regs *);
+
 int gpio_ctl_o;
 int gpio_ctl_i;
 int gpio_data_o;
@@ -24,11 +35,310 @@ u8 o_value[MAX_PKTLEN] = {0};
 u8 i_value[MAX_PKTLEN] = {0};
 
 
+
+
+
+void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
+
+    printk(KERN_INFO "napi interrupt\n");
+
+	struct geth_priv *priv;
+
+
+	struct net_device *dev = (struct net_device *)dev_id;
+
+	if (!dev){
+        printk(KERN_INFO "invalid dev\n");
+		return;
+    }
+
+	priv = netdev_priv(dev);
+	spin_lock(&priv->lock);
+
+	printk(KERN_INFO "napi receive\n");
+	napi_schedule(&priv->napi);
+
+    printk(KERN_INFO "napi interrupt end\n");
+
+	spin_unlock(&priv->lock);
+	return;
+}
+
+
+int geth_poll(struct napi_struct *napi, int budget){
+
+
+	int npackets = 0;
+	struct sk_buff *skb;
+	struct geth_priv *priv = container_of(napi, struct geth_priv, napi);
+	struct net_device *dev = priv->dev;
+	struct geth_packet *pkt;
+
+    printk(KERN_INFO "polling\n");
+
+	while (npackets < budget) {
+
+		// copy value to pkt
+		// pkt = 
+		skb = dev_alloc_skb(NET_IP_ALIGN + pkt->datalen);
+		if (! skb) {
+			if (printk_ratelimit()){
+                printk(KERN_INFO "geth: packet dropped\n");
+            }
+			priv->stats.rx_dropped++;
+			npackets++;
+			continue;
+		}
+		skb_reserve(skb, NET_IP_ALIGN);  
+		memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
+		skb->dev = dev;
+		skb->protocol = eth_type_trans(skb, dev);
+		skb->ip_summed = CHECKSUM_UNNECESSARY;
+		netif_receive_skb(skb);
+
+		npackets++;
+		priv->stats.rx_packets++;
+		priv->stats.rx_bytes += pkt->datalen;
+	}
+
+    printk(KERN_INFO "polling done\n");
+
+	if (npackets < budget) {
+        printk(KERN_INFO "npackets smaller than budget\n");
+		unsigned long flags;
+		spin_lock_irqsave(&priv->lock, flags);
+		if (napi_complete_done(napi, npackets)){
+			printk(KERN_INFO "napi complete\n");
+        }
+		spin_unlock_irqrestore(&priv->lock, flags);
+	}
+
+    printk(KERN_INFO "polling end\n");
+
+	return npackets;
+
+}
+
+
+
+netdev_tx_t geth_xmit(struct sk_buff *skb, struct net_device *dev){
+
+    printk("entered xmit\n");
+
+	int len;
+	char *data, shortpkt[ETH_ZLEN];
+	struct geth_priv *priv = netdev_priv(dev);
+
+	data = skb->data;
+	len = skb->len;
+	if (len < ETH_ZLEN) {
+		memset(shortpkt, 0, ETH_ZLEN);
+		memcpy(shortpkt, skb->data, skb->len);
+		len = ETH_ZLEN;
+		data = shortpkt;
+	}
+	netif_trans_update(dev);
+
+	priv->skb = skb;
+
+	geth_hw_tx(data, len, dev);
+
+    printk("exiting xmit\n");
+
+	return 0;
+
+
+}
+
+
+void geth_hw_tx(char *buf, int len, struct net_device *dev){
+
+
+    printk(KERN_INFO "entered hw tx\n");
+
+	struct ethhdr *eh;
+	struct iphdr *ih;
+	struct udphdr *uh;
+	struct tcphdr *th;
+
+	struct geth_priv *priv;
+	u16 sport;
+	u16 dport;
+
+
+	if (len < sizeof(struct ethhdr) + sizeof(struct iphdr)) {
+		printk("geth: packet too short (%i octets)\n",
+				len);
+		return;
+	}
+
+
+	eh = (struct ethhdr*)buf;
+
+	ih = (struct iphdr*)(buf + sizeof(struct ethhdr));
+
+
+	printk("eth src: %02X:%02X:%02X:%02X:%02X:%02X\n", 
+		eh->h_source[0],  
+		eh->h_source[1],  
+		eh->h_source[2],  
+		eh->h_source[3],  
+		eh->h_source[4],  
+		eh->h_source[5]);
+	printk("eth dst: %02X:%02X:%02X:%02X:%02X:%02X\n", 
+		eh->h_dest[0], 
+		eh->h_dest[1], 
+		eh->h_dest[2], 
+		eh->h_dest[3], 
+		eh->h_dest[4], 
+		eh->h_dest[5]);
+
+
+	if(ih->protocol == IPPROTO_UDP){
+
+		uh = (struct udphdr*)(buf + sizeof(struct ethhdr) + sizeof(struct iphdr));
+
+		sport = ntohs(uh->source);
+		dport = ntohs(uh->dest);
+
+	} else if (ih->protocol == IPPROTO_TCP){
+
+		th = (struct tcphdr*)(buf + sizeof(struct ethhdr) + sizeof(struct iphdr));
+
+		sport = ntohs(th->source);
+		dport = ntohs(th->dest);
+
+	}
+
+	printk("src: %08x:%05i\n",
+		ntohl(ih->daddr), sport);
+
+	printk("dst: %08x:%05i\n",
+		ntohl(ih->daddr), dport);
+
+
+	
+	// gpio tx
+
+	priv = netdev_priv(dev);
+
+	priv->stats.tx_packets++;
+	priv->stats.tx_bytes += len;
+	if(priv->skb) {
+		dev_kfree_skb(priv->skb);
+		priv->skb = 0;
+	}
+	if (lockup && ((priv->stats.tx_packets + 1) % lockup) == 0) {
+
+		netif_stop_queue(dev);
+		printk(KERN_INFO "simulate lockup at %ld, txp %ld\n", jiffies, (unsigned long) priv->stats.tx_packets);
+
+	} 
+
+}
+
+
+
+
+int geth_open(struct net_device *dev){
+
+	memcpy((void*)dev->dev_addr, "GETH01", ETH_ALEN);
+
+	struct geth_priv *priv = netdev_priv(dev);
+	napi_enable(&priv->napi);
+
+	netif_start_queue(dev);
+
+    printk(KERN_INFO "started geth\n");
+
+	return 0;
+}
+
+int geth_stop(struct net_device *dev){
+
+	netif_stop_queue(dev);
+
+	struct geth_priv *priv = netdev_priv(dev);
+	napi_disable(&priv->napi);
+
+	return 0;
+
+    printk(KERN_INFO "stopped geth\n");
+}
+
+
+
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
+
+void geth_tx_timeout(struct net_device *dev)
+
+#else 
+
+void geth_tx_timeout(struct net_device *dev, unsigned int txqueue)
+
+#endif 
+
+{
+	struct geth_priv *priv = netdev_priv(dev);
+    struct netdev_queue *txq = netdev_get_tx_queue(dev, 0);
+
+	printk(KERN_INFO "transmit timeout at %ld, latency %ld\n", jiffies,
+			jiffies - txq->trans_start);
+
+	geth_interrupt(0, dev, NULL);
+	priv->stats.tx_errors++;
+
+	spin_lock(&priv->lock);
+	spin_unlock(&priv->lock);
+
+	netif_wake_queue(dev);
+	return;
+}
+
+
+
+const struct net_device_ops geth_netdev_ops = {
+	.ndo_open            = geth_open,
+	.ndo_stop            = geth_stop,
+	.ndo_start_xmit      = geth_xmit,
+	.ndo_tx_timeout      = geth_tx_timeout,
+};
+
+
+
+
+void geth_setup(struct net_device *dev){
+
+	ether_setup(dev); 
+	dev->watchdog_timeo = timeout;
+	dev->netdev_ops = &geth_netdev_ops;
+	dev->features        |= NETIF_F_HW_CSUM;
+
+	geth_privs = netdev_priv(dev);
+
+	memset(geth_privs, 0, sizeof(struct geth_priv));
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
+	netif_napi_add(dev, &geth_privs->napi, geth_poll,2);
+#else 
+	netif_napi_add_weight(dev, &geth_privs->napi, geth_poll,2);
+#endif
+
+	spin_lock_init(&geth_privs->lock);
+	geth_privs->dev = dev;
+
+	printk(KERN_INFO "geth: setup success\n");
+}
+
+
+
+
 void gpio_ctl_on(void){
 
 	gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_RISING);
 
-	udelay(64);
+	udelay(SYNC_UDELAY);
 
 	gpio_set_value(gpio_ctl_o, IRQF_TRIGGER_NONE);
 }
@@ -37,7 +347,7 @@ void gpio_data_on(void){
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_RISING);
 
-	udelay(64);
+	udelay(SYNC_UDELAY);
 
 	gpio_set_value(gpio_data_o, IRQF_TRIGGER_NONE);
 
@@ -109,17 +419,20 @@ irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
 		if(data_bits_count == 0){
 			return IRQ_HANDLED;
 		} else {
-			// skb
-			printk("value: %02x%02x%02x%02x...%02x%02x%02x%02x\n", 
-				i_value[0],
-				i_value[1],
-				i_value[2],
-				i_value[3],
-				i_value[MAX_PKTLEN-4],
-				i_value[MAX_PKTLEN-3],
-				i_value[MAX_PKTLEN-2],
-				i_value[MAX_PKTLEN-1]
-			);
+			if(gpio_ctl_i != 0 && gpio_ctl_o != 0){
+				// geth interrupt
+			}else {
+				printk("value: %02x%02x%02x%02x...%02x%02x%02x%02x\n", 
+					i_value[0],
+					i_value[1],
+					i_value[2],
+					i_value[3],
+					i_value[MAX_PKTLEN-4],
+					i_value[MAX_PKTLEN-3],
+					i_value[MAX_PKTLEN-2],
+					i_value[MAX_PKTLEN-1]
+				);
+			}
 			data_bits_count = 0;
 			return IRQ_HANDLED;
 		}
@@ -178,6 +491,8 @@ static void job_handler(struct work_struct* work){
 
 
 static int __init ksock_gpio_init(void) {
+
+	int err;
 
 	if(gpio_ctl_o == 0 && gpio_ctl_i == 0){
 
@@ -339,6 +654,38 @@ static int __init ksock_gpio_init(void) {
 		printk(KERN_INFO "job done\n");
 
 	}
+	if(gpio_ctl_o != 0 && gpio_ctl_i != 0){
+
+		printk("gpio irqsk: prod mode\n");
+
+		geth_interrupt = geth_napi_interrupt;
+
+		geth_devs = alloc_netdev(sizeof(struct geth_priv), "geth%d", NET_NAME_UNKNOWN, geth_setup);
+		if (!geth_devs){
+			printk("gpio irqsk: can't alloc netdev\n");
+			gpio_free(gpio_ctl_o);
+			gpio_free(gpio_data_o);
+			gpio_free(gpio_ctl_i);
+			gpio_free(gpio_data_i);
+			free_irq(gpio_ctl_i_irq, NULL);
+			free_irq(gpio_data_i_irq, NULL);
+			return -ENOMEM;
+		}
+
+		err = register_netdevice(geth_devs);
+		if (err < 0) {
+			printk("gpio irqsk: can't register netdev\n");
+			gpio_free(gpio_ctl_o);
+			gpio_free(gpio_data_o);
+			gpio_free(gpio_ctl_i);
+			gpio_free(gpio_data_i);
+			free_irq(gpio_ctl_i_irq, NULL);
+			free_irq(gpio_data_i_irq, NULL);
+			free_netdev(geth_devs);
+			return -1;
+		}
+
+	}
 
 
 	return 0;
@@ -346,6 +693,9 @@ static int __init ksock_gpio_init(void) {
 }
 
 static void __exit ksock_gpio_exit(void) {
+
+	unregister_netdev(geth_devs);
+	free_netdev(geth_devs);
 
 	if(gpio_ctl_o != 0){
 

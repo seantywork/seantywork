@@ -94,7 +94,7 @@ void kxfrm_setup_pool(struct net_device *dev);
 
 void kxfrm_teardown_pool(struct net_device *dev);
 
-struct kxfrm_packet *kxfrm_tx_cons_buffer(struct net_device *dev);
+struct kxfrm_packet *kxfrm_tx_reserve_buffer(struct net_device *dev);
 
 void kxfrm_tx_release_buffer(struct kxfrm_packet *pkt);
 

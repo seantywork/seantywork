@@ -85,7 +85,7 @@ void deth_setup_pool(struct net_device *dev);
 
 void deth_teardown_pool(struct net_device *dev);
 
-struct deth_packet *deth_tx_cons_buffer(struct net_device *dev);
+struct deth_packet *deth_tx_reserve_buffer(struct net_device *dev);
 
 void deth_tx_release_buffer(struct deth_packet *pkt);
 

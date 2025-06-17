@@ -50,7 +50,7 @@ void deth_teardown_pool(struct net_device *dev){
 }    
 
 
-struct deth_packet *deth_tx_cons_buffer(struct net_device *dev){
+struct deth_packet *deth_tx_reserve_buffer(struct net_device *dev){
 
 	struct deth_priv *priv = netdev_priv(dev);
 	unsigned long flags;
@@ -328,7 +328,7 @@ void deth_hw_tx(char *buf, int len, struct net_device *dev){
 	dest = deth_devs[dev == deth_devs[0] ? 1 : 0];
 	priv = netdev_priv(dest);
 
-	tx_buffer = deth_tx_cons_buffer(dev);
+	tx_buffer = deth_tx_reserve_buffer(dev);
 
 	if(!tx_buffer) {
 		printk(KERN_INFO "out of tx buffer, len is %i\n",len);
