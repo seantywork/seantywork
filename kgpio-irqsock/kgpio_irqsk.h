@@ -38,6 +38,7 @@
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
 #define MAX_PKTLEN 1500
+#define MAX_Q_LEN 64
 
 #define SYNC_UDELAY 64
 
@@ -100,14 +101,9 @@ extern int data_bits_count;
 extern u8 o_value[MAX_PKTLEN];
 extern u8 i_value[MAX_PKTLEN];
 
-
-
-
-
-void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs);
-
-int geth_poll(struct napi_struct *napi, int budget);
-
+extern int i_q_ptr;
+extern int i_q_len[MAX_Q_LEN];
+extern u8 i_q[MAX_Q_LEN][MAX_PKTLEN];
 
 netdev_tx_t geth_xmit(struct sk_buff *skb, struct net_device *dev);
 

@@ -35,16 +35,18 @@ u8 o_value[MAX_PKTLEN] = {0};
 u8 i_value[MAX_PKTLEN] = {0};
 
 
+int i_q_ptr = 0;
+int i_q_len[MAX_Q_LEN];
+u8 i_q[MAX_Q_LEN][MAX_PKTLEN];
 
+spinlock_t q_lock;
 
 
 void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 
     printk(KERN_INFO "napi interrupt\n");
-
+	unsigned long flags;
 	struct geth_priv *priv;
-
-
 	struct net_device *dev = (struct net_device *)dev_id;
 
 	if (!dev){
@@ -53,14 +55,20 @@ void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
     }
 
 	priv = netdev_priv(dev);
-	spin_lock(&priv->lock);
 
 	printk(KERN_INFO "napi receive\n");
 	napi_schedule(&priv->napi);
 
+	spin_lock(&q_lock);
+
+	i_q_ptr += 1;
+	i_q_len[i_q_ptr] = data_bits_count / 8;
+	memcpy(i_q[i_q_ptr], i_value, i_q_len[i_q_ptr]);
+
+	geth_interrupt(0, geth_devs, NULL);
+
     printk(KERN_INFO "napi interrupt end\n");
 
-	spin_unlock(&priv->lock);
 	return;
 }
 
@@ -72,15 +80,21 @@ int geth_poll(struct napi_struct *napi, int budget){
 	struct sk_buff *skb;
 	struct geth_priv *priv = container_of(napi, struct geth_priv, napi);
 	struct net_device *dev = priv->dev;
-	struct geth_packet *pkt;
+	struct geth_packet pkt;
+	
+	pkt.dev = dev;
+	pkt.datalen = i_q_len[i_q_ptr];
+	memcpy(pkt.data, i_q[i_q_ptr], pkt.datalen);
+
+	i_q_ptr -= 1;
+
+	spin_unlock(&q_lock);
 
     printk(KERN_INFO "polling\n");
 
 	while (npackets < budget) {
 
-		// copy value to pkt
-		// pkt = 
-		skb = dev_alloc_skb(NET_IP_ALIGN + pkt->datalen);
+		skb = dev_alloc_skb(NET_IP_ALIGN + pkt.datalen);
 		if (! skb) {
 			if (printk_ratelimit()){
                 printk(KERN_INFO "geth: packet dropped\n");
@@ -90,7 +104,7 @@ int geth_poll(struct napi_struct *napi, int budget){
 			continue;
 		}
 		skb_reserve(skb, NET_IP_ALIGN);  
-		memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
+		memcpy(skb_put(skb, pkt.datalen), pkt.data, pkt.datalen);
 		skb->dev = dev;
 		skb->protocol = eth_type_trans(skb, dev);
 		skb->ip_summed = CHECKSUM_UNNECESSARY;
@@ -98,7 +112,7 @@ int geth_poll(struct napi_struct *napi, int budget){
 
 		npackets++;
 		priv->stats.rx_packets++;
-		priv->stats.rx_bytes += pkt->datalen;
+		priv->stats.rx_bytes += pkt.datalen;
 	}
 
     printk(KERN_INFO "polling done\n");
@@ -112,6 +126,7 @@ int geth_poll(struct napi_struct *napi, int budget){
         }
 		spin_unlock_irqrestore(&priv->lock, flags);
 	}
+
 
     printk(KERN_INFO "polling end\n");
 
@@ -218,7 +233,7 @@ void geth_hw_tx(char *buf, int len, struct net_device *dev){
 
 
 	
-	// gpio tx
+	gpio_tx((u8*)buf, len);
 
 	priv = netdev_priv(dev);
 
@@ -325,6 +340,7 @@ void geth_setup(struct net_device *dev){
 	netif_napi_add_weight(dev, &geth_privs->napi, geth_poll,2);
 #endif
 
+    spin_lock_init(&q_lock);
 	spin_lock_init(&geth_privs->lock);
 	geth_privs->dev = dev;
 
@@ -420,7 +436,7 @@ irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
 			return IRQ_HANDLED;
 		} else {
 			if(gpio_ctl_i != 0 && gpio_ctl_o != 0){
-				// geth interrupt
+				geth_interrupt(0, geth_devs, NULL);
 			}else {
 				printk("value: %02x%02x%02x%02x...%02x%02x%02x%02x\n", 
 					i_value[0],
