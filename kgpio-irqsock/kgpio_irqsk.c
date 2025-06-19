@@ -93,6 +93,12 @@ int geth_poll(struct napi_struct *napi, int budget){
 
     printk(KERN_INFO "polling\n");
 
+	struct ethhdr *eh;
+
+	eh = (struct ethhdr*)buf;
+
+	printk(KERN_INFO "eth proto: %04x\n", eh->h_proto);
+
 	while (npackets < budget && (i_q_ptr + 1)) {
 
 		i_q_ptr -= 1;
