@@ -271,7 +271,7 @@ void geth_hw_tx(char *buf, int len, struct net_device *dev){
 
 int geth_open(struct net_device *dev){
 
-	memcpy((void*)dev->dev_addr, "GETH01", ETH_ALEN);
+	//memcpy((void*)dev->dev_addr, "GETH01", ETH_ALEN);
 
 	struct geth_priv *priv = netdev_priv(dev);
 	napi_enable(&priv->napi);
