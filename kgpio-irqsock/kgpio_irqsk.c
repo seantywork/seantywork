@@ -96,7 +96,7 @@ int geth_poll(struct napi_struct *napi, int budget){
 	while (npackets < budget && (i_q_ptr + 1)) {
 
 		i_q_ptr -= 1;
-		
+
 		skb = dev_alloc_skb(NET_IP_ALIGN + pkt.datalen);
 		if (! skb) {
 			if (printk_ratelimit()){
@@ -428,6 +428,8 @@ void gpio_tx(u8* data, int datalen){
 	
 	gpio_data_on();
 
+	comms_mode_o = 0;
+
 }
 
 
@@ -462,6 +464,7 @@ irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
 				);
 			}
 			data_bits_count = 0;
+			comms_mode_i = 0;
 			return IRQ_HANDLED;
 		}
 	}
