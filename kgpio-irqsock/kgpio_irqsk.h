@@ -40,7 +40,7 @@
 #define MAX_PKTLEN 1500
 #define MAX_Q_LEN 64
 
-#define SYNC_UDELAY 1024
+#define SYNC_UDELAY 64
 
 
 

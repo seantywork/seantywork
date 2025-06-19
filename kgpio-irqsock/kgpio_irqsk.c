@@ -463,6 +463,7 @@ irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
 					i_value[MAX_PKTLEN-1]
 				);
 			}
+			memset(i_value, 0, MAX_PKTLEN);
 			data_bits_count = 0;
 			comms_mode_i = 0;
 			return IRQ_HANDLED;
