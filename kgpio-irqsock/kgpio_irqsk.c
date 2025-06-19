@@ -66,17 +66,6 @@ void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 
 	//spin_unlock(&q_lock);
 
-	printk("value: %02x%02x%02x%02x...%02x%02x%02x%02x\n", 
-		i_value[0],
-		i_value[1],
-		i_value[2],
-		i_value[3],
-		i_value[MAX_PKTLEN-4],
-		i_value[MAX_PKTLEN-3],
-		i_value[MAX_PKTLEN-2],
-		i_value[MAX_PKTLEN-1]
-	);
-
 	napi_schedule(&priv->napi);
 
     printk(KERN_INFO "napi interrupt end\n");
@@ -100,14 +89,14 @@ int geth_poll(struct napi_struct *napi, int budget){
 	pkt.datalen = i_q_len[i_q_ptr];
 	memcpy(pkt.data, i_q[i_q_ptr], pkt.datalen);
 
-	i_q_ptr -= 1;
-
 	//spin_unlock(&q_lock);
 
     printk(KERN_INFO "polling\n");
 
-	while (npackets < budget) {
+	while (npackets < budget && (i_q_ptr + 1)) {
 
+		i_q_ptr -= 1;
+		
 		skb = dev_alloc_skb(NET_IP_ALIGN + pkt.datalen);
 		if (! skb) {
 			if (printk_ratelimit()){
