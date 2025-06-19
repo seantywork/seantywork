@@ -66,6 +66,17 @@ void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 
 	//spin_unlock(&q_lock);
 
+	printk("value: %02x%02x%02x%02x...%02x%02x%02x%02x\n", 
+		i_value[0],
+		i_value[1],
+		i_value[2],
+		i_value[3],
+		i_value[MAX_PKTLEN-4],
+		i_value[MAX_PKTLEN-3],
+		i_value[MAX_PKTLEN-2],
+		i_value[MAX_PKTLEN-1]
+	);
+
 	napi_schedule(&priv->napi);
 
     printk(KERN_INFO "napi interrupt end\n");
@@ -439,6 +450,7 @@ irqreturn_t gpio_data_irq_handler(int irq, void *dev_id) {
 			return IRQ_HANDLED;
 		} else {
 			if(gpio_ctl_i != 0 && gpio_ctl_o != 0){
+
 				geth_interrupt(0, geth_devs, NULL);
 			}else {
 				printk("value: %02x%02x%02x%02x...%02x%02x%02x%02x\n", 

@@ -470,7 +470,35 @@ journalctl -xe
 journalctl -k
 journalctl -b
 dmesg
+dmest -wH
 efibootmgr
+```
+
+# LINUX KERNEL PANIC KDUMP
+
+```shell
+
+# should be enabled
+# /boot/config
+
+CONFIG_RELOCATABLE=y
+CONFIG_KEXEC=y
+CONFIG_CRASH_DUMP=y
+CONFIG_DEBUG_INFO=y
+
+
+sudo apt update
+
+sudo apt install kdump-tools crash kexec-tools makedumpfile linux-image-$(uname -r)-dbg
+
+# yes
+
+# reboot
+
+sudo grep USE_KDUMP /etc/default/kdump-tools
+
+grep LOAD_KEXEC /etc/default/kexec
+
 ```
 
 # GCC G++ CLANG COMPILE
