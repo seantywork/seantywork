@@ -64,6 +64,8 @@ void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 	i_q_len[i_q_ptr] = data_bits_count / 8;
 	memcpy(i_q[i_q_ptr], i_value, i_q_len[i_q_ptr]);
 
+	printk(KERN_INFO "napi: pktlen: %d\n", i_q_len[i_q_ptr]);
+
 	//spin_unlock(&q_lock);
 
 	napi_schedule(&priv->napi);
