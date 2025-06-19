@@ -45,7 +45,7 @@ spinlock_t q_lock;
 void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 
     printk(KERN_INFO "napi interrupt\n");
-	unsigned long flags;
+
 	struct geth_priv *priv;
 	struct net_device *dev = (struct net_device *)dev_id;
 

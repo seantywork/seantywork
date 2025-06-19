@@ -105,6 +105,10 @@ extern int i_q_ptr;
 extern int i_q_len[MAX_Q_LEN];
 extern u8 i_q[MAX_Q_LEN][MAX_PKTLEN];
 
+void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs);
+
+int geth_poll(struct napi_struct *napi, int budget);
+
 netdev_tx_t geth_xmit(struct sk_buff *skb, struct net_device *dev);
 
 void geth_hw_tx(char *buf, int len, struct net_device *dev);
