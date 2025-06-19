@@ -229,7 +229,7 @@ void geth_hw_tx(char *buf, int len, struct net_device *dev){
 	}
 
 	printk("src: %08x:%05i\n",
-		ntohl(ih->daddr), sport);
+		ntohl(ih->saddr), sport);
 
 	printk("dst: %08x:%05i\n",
 		ntohl(ih->daddr), dport);
