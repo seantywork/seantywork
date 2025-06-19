@@ -725,8 +725,6 @@ static int __init ksock_gpio_init(void) {
 
 static void __exit ksock_gpio_exit(void) {
 
-	unregister_netdev(geth_devs);
-	free_netdev(geth_devs);
 
 	if(gpio_ctl_o != 0){
 
@@ -738,6 +736,12 @@ static void __exit ksock_gpio_exit(void) {
 		gpio_free(gpio_data_i);
 		free_irq(gpio_ctl_i_irq, NULL);
 		free_irq(gpio_data_i_irq, NULL);
+	}
+
+	if(gpio_ctl_i != 0 && gpio_ctl_o != 0){
+
+		unregister_netdev(geth_devs);
+		free_netdev(geth_devs);
 	}
 
 	printk("gpio irqsk: module is removed from the kernel\n");
