@@ -125,3 +125,11 @@ echo "DATA IN : $DATAIN = $DATAIN_LINE"
 
 insmod kgpio_irqsk.ko gpio_ctl_o=$CTLOUT_LINE gpio_data_o=$DATAOUT_LINE gpio_ctl_i=$CTLIN_LINE gpio_data_i=$DATAIN_LINE
 
+if [[ "$DEV" == "n" ]]
+then
+
+    echo "IF ADDR: $IF_ADDR"
+    ip addr add $IF_ADDR dev geth0
+
+    ip link set dev geth0 up
+fi 
