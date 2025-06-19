@@ -95,7 +95,7 @@ int geth_poll(struct napi_struct *napi, int budget){
 
 	struct ethhdr *eh;
 
-	eh = (struct ethhdr*)buf;
+	eh = (struct ethhdr*)pkt.data;
 
 	printk(KERN_INFO "eth proto: %04x\n", eh->h_proto);
 
