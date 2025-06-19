@@ -35,7 +35,7 @@ u8 o_value[MAX_PKTLEN] = {0};
 u8 i_value[MAX_PKTLEN] = {0};
 
 
-int i_q_ptr = 0;
+int i_q_ptr = -1;
 int i_q_len[MAX_Q_LEN];
 u8 i_q[MAX_Q_LEN][MAX_PKTLEN];
 
@@ -57,15 +57,16 @@ void geth_napi_interrupt(int irq, void *dev_id, struct pt_regs *regs){
 	priv = netdev_priv(dev);
 
 	printk(KERN_INFO "napi receive\n");
-	napi_schedule(&priv->napi);
 
-	spin_lock(&q_lock);
+	//spin_lock(&q_lock);
 
 	i_q_ptr += 1;
 	i_q_len[i_q_ptr] = data_bits_count / 8;
 	memcpy(i_q[i_q_ptr], i_value, i_q_len[i_q_ptr]);
 
-	geth_interrupt(0, geth_devs, NULL);
+	//spin_unlock(&q_lock);
+
+	napi_schedule(&priv->napi);
 
     printk(KERN_INFO "napi interrupt end\n");
 
@@ -82,13 +83,15 @@ int geth_poll(struct napi_struct *napi, int budget){
 	struct net_device *dev = priv->dev;
 	struct geth_packet pkt;
 	
+	//spin_lock(&q_lock);
+
 	pkt.dev = dev;
 	pkt.datalen = i_q_len[i_q_ptr];
 	memcpy(pkt.data, i_q[i_q_ptr], pkt.datalen);
 
 	i_q_ptr -= 1;
 
-	spin_unlock(&q_lock);
+	//spin_unlock(&q_lock);
 
     printk(KERN_INFO "polling\n");
 
