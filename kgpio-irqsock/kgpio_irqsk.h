@@ -38,7 +38,7 @@
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
 #define MAX_PKTLEN 1500
-#define MAX_Q_LEN 64
+#define MAX_Q_LEN 128
 
 #define SYNC_UDELAY 64
 
