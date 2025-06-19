@@ -479,7 +479,7 @@ efibootmgr
 ```shell
 
 # should be enabled
-# /boot/config
+# /boot/config-$(uname -r)
 
 CONFIG_RELOCATABLE=y
 CONFIG_KEXEC=y
@@ -489,7 +489,20 @@ CONFIG_DEBUG_INFO=y
 
 sudo apt update
 
-sudo apt install kdump-tools crash kexec-tools makedumpfile linux-image-$(uname -r)-dbg
+sudo apt install kdump-tools crash kexec-tools makedumpfile
+
+# dbg symbol package
+
+sudo apt install ubuntu-dbgsym-keyring
+
+sudo echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted universe multiverse
+deb http://ddebs.ubuntu.com $(lsb_release -cs)-updates main restricted universe multiverse
+deb http://ddebs.ubuntu.com $(lsb_release -cs)-proposed main restricted universe multiverse" | \
+sudo tee -a /etc/apt/sources.list.d/ddebs.list
+
+sudo apt update
+
+sudo apt install linux-image-$(uname -r)-dbgsym
 
 # yes
 
@@ -497,8 +510,24 @@ sudo apt install kdump-tools crash kexec-tools makedumpfile linux-image-$(uname 
 
 sudo grep USE_KDUMP /etc/default/kdump-tools
 
-grep LOAD_KEXEC /etc/default/kexec
+sudo grep LOAD_KEXEC /etc/default/kexec
 
+# check
+
+sudo kdump-config show
+
+# after panic and reboot
+
+sudo -i
+
+cd /var/crash/$CRASH_TIMESTAMP
+
+root@ubuntu24-8:/var/crash/xx# ls
+dmesg.xx  dump.xx
+
+# read dump
+
+crash /usr/lib/debug/boot/vmlinux-$(uname -r) dump.xx
 ```
 
 # GCC G++ CLANG COMPILE
