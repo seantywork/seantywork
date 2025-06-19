@@ -271,7 +271,15 @@ void geth_hw_tx(char *buf, int len, struct net_device *dev){
 
 int geth_open(struct net_device *dev){
 
-	//memcpy((void*)dev->dev_addr, "GETH01", ETH_ALEN);
+	char macaddr[ETH_ALEN] = {0};
+
+	int val = gpio_data_i - gpio_ctl_i;
+
+	printk(KERN_INFO "geth mac val: %d\n", val);
+
+	sprintf(macaddr, "GETH0%d", val);
+
+	memcpy((void*)dev->dev_addr, macaddr, ETH_ALEN);
 
 	struct geth_priv *priv = netdev_priv(dev);
 	napi_enable(&priv->napi);
