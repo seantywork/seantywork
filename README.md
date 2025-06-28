@@ -45,7 +45,7 @@
   make
   git
   curl
-  docker
+  podman
   chrome
   libreoffice
   vscode
