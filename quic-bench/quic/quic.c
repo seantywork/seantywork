@@ -6,11 +6,11 @@ QUIC_REGISTRATION_CONFIG quic_reg_config = { "quicsample", QUIC_EXECUTION_PROFIL
 
 QUIC_BUFFER quic_alpn = { sizeof("sample") - 1, (uint8_t*)"sample" };
 
-uint16_t quic_udp_port = 4567;
+uint16_t quic_udp_port = SERVER_PORT;
 
 uint64_t quic_idle_timeoutms = 1000;
 
-uint32_t quic_send_buffer_len = 100;
+uint32_t quic_send_buffer_len = INPUT_BUFF_CHUNK;
 
 QUIC_API_TABLE* quic_api;
 
