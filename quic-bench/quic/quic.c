@@ -620,33 +620,42 @@ Error:
     }
 }
 
-int
-QUIC_MAIN_EXPORT
-main(
-    _In_ int argc,
-    _In_reads_(argc) _Null_terminated_ char* argv[]
-    )
-{
+static void help(){
+
+    printf("option: [c|s]\n");
+    printf("c: client mode\n");
+    printf("s: server mode\n");
+}
+
+
+
+int main(int argc, char** argv){
+
+    if(argc != 2){
+        help();
+        return -1;
+    }
+
     QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
 
-    //
-    // Open a handle to the library and get the API function table.
-    //
     if (QUIC_FAILED(Status = MsQuicOpen2(&quic_api))) {
         printf("MsQuicOpen2 failed, 0x%x!\n", Status);
         goto Error;
     }
 
-    //
-    // Create a registration for the app's connections.
-    //
     if (QUIC_FAILED(Status = quic_api->RegistrationOpen(&quic_reg_config, &quic_registration))) {
         printf("RegistrationOpen failed, 0x%x!\n", Status);
         goto Error;
     }
 
-    RunClient();
-
+    if(strcmp(argv[1], "c") == 0){
+        RunClient();
+    } else if(strcmp(argv[1], "s") == 0){
+        RunServer();
+    } else {
+        help();
+        return -1;
+    }
 
 Error:
 
