@@ -11,10 +11,7 @@ LIBS := -lcore -lmsquic -lmsquic_platform -lssl -lcrypto
 
 all:
 
-
-	gcc $(FLAGS) $(INCLUDES) $(LINKS) -o client.out client.c $(LIBS)
-
-	gcc $(FLAGS) $(INCLUDES) $(LINKS) -o server.out server.c $(LIBS)
+	gcc $(FLAGS) $(INCLUDES) $(LINKS) -o quic.out quic.c $(LIBS)
 
 clean:
 
