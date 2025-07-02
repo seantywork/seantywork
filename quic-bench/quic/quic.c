@@ -206,7 +206,6 @@ BOOLEAN server_conf() {
     Settings.PeerBidiStreamCount = 1;
     Settings.IsSet.PeerBidiStreamCount = TRUE;
 
-    Settings.
 
     QUIC_CREDENTIAL_CONFIG_HELPER Config;
     memset(&Config, 0, sizeof(Config));
