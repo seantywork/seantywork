@@ -27,9 +27,10 @@
 
 #define SERVER_ADDR "quicbench"
 #define SERVER_PORT 9999
-#define INPUT_BUFF_CHUNK 65535
+#define INPUT_BUFF_CHUNK 65536
 //#define INPUT_BUFF_CHUNK 100
-#define INPUT_BUFF_MAX 4294967296
+//#define INPUT_BUFF_MAX 4294967296
+#define INPUT_BUFF_MAX 8388608
 #define CERT_CA "certs/ca.pem"
 #define CERT_SERVER "certs/server.crt.pem"
 #define KEY_SERVER "certs/server.key.pem"

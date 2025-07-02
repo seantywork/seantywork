@@ -27,19 +27,27 @@ char* quic_ssl_keylog_env = "SSLKEYLOGFILE";
 
 pthread_t client_tid;
 uint32_t client_total_sent = 0;
-uint8_t server_total_data[INPUT_BUFF_CHUNK] = {0};
-uint32_t server_total_recvd = 0;
+uint8_t server_total_data[INPUT_BUFF_MAX + 65536 + 65536] = {0};
+uint64_t server_total_recvd = 0;
+uint64_t server_this_recvd = 0;
 
 
-void server_recv(QUIC_BUFFER* qbuff){
+void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len){
 
-    //memcpy(server_total_data, qbuff->Buffer, qbuff->Length);
 
-    server_total_recvd += qbuff->Length;    
+    //memcpy(server_total_data + server_total_recvd, qbuff->Buffer, qbuff->Length);
 
-    printf("server this buffer length: %lu\n", qbuff->Length);
-    printf("server total buff count: %lu\n", server_total_recvd);
 
+    server_total_recvd += buff_tot_len;
+    printf("buffer count: %lu\n", buff_count);
+    printf("server total buffer length: %llu\n", buff_tot_len);
+    for(int i = 0 ; i < buff_count; i++){
+        server_this_recvd += qbuff[i].Length;        
+        printf("server this buffer length: %llu\n", qbuff[i].Length);
+    }
+
+    printf("server total buff count: %llu\n", server_total_recvd);
+    printf("server this buff count: %llu\n", server_this_recvd);
     return;
 
 }
@@ -61,7 +69,7 @@ QUIC_STATUS server_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Eve
         // Data was received from the peer on the stream.
         //
 
-        server_recv(Event->RECEIVE.Buffers);
+        server_recv(Event->RECEIVE.Buffers, Event->RECEIVE.BufferCount, Event->RECEIVE.TotalBufferLength);
 
         printf("[strm][%p] Data received\n", Stream);
         break;
