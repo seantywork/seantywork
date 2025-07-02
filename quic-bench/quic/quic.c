@@ -25,6 +25,24 @@ QUIC_TLS_SECRETS quic_client_secrets = {0};
 
 char* quic_ssl_keylog_env = "SSLKEYLOGFILE";
 
+pthread_t client_tid;
+uint32_t client_total_sent = 0;
+uint8_t server_total_data[INPUT_BUFF_CHUNK] = {0};
+uint32_t server_total_recvd = 0;
+
+
+void server_recv(QUIC_BUFFER* qbuff){
+
+    //memcpy(server_total_data, qbuff->Buffer, qbuff->Length);
+
+    server_total_recvd += qbuff->Length;    
+
+    printf("server this buffer length: %lu\n", qbuff->Length);
+    printf("server total buff count: %lu\n", server_total_recvd);
+
+    return;
+
+}
 
 QUIC_STATUS server_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Event){
 
@@ -42,6 +60,9 @@ QUIC_STATUS server_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Eve
         //
         // Data was received from the peer on the stream.
         //
+
+        server_recv(Event->RECEIVE.Buffers);
+
         printf("[strm][%p] Data received\n", Stream);
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_SHUTDOWN:
@@ -62,6 +83,7 @@ QUIC_STATUS server_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Eve
         // Both directions of the stream have been shut down and quic_api is done
         // with the stream. It can now be safely cleaned up.
         //
+
         printf("[strm][%p] All done\n", Stream);
         quic_api->StreamClose(Stream);
         break;
@@ -184,15 +206,17 @@ BOOLEAN server_conf() {
     Settings.PeerBidiStreamCount = 1;
     Settings.IsSet.PeerBidiStreamCount = TRUE;
 
+    Settings.
+
     QUIC_CREDENTIAL_CONFIG_HELPER Config;
     memset(&Config, 0, sizeof(Config));
     Config.CredConfig.Flags = QUIC_CREDENTIAL_FLAG_NONE;
     Config.CredConfig.Flags |= QUIC_CREDENTIAL_FLAG_SET_CA_CERTIFICATE_FILE;
 
 
-    const char* Ca = "certs/ca.pem";
-    const char* Cert = "certs/server.crt.pem";
-    const char* KeyFile = "certs/server.key.pem";
+    const char* Ca = CERT_CA;
+    const char* Cert = CERT_SERVER;
+    const char* KeyFile = KEY_SERVER;
 
 
     Config.CertFile.CertificateFile = (char*)Cert;
@@ -284,8 +308,8 @@ QUIC_STATUS client_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Eve
         // A previous StreamSend call has completed, and the context is being
         // returned back to the app.
         //
-        free(Event->SEND_COMPLETE.ClientContext);
-        printf("[strm][%p] Data sent\n", Stream);
+        //free(Event->SEND_COMPLETE.ClientContext);
+        //printf("[strm][%p] Data sent\n", Stream);
         break;
     case QUIC_STREAM_EVENT_RECEIVE:
         //
@@ -321,11 +345,13 @@ QUIC_STATUS client_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Eve
     return QUIC_STATUS_SUCCESS;
 }
 
-void client_send(HQUIC Connection){
+void* client_send(void* varg){
 
+    HQUIC Connection = (HQUIC)varg;
     QUIC_STATUS Status;
     HQUIC Stream = NULL;
     uint8_t* SendBufferRaw;
+    uint8_t* sb_fill = NULL;
     QUIC_BUFFER* SendBuffer;
 
     //
@@ -358,10 +384,32 @@ void client_send(HQUIC Connection){
         Status = QUIC_STATUS_OUT_OF_MEMORY;
         goto Error;
     }
+
+
     SendBuffer = (QUIC_BUFFER*)SendBufferRaw;
     SendBuffer->Buffer = SendBufferRaw + sizeof(QUIC_BUFFER);
     SendBuffer->Length = quic_send_buffer_len;
 
+/*
+    int bound = INPUT_BUFF_CHUNK / 4;
+
+    for(int i = 0 ; i < INPUT_BUFF_CHUNK; i++){
+        
+        sb_fill = SendBuffer->Buffer + i;
+
+        if(i < (bound * 1)){
+            *sb_fill = 'a';
+        } else if(i < (bound * 2)){
+            *sb_fill = 'b';
+        } else if(i < (bound * 3)){
+            *sb_fill = 'c';
+        } else if(i < (bound * 4)){
+            *sb_fill = 'd';
+        } 
+
+
+    }
+*/
     printf("[strm][%p] Sending data...\n", Stream);
 
     //
@@ -369,17 +417,49 @@ void client_send(HQUIC Connection){
     // the buffer. This indicates this is the last buffer on the stream and the
     // the stream is shut down (in the send direction) immediately after.
     //
+
+    /*
+    if(getrandom(SendBuffer->Buffer, quic_send_buffer_len, 0) < 0){
+        printf("getrandom failed\n");
+        goto Error;
+    }
     if (QUIC_FAILED(Status = quic_api->StreamSend(Stream, SendBuffer, 1, QUIC_SEND_FLAG_FIN, SendBuffer))) {
         printf("StreamSend failed, 0x%x!\n", Status);
         free(SendBufferRaw);
         goto Error;
     }
-
+    */
+    
+    for(;;){
+        if(getrandom(SendBuffer->Buffer, quic_send_buffer_len, 0) < 0){
+            printf("getrandom failed\n");
+            goto Error;
+        }
+        if (QUIC_FAILED(Status = quic_api->StreamSend(Stream, SendBuffer, 1, QUIC_SEND_FLAG_NONE, SendBuffer))) {
+            printf("StreamSend failed, 0x%x!\n", Status);
+            free(SendBufferRaw);
+            goto Error;
+        }
+        client_total_sent += quic_send_buffer_len;
+        printf("client sent: %lu\n", client_total_sent);
+        if(client_total_sent >= INPUT_BUFF_MAX - 1){
+            if (QUIC_FAILED(Status = quic_api->StreamSend(Stream, SendBuffer, 1, QUIC_SEND_FLAG_FIN, SendBuffer))) {
+                printf("StreamSend failed, 0x%x!\n", Status);
+                free(SendBufferRaw);
+                goto Error;
+            }
+            printf("client send done\n");
+            break;
+        }
+    }
+        
 Error:
 
     if (QUIC_FAILED(Status)) {
         quic_api->ConnectionShutdown(Connection, QUIC_CONNECTION_SHUTDOWN_FLAG_NONE, 0);
     }
+
+    pthread_exit(NULL);
 }
 
 //
@@ -401,7 +481,6 @@ QUIC_STATUS client_conn_cb(HQUIC Connection, void* Context, QUIC_CONNECTION_EVEN
         // The handshake has completed for the connection.
         //
         printf("[conn][%p] Connected\n", Connection);
-        client_send(Connection);
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_TRANSPORT:
         //
@@ -436,11 +515,8 @@ QUIC_STATUS client_conn_cb(HQUIC Connection, void* Context, QUIC_CONNECTION_EVEN
         // A resumption ticket (also called New Session Ticket or NST) was
         // received from the server.
         //
-        printf("[conn][%p] Resumption ticket received (%u bytes):\n", Connection, Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength);
-        for (uint32_t i = 0; i < Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength; i++) {
-            printf("%.2X", (uint8_t)Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicket[i]);
-        }
-        printf("\n");
+        printf("[conn][%p] Resumption ticket received (%u bytes)\n", Connection, Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength);
+        pthread_create(&client_tid, NULL, client_send, (void*)Connection);
         break;
     default:
         break;
@@ -470,9 +546,9 @@ BOOLEAN client_conf()
     Config.Flags = QUIC_CREDENTIAL_FLAG_CLIENT;
     Config.Flags |= QUIC_CREDENTIAL_FLAG_SET_CA_CERTIFICATE_FILE;
 
-    const char* Ca = "certs/ca.pem";
-    const char* Cert = "certs/client.crt.pem";
-    const char* Key = "certs/client.key.pem";
+    const char* Ca = CERT_CA;
+    const char* Cert = CERT_CLIENT;
+    const char* Key = KEY_CLIENT;
 
     QUIC_CERTIFICATE_FILE CertFile;    
     CertFile.CertificateFile = (char*)Cert;
