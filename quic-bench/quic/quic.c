@@ -26,50 +26,8 @@ QUIC_TLS_SECRETS quic_client_secrets = {0};
 char* quic_ssl_keylog_env = "SSLKEYLOGFILE";
 
 
-void
-ServerSend(
-    _In_ HQUIC Stream
-    )
-{
-    //
-    // Allocates and builds the buffer to send over the stream.
-    //
-    void* SendBufferRaw = malloc(sizeof(QUIC_BUFFER) + quic_send_buffer_len);
-    if (SendBufferRaw == NULL) {
-        printf("SendBuffer allocation failed!\n");
-        quic_api->StreamShutdown(Stream, QUIC_STREAM_SHUTDOWN_FLAG_ABORT, 0);
-        return;
-    }
-    QUIC_BUFFER* SendBuffer = (QUIC_BUFFER*)SendBufferRaw;
-    SendBuffer->Buffer = (uint8_t*)SendBufferRaw + sizeof(QUIC_BUFFER);
-    SendBuffer->Length = quic_send_buffer_len;
+QUIC_STATUS server_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Event){
 
-    printf("[strm][%p] Sending data...\n", Stream);
-
-    //
-    // Sends the buffer over the stream. Note the FIN flag is passed along with
-    // the buffer. This indicates this is the last buffer on the stream and the
-    // the stream is shut down (in the send direction) immediately after.
-    //
-    QUIC_STATUS Status;
-    if (QUIC_FAILED(Status = quic_api->StreamSend(Stream, SendBuffer, 1, QUIC_SEND_FLAG_FIN, SendBuffer))) {
-        printf("StreamSend failed, 0x%x!\n", Status);
-        free(SendBufferRaw);
-        quic_api->StreamShutdown(Stream, QUIC_STREAM_SHUTDOWN_FLAG_ABORT, 0);
-    }
-}
-
-
-_IRQL_requires_max_(DISPATCH_LEVEL)
-_Function_class_(QUIC_STREAM_CALLBACK)
-QUIC_STATUS
-QUIC_API
-ServerStreamCallback(
-    _In_ HQUIC Stream,
-    _In_opt_ void* Context,
-    _Inout_ QUIC_STREAM_EVENT* Event
-    )
-{
     UNREFERENCED_PARAMETER(Context);
     switch (Event->Type) {
     case QUIC_STREAM_EVENT_SEND_COMPLETE:
@@ -91,7 +49,6 @@ ServerStreamCallback(
         // The peer gracefully shut down its send direction of the stream.
         //
         printf("[strm][%p] Peer shut down\n", Stream);
-        ServerSend(Stream);
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_ABORTED:
         //
@@ -117,16 +74,8 @@ ServerStreamCallback(
 //
 // The server's callback for connection events from quic_api.
 //
-_IRQL_requires_max_(DISPATCH_LEVEL)
-_Function_class_(QUIC_CONNECTION_CALLBACK)
-QUIC_STATUS
-QUIC_API
-ServerConnectionCallback(
-    _In_ HQUIC Connection,
-    _In_opt_ void* Context,
-    _Inout_ QUIC_CONNECTION_EVENT* Event
-    )
-{
+QUIC_STATUS server_conn_cb(HQUIC Connection,void* Context, QUIC_CONNECTION_EVENT* Event){
+
     UNREFERENCED_PARAMETER(Context);
     switch (Event->Type) {
     case QUIC_CONNECTION_EVENT_CONNECTED:
@@ -168,7 +117,7 @@ ServerConnectionCallback(
         // callback handler before returning.
         //
         printf("[strm][%p] Peer started\n", Event->PEER_STREAM_STARTED.Stream);
-        quic_api->SetCallbackHandler(Event->PEER_STREAM_STARTED.Stream, (void*)ServerStreamCallback, NULL);
+        quic_api->SetCallbackHandler(Event->PEER_STREAM_STARTED.Stream, (void*)server_stream_cb, NULL);
         break;
     case QUIC_CONNECTION_EVENT_RESUMED:
         //
@@ -186,16 +135,9 @@ ServerConnectionCallback(
 //
 // The server's callback for listener events from quic_api.
 //
-_IRQL_requires_max_(PASSIVE_LEVEL)
-_Function_class_(QUIC_LISTENER_CALLBACK)
-QUIC_STATUS
-QUIC_API
-ServerListenerCallback(
-    _In_ HQUIC Listener,
-    _In_opt_ void* Context,
-    _Inout_ QUIC_LISTENER_EVENT* Event
-    )
-{
+
+QUIC_STATUS server_listen_cb(HQUIC Listener, void* Context, QUIC_LISTENER_EVENT* Event){
+
     UNREFERENCED_PARAMETER(Listener);
     UNREFERENCED_PARAMETER(Context);
     QUIC_STATUS Status = QUIC_STATUS_NOT_SUPPORTED;
@@ -206,7 +148,7 @@ ServerListenerCallback(
         // proceed, the server must provide a configuration for QUIC to use. The
         // app MUST set the callback handler before returning.
         //
-        quic_api->SetCallbackHandler(Event->NEW_CONNECTION.Connection, (void*)ServerConnectionCallback, NULL);
+        quic_api->SetCallbackHandler(Event->NEW_CONNECTION.Connection, (void*)server_conn_cb, NULL);
         Status = quic_api->ConnectionSetConfiguration(Event->NEW_CONNECTION.Connection, quic_configuration);
         break;
     default:
@@ -220,7 +162,7 @@ ServerListenerCallback(
 // Helper function to load a server configuration. Uses the command line
 // arguments to load the credential part of the configuration.
 //
-BOOLEAN ServerLoadConfiguration() {
+BOOLEAN server_conf() {
 
     QUIC_SETTINGS Settings = {0};
     //
@@ -245,8 +187,10 @@ BOOLEAN ServerLoadConfiguration() {
     QUIC_CREDENTIAL_CONFIG_HELPER Config;
     memset(&Config, 0, sizeof(Config));
     Config.CredConfig.Flags = QUIC_CREDENTIAL_FLAG_NONE;
+    Config.CredConfig.Flags |= QUIC_CREDENTIAL_FLAG_SET_CA_CERTIFICATE_FILE;
 
 
+    const char* Ca = "certs/ca.pem";
     const char* Cert = "certs/server.crt.pem";
     const char* KeyFile = "certs/server.key.pem";
 
@@ -255,6 +199,7 @@ BOOLEAN ServerLoadConfiguration() {
     Config.CertFile.PrivateKeyFile = (char*)KeyFile;
     Config.CredConfig.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
     Config.CredConfig.CertificateFile = &Config.CertFile;
+    Config.CredConfig.CaCertificateFile = Ca;
   //
     // Allocate/initialize the configuration object, with the configured ALPN
     // and settings.
@@ -279,7 +224,7 @@ BOOLEAN ServerLoadConfiguration() {
 //
 // Runs the server side of the protocol.
 //
-void RunServer(){
+void run_server(){
     QUIC_STATUS Status;
     HQUIC Listener = NULL;
 
@@ -294,14 +239,14 @@ void RunServer(){
     //
     // Load the server configuration based on the command line.
     //
-    if (!ServerLoadConfiguration()) {
+    if (!server_conf()) {
         return;
     }
 
     //
     // Create/allocate a new listener object.
     //
-    if (QUIC_FAILED(Status = quic_api->ListenerOpen(quic_registration, ServerListenerCallback, NULL, &Listener))) {
+    if (QUIC_FAILED(Status = quic_api->ListenerOpen(quic_registration, server_listen_cb, NULL, &Listener))) {
         printf("ListenerOpen failed, 0x%x!\n", Status);
         goto Error;
     }
@@ -329,16 +274,9 @@ Error:
 
 
 
-_IRQL_requires_max_(DISPATCH_LEVEL)
-_Function_class_(QUIC_STREAM_CALLBACK)
-QUIC_STATUS
-QUIC_API
-ClientStreamCallback(
-    _In_ HQUIC Stream,
-    _In_opt_ void* Context,
-    _Inout_ QUIC_STREAM_EVENT* Event
-    )
-{
+
+QUIC_STATUS client_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Event){
+
     UNREFERENCED_PARAMETER(Context);
     switch (Event->Type) {
     case QUIC_STREAM_EVENT_SEND_COMPLETE:
@@ -383,11 +321,8 @@ ClientStreamCallback(
     return QUIC_STATUS_SUCCESS;
 }
 
-void
-ClientSend(
-    _In_ HQUIC Connection
-    )
-{
+void client_send(HQUIC Connection){
+
     QUIC_STATUS Status;
     HQUIC Stream = NULL;
     uint8_t* SendBufferRaw;
@@ -397,7 +332,7 @@ ClientSend(
     // Create/allocate a new bidirectional stream. The stream is just allocated
     // and no QUIC stream identifier is assigned until it's started.
     //
-    if (QUIC_FAILED(Status = quic_api->StreamOpen(Connection, QUIC_STREAM_OPEN_FLAG_NONE, ClientStreamCallback, NULL, &Stream))) {
+    if (QUIC_FAILED(Status = quic_api->StreamOpen(Connection, QUIC_STREAM_OPEN_FLAG_NONE, client_stream_cb, NULL, &Stream))) {
         printf("StreamOpen failed, 0x%x!\n", Status);
         goto Error;
     }
@@ -450,16 +385,9 @@ Error:
 //
 // The clients's callback for connection events from quic_api.
 //
-_IRQL_requires_max_(DISPATCH_LEVEL)
-_Function_class_(QUIC_CONNECTION_CALLBACK)
-QUIC_STATUS
-QUIC_API
-ClientConnectionCallback(
-    _In_ HQUIC Connection,
-    _In_opt_ void* Context,
-    _Inout_ QUIC_CONNECTION_EVENT* Event
-    )
-{
+
+QUIC_STATUS client_conn_cb(HQUIC Connection, void* Context, QUIC_CONNECTION_EVENT* Event){
+
     UNREFERENCED_PARAMETER(Context);
 
     if (Event->Type == QUIC_CONNECTION_EVENT_CONNECTED) {
@@ -473,7 +401,7 @@ ClientConnectionCallback(
         // The handshake has completed for the connection.
         //
         printf("[conn][%p] Connected\n", Connection);
-        ClientSend(Connection);
+        client_send(Connection);
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_TRANSPORT:
         //
@@ -523,7 +451,7 @@ ClientConnectionCallback(
 //
 // Helper function to load a client configuration.
 //
-BOOLEAN ClientLoadConfiguration()
+BOOLEAN client_conf()
 {
     QUIC_SETTINGS Settings = {0};
     //
@@ -540,17 +468,17 @@ BOOLEAN ClientLoadConfiguration()
     memset(&Config, 0, sizeof(Config));
     Config.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
     Config.Flags = QUIC_CREDENTIAL_FLAG_CLIENT;
+    Config.Flags |= QUIC_CREDENTIAL_FLAG_SET_CA_CERTIFICATE_FILE;
 
-//    const char* Ca = "certs/ca.pem";
+    const char* Ca = "certs/ca.pem";
     const char* Cert = "certs/client.crt.pem";
     const char* Key = "certs/client.key.pem";
-
-//    Config.CaCertificateFile = Ca;
 
     QUIC_CERTIFICATE_FILE CertFile;    
     CertFile.CertificateFile = (char*)Cert;
     CertFile.PrivateKeyFile = (char*)Key;
     Config.CertificateFile = &CertFile;
+    Config.CaCertificateFile = Ca;
 
     //
     // Allocate/initialize the configuration object, with the configured ALPN
@@ -577,11 +505,11 @@ BOOLEAN ClientLoadConfiguration()
 //
 // Runs the client side of the protocol.
 //
-void RunClient() {
+void run_client() {
     //
     // Load the client configuration based on the "unsecure" command line option.
     //
-    if (!ClientLoadConfiguration()) {
+    if (!client_conf()) {
         return;
     }
 
@@ -593,7 +521,7 @@ void RunClient() {
     //
     // Allocate a new connection object.
     //
-    if (QUIC_FAILED(Status = quic_api->ConnectionOpen(quic_registration, ClientConnectionCallback, NULL, &Connection))) {
+    if (QUIC_FAILED(Status = quic_api->ConnectionOpen(quic_registration, client_conn_cb, NULL, &Connection))) {
         printf("ConnectionOpen failed, 0x%x!\n", Status);
         goto Error;
     }
@@ -601,7 +529,7 @@ void RunClient() {
     //
     // Get the target / server name or IP from the command line.
     //
-    const char* Target = "localhost";
+    const char* Target = SERVER_ADDR;
 
     printf("[conn][%p] Connecting...\n", Connection);
 
@@ -649,9 +577,9 @@ int main(int argc, char** argv){
     }
 
     if(strcmp(argv[1], "c") == 0){
-        RunClient();
+        run_client();
     } else if(strcmp(argv[1], "s") == 0){
-        RunServer();
+        run_server();
     } else {
         help();
         return -1;

@@ -237,17 +237,17 @@ BOOLEAN ClientLoadConfiguration()
     memset(&Config, 0, sizeof(Config));
     Config.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
     Config.Flags = QUIC_CREDENTIAL_FLAG_CLIENT;
+    Config.Flags |= QUIC_CREDENTIAL_FLAG_SET_CA_CERTIFICATE_FILE;
 
-//    const char* Ca = "certs/ca.pem";
+    const char* Ca = "certs/ca.pem";
     const char* Cert = "certs/client.crt.pem";
     const char* Key = "certs/client.key.pem";
-
-//    Config.CaCertificateFile = Ca;
 
     QUIC_CERTIFICATE_FILE CertFile;    
     CertFile.CertificateFile = (char*)Cert;
     CertFile.PrivateKeyFile = (char*)Key;
     Config.CertificateFile = &CertFile;
+    Config.CaCertificateFile = Ca;
 
     //
     // Allocate/initialize the configuration object, with the configured ALPN

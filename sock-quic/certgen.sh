@@ -36,8 +36,8 @@ echo "signing requests for client...."
 
 openssl x509 -req -extfile <(printf "subjectAltName = DNS:client") -days 365 -in ./certs/client.csr -CA ./certs/ca.pem -CAkey ./certs/ca_priv.pem -CAcreateserial -sha256 -out ./certs/client.crt.pem 
 
-sudo /bin/cp -Rf ca.pem /usr/local/share/ca-certificates/quicroot.crt
+#sudo /bin/cp -Rf ca.pem /usr/local/share/ca-certificates/quicroot.crt
 
-sudo update-ca-certificates
+#sudo update-ca-certificates
 
 echo "done!"
