@@ -23,7 +23,6 @@ HQUIC quic_configuration;
 QUIC_TLS_SECRETS quic_client_secrets = {0};
 
 
-char* quic_ssl_keylog_env = "SSLKEYLOGFILE";
 
 pthread_t client_tid;
 uint64_t client_total_sent = 0;
@@ -51,26 +50,26 @@ void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len)
 
 }
 
-QUIC_STATUS server_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Event){
+QUIC_STATUS server_stream_cb(HQUIC stream, void* context, QUIC_STREAM_EVENT* event){
 
-    UNREFERENCED_PARAMETER(Context);
-    switch (Event->Type) {
+    UNREFERENCED_PARAMETER(context);
+    switch (event->Type) {
     case QUIC_STREAM_EVENT_SEND_COMPLETE:
-        free(Event->SEND_COMPLETE.ClientContext);
+        free(event->SEND_COMPLETE.ClientContext);
         break;
     case QUIC_STREAM_EVENT_RECEIVE:
-        server_recv(Event->RECEIVE.Buffers, Event->RECEIVE.BufferCount, Event->RECEIVE.TotalBufferLength);
+        server_recv(event->RECEIVE.Buffers, event->RECEIVE.BufferCount, event->RECEIVE.TotalBufferLength);
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_SHUTDOWN:
         printf("client shut down\n");
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_ABORTED:
         printf("client aborted\n");
-        quic_api->StreamShutdown(Stream, QUIC_STREAM_SHUTDOWN_FLAG_ABORT, 0);
+        quic_api->StreamShutdown(stream, QUIC_STREAM_SHUTDOWN_FLAG_ABORT, 0);
         break;
     case QUIC_STREAM_EVENT_SHUTDOWN_COMPLETE:
         printf("stream done\n");
-        quic_api->StreamClose(Stream);
+        quic_api->StreamClose(stream);
         break;
     default:
         break;
@@ -78,33 +77,33 @@ QUIC_STATUS server_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Eve
     return QUIC_STATUS_SUCCESS;
 }
 
-QUIC_STATUS server_conn_cb(HQUIC Connection,void* Context, QUIC_CONNECTION_EVENT* Event){
+QUIC_STATUS server_conn_cb(HQUIC connection,void* context, QUIC_CONNECTION_EVENT* event){
 
-    UNREFERENCED_PARAMETER(Context);
-    switch (Event->Type) {
+    UNREFERENCED_PARAMETER(context);
+    switch (event->Type) {
     case QUIC_CONNECTION_EVENT_CONNECTED:
 
         printf("client connected\n");
-        quic_api->ConnectionSendResumptionTicket(Connection, QUIC_SEND_RESUMPTION_FLAG_NONE, 0, NULL);
+        quic_api->ConnectionSendResumptionTicket(connection, QUIC_SEND_RESUMPTION_FLAG_NONE, 0, NULL);
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_TRANSPORT:
-        if (Event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status == QUIC_STATUS_CONNECTION_IDLE) {
+        if (event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status == QUIC_STATUS_CONNECTION_IDLE) {
             printf("successfully shut down on idle\n");
         } else {
-            printf("shut down by transport: 0x%x\n", Event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status);
+            printf("shut down by transport: 0x%x\n", event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status);
         }
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_PEER:
-        printf("shut down by peer: 0x%llu\n",(unsigned long long)Event->SHUTDOWN_INITIATED_BY_PEER.ErrorCode);
+        printf("shut down by peer: 0x%llu\n",(unsigned long long)event->SHUTDOWN_INITIATED_BY_PEER.ErrorCode);
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
         printf("connection done\n");
-        quic_api->ConnectionClose(Connection);
+        quic_api->ConnectionClose(connection);
         server_done = 1;
         break;
     case QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED:
         printf("client stream started\n");
-        quic_api->SetCallbackHandler(Event->PEER_STREAM_STARTED.Stream, (void*)server_stream_cb, NULL);
+        quic_api->SetCallbackHandler(event->PEER_STREAM_STARTED.Stream, (void*)server_stream_cb, NULL);
         break;
     case QUIC_CONNECTION_EVENT_RESUMED:
         printf("client connection resumed\n");
@@ -115,60 +114,63 @@ QUIC_STATUS server_conn_cb(HQUIC Connection,void* Context, QUIC_CONNECTION_EVENT
     return QUIC_STATUS_SUCCESS;
 }
 
-QUIC_STATUS server_listen_cb(HQUIC Listener, void* Context, QUIC_LISTENER_EVENT* Event){
+QUIC_STATUS server_listen_cb(HQUIC listener, void* context, QUIC_LISTENER_EVENT* event){
 
-    UNREFERENCED_PARAMETER(Listener);
-    UNREFERENCED_PARAMETER(Context);
-    QUIC_STATUS Status = QUIC_STATUS_NOT_SUPPORTED;
-    switch (Event->Type) {
+    UNREFERENCED_PARAMETER(listener);
+    UNREFERENCED_PARAMETER(context);
+    QUIC_STATUS status = QUIC_STATUS_NOT_SUPPORTED;
+    switch (event->Type) {
     case QUIC_LISTENER_EVENT_NEW_CONNECTION:
-        quic_api->SetCallbackHandler(Event->NEW_CONNECTION.Connection, (void*)server_conn_cb, NULL);
-        Status = quic_api->ConnectionSetConfiguration(Event->NEW_CONNECTION.Connection, quic_configuration);
+        quic_api->SetCallbackHandler(event->NEW_CONNECTION.Connection, (void*)server_conn_cb, NULL);
+        status = quic_api->ConnectionSetConfiguration(event->NEW_CONNECTION.Connection, quic_configuration);
         break;
     default:
         break;
     }
-    return Status;
+    return status;
 }
 
 
 
-BOOLEAN server_conf() {
+int server_conf() {
 
-    QUIC_SETTINGS Settings = {0};
+    QUIC_SETTINGS settings = {0};
 
-    Settings.IdleTimeoutMs = quic_idle_timeoutms;
-    Settings.IsSet.IdleTimeoutMs = TRUE;
+    settings.IdleTimeoutMs = quic_idle_timeoutms;
+    settings.IsSet.IdleTimeoutMs = TRUE;
 
-    Settings.ServerResumptionLevel = QUIC_SERVER_RESUME_AND_ZERORTT;
-    Settings.IsSet.ServerResumptionLevel = TRUE;
+    settings.ServerResumptionLevel = QUIC_SERVER_RESUME_AND_ZERORTT;
+    settings.IsSet.ServerResumptionLevel = TRUE;
 
-    Settings.PeerBidiStreamCount = 1;
-    Settings.IsSet.PeerBidiStreamCount = TRUE;
+    settings.PeerBidiStreamCount = 1;
+    settings.IsSet.PeerBidiStreamCount = TRUE;
 
-    QUIC_CREDENTIAL_CONFIG_HELPER Config;
-    memset(&Config, 0, sizeof(Config));
-    Config.CredConfig.Flags = QUIC_CREDENTIAL_FLAG_NONE;
-    Config.CredConfig.Flags |= QUIC_CREDENTIAL_FLAG_SET_CA_CERTIFICATE_FILE;
+    QUIC_CREDENTIAL_CONFIG_HELPER config;
+    memset(&config, 0, sizeof(config));
+    config.CredConfig.Flags = QUIC_CREDENTIAL_FLAG_NONE;
+    config.CredConfig.Flags |= QUIC_CREDENTIAL_FLAG_SET_CA_CERTIFICATE_FILE;
+    config.CredConfig.Flags |= QUIC_CREDENTIAL_FLAG_SET_ALLOWED_CIPHER_SUITES;
+    config.CredConfig.AllowedCipherSuites = QUIC_ALLOWED_CIPHER_SUITE_AES_256_GCM_SHA384;
 
-    const char* Ca = CERT_CA;
-    const char* Cert = CERT_SERVER;
-    const char* KeyFile = KEY_SERVER;
 
-    Config.CertFile.CertificateFile = (char*)Cert;
-    Config.CertFile.PrivateKeyFile = (char*)KeyFile;
-    Config.CredConfig.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
-    Config.CredConfig.CertificateFile = &Config.CertFile;
-    Config.CredConfig.CaCertificateFile = Ca;
+    const char* ca = CERT_CA;
+    const char* cert = CERT_SERVER;
+    const char* key = KEY_SERVER;
 
-    QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
-    if (QUIC_FAILED(Status = quic_api->ConfigurationOpen(quic_registration, &quic_alpn, 1, &Settings, sizeof(Settings), NULL, &quic_configuration))) {
-        printf("ConfigurationOpen failed, 0x%x!\n", Status);
+    config.CertFile.CertificateFile = (char*)cert;
+    config.CertFile.PrivateKeyFile = (char*)key;
+    config.CredConfig.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
+    config.CredConfig.CertificateFile = &config.CertFile;
+    config.CredConfig.CaCertificateFile = ca;
+
+    QUIC_STATUS status = QUIC_STATUS_SUCCESS;
+    if (QUIC_FAILED(status = quic_api->ConfigurationOpen(quic_registration, &quic_alpn, 1, &settings, sizeof(settings), NULL, &quic_configuration))) {
+        printf("ConfigurationOpen failed, 0x%x!\n", status);
         return FALSE;
     }
 
-    if (QUIC_FAILED(Status = quic_api->ConfigurationLoadCredential(quic_configuration, &Config.CredConfig))) {
-        printf("ConfigurationLoadCredential failed, 0x%x!\n", Status);
+    if (QUIC_FAILED(status = quic_api->ConfigurationLoadCredential(quic_configuration, &config.CredConfig))) {
+        printf("ConfigurationLoadCredential failed, 0x%x!\n", status);
         return FALSE;
     }
 
@@ -177,46 +179,46 @@ BOOLEAN server_conf() {
 
 
 void run_server(){
-    QUIC_STATUS Status;
-    HQUIC Listener = NULL;
+    QUIC_STATUS status;
+    HQUIC listener = NULL;
 
-    QUIC_ADDR Address = {0};
-    QuicAddrSetFamily(&Address, QUIC_ADDRESS_FAMILY_UNSPEC);
-    QuicAddrSetPort(&Address, quic_udp_port);
+    QUIC_ADDR address = {0};
+    QuicAddrSetFamily(&address, QUIC_ADDRESS_FAMILY_UNSPEC);
+    QuicAddrSetPort(&address, quic_udp_port);
 
-    if (!server_conf()) {
+    if (server_conf() < 0) {
         return;
     }
 
-    if (QUIC_FAILED(Status = quic_api->ListenerOpen(quic_registration, server_listen_cb, NULL, &Listener))) {
-        printf("ListenerOpen failed, 0x%x!\n", Status);
-        goto Error;
+    if (QUIC_FAILED(status = quic_api->ListenerOpen(quic_registration, server_listen_cb, NULL, &listener))) {
+        printf("ListenerOpen failed, 0x%x!\n", status);
+        goto error;
     }
 
 
-    if (QUIC_FAILED(Status = quic_api->ListenerStart(Listener, &quic_alpn, 1, &Address))) {
-        printf("ListenerStart failed, 0x%x!\n", Status);
-        goto Error;
+    if (QUIC_FAILED(status = quic_api->ListenerStart(listener, &quic_alpn, 1, &address))) {
+        printf("ListenerStart failed, 0x%x!\n", status);
+        goto error;
     }
 
     while(!server_done){
         sleep(1);
     }
 
-Error:
+error:
 
-    if (Listener != NULL) {
-        quic_api->ListenerClose(Listener);
+    if (listener != NULL) {
+        quic_api->ListenerClose(listener);
     }
 }
 
 
 
 
-QUIC_STATUS client_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Event){
+QUIC_STATUS client_stream_cb(HQUIC stream, void* context, QUIC_STREAM_EVENT* event){
 
-    UNREFERENCED_PARAMETER(Context);
-    switch (Event->Type) {
+    UNREFERENCED_PARAMETER(context);
+    switch (event->Type) {
     case QUIC_STREAM_EVENT_SEND_COMPLETE:
 
         //free(Event->SEND_COMPLETE.ClientContext);
@@ -234,8 +236,8 @@ QUIC_STATUS client_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Eve
         break;
     case QUIC_STREAM_EVENT_SHUTDOWN_COMPLETE:
         printf("stream done\n");
-        if (!Event->SHUTDOWN_COMPLETE.AppCloseInProgress) {
-            quic_api->StreamClose(Stream);
+        if (!event->SHUTDOWN_COMPLETE.AppCloseInProgress) {
+            quic_api->StreamClose(stream);
         }
         break;
     default:
@@ -246,35 +248,35 @@ QUIC_STATUS client_stream_cb(HQUIC Stream, void* Context, QUIC_STREAM_EVENT* Eve
 
 void* client_send(void* varg){
 
-    HQUIC Connection = (HQUIC)varg;
-    QUIC_STATUS Status;
-    HQUIC Stream = NULL;
-    uint8_t* SendBufferRaw = NULL;
+    HQUIC connection = (HQUIC)varg;
+    QUIC_STATUS status;
+    HQUIC stream = NULL;
+    uint8_t* send_buffer_raw = NULL;
     uint8_t* sb_fill = NULL;
-    QUIC_BUFFER* SendBuffer;
+    QUIC_BUFFER* send_buffer;
 
-    if (QUIC_FAILED(Status = quic_api->StreamOpen(Connection, QUIC_STREAM_OPEN_FLAG_NONE, client_stream_cb, NULL, &Stream))) {
-        printf("StreamOpen failed, 0x%x!\n", Status);
-        goto Error;
+    if (QUIC_FAILED(status = quic_api->StreamOpen(connection, QUIC_STREAM_OPEN_FLAG_NONE, client_stream_cb, NULL, &stream))) {
+        printf("StreamOpen failed, 0x%x!\n", status);
+        goto error;
     }
 
-    if (QUIC_FAILED(Status = quic_api->StreamStart(Stream, QUIC_STREAM_START_FLAG_NONE))) {
-        printf("StreamStart failed, 0x%x!\n", Status);
-        quic_api->StreamClose(Stream);
-        goto Error;
+    if (QUIC_FAILED(status = quic_api->StreamStart(stream, QUIC_STREAM_START_FLAG_NONE))) {
+        printf("StreamStart failed, 0x%x!\n", status);
+        quic_api->StreamClose(stream);
+        goto error;
     }
 
-    SendBufferRaw = (uint8_t*)malloc(sizeof(QUIC_BUFFER) + quic_send_buffer_len);
-    if (SendBufferRaw == NULL) {
+    send_buffer_raw = (uint8_t*)malloc(sizeof(QUIC_BUFFER) + quic_send_buffer_len);
+    if (send_buffer_raw == NULL) {
         printf("SendBuffer allocation failed!\n");
-        Status = QUIC_STATUS_OUT_OF_MEMORY;
-        goto Error;
+        status = QUIC_STATUS_OUT_OF_MEMORY;
+        goto error;
     }
 
 
-    SendBuffer = (QUIC_BUFFER*)SendBufferRaw;
-    SendBuffer->Buffer = SendBufferRaw + sizeof(QUIC_BUFFER);
-    SendBuffer->Length = quic_send_buffer_len;
+    send_buffer = (QUIC_BUFFER*)send_buffer_raw;
+    send_buffer->Buffer = send_buffer_raw + sizeof(QUIC_BUFFER);
+    send_buffer->Length = quic_send_buffer_len;
 
 /*
     int bound = INPUT_BUFF_CHUNK / 4;
@@ -303,23 +305,23 @@ void* client_send(void* varg){
     printf("client sending...\n");
 
     for(;;){
-        if(getrandom(SendBuffer->Buffer, quic_send_buffer_len, 0) < 0){
+        if(getrandom(send_buffer->Buffer, quic_send_buffer_len, 0) < 0){
             printf("getrandom failed\n");
-            goto Error;
+            goto error;
         }
-        if (QUIC_FAILED(Status = quic_api->StreamSend(Stream, SendBuffer, 1, QUIC_SEND_FLAG_NONE, SendBuffer))) {
-            printf("StreamSend failed, 0x%x!\n", Status);
-            free(SendBufferRaw);
-            goto Error;
+        if (QUIC_FAILED(status = quic_api->StreamSend(stream, send_buffer, 1, QUIC_SEND_FLAG_NONE, send_buffer))) {
+            printf("StreamSend failed, 0x%x!\n", status);
+            free(send_buffer_raw);
+            goto error;
         }
         client_total_sent += quic_send_buffer_len;
         //printf("client sent: %lu\n", client_total_sent);
         if(client_total_sent >= INPUT_BUFF_MAX){
-            SendBuffer->Length = 0;
-            if (QUIC_FAILED(Status = quic_api->StreamSend(Stream, SendBuffer, 1, QUIC_SEND_FLAG_FIN, SendBuffer))) {
-                printf("StreamSend failed, 0x%x!\n", Status);
-                free(SendBufferRaw);
-                goto Error;
+            send_buffer->Length = 0;
+            if (QUIC_FAILED(status = quic_api->StreamSend(stream, send_buffer, 1, QUIC_SEND_FLAG_FIN, send_buffer))) {
+                printf("StreamSend failed, 0x%x!\n", status);
+                free(send_buffer_raw);
+                goto error;
             }
             printf("client send done\n");
             break;
@@ -332,53 +334,53 @@ void* client_send(void* varg){
     
     printf("sec: %lu ms: %lu\n", seconds, ms);
         
-Error:
+error:
 
-    if (QUIC_FAILED(Status)) {
-        quic_api->ConnectionShutdown(Connection, QUIC_CONNECTION_SHUTDOWN_FLAG_NONE, 0);
+    if (QUIC_FAILED(status)) {
+        quic_api->ConnectionShutdown(connection, QUIC_CONNECTION_SHUTDOWN_FLAG_NONE, 0);
     }
 
-    if(SendBufferRaw != NULL){
-        free(SendBufferRaw);
+    if(send_buffer_raw != NULL){
+        free(send_buffer_raw);
     }
 
     pthread_exit(NULL);
 }
 
-QUIC_STATUS client_conn_cb(HQUIC Connection, void* Context, QUIC_CONNECTION_EVENT* Event){
+QUIC_STATUS client_conn_cb(HQUIC connection, void* context, QUIC_CONNECTION_EVENT* event){
 
-    UNREFERENCED_PARAMETER(Context);
+    UNREFERENCED_PARAMETER(context);
 
-    if (Event->Type == QUIC_CONNECTION_EVENT_CONNECTED) {
+    if (event->Type == QUIC_CONNECTION_EVENT_CONNECTED) {
 
         printf("client: quic event connected\n");
     }
 
-    switch (Event->Type) {
+    switch (event->Type) {
     case QUIC_CONNECTION_EVENT_CONNECTED:
         printf("connected\n");
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_TRANSPORT:
-        if (Event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status == QUIC_STATUS_CONNECTION_IDLE) {
+        if (event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status == QUIC_STATUS_CONNECTION_IDLE) {
             printf("successfully shut down on idle\n");
         } else {
-            printf("shut down by transport: 0x%x\n", Event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status);
+            printf("shut down by transport: 0x%x\n", event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status);
         }
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_PEER:
 
-        printf("shut down by server: 0x%llu\n",(unsigned long long)Event->SHUTDOWN_INITIATED_BY_PEER.ErrorCode);
+        printf("shut down by server: 0x%llu\n",(unsigned long long)event->SHUTDOWN_INITIATED_BY_PEER.ErrorCode);
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
 
         printf("connection done\n");
-        if (!Event->SHUTDOWN_COMPLETE.AppCloseInProgress) {
-            quic_api->ConnectionClose(Connection);
+        if (!event->SHUTDOWN_COMPLETE.AppCloseInProgress) {
+            quic_api->ConnectionClose(connection);
         }
         break;
     case QUIC_CONNECTION_EVENT_RESUMPTION_TICKET_RECEIVED:
-        printf("resumption ticket received: %u bytes\n", Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength);
-        pthread_create(&client_tid, NULL, client_send, (void*)Connection);
+        printf("resumption ticket received: %u bytes\n", event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength);
+        pthread_create(&client_tid, NULL, client_send, (void*)connection);
         break;
     default:
         break;
@@ -387,71 +389,72 @@ QUIC_STATUS client_conn_cb(HQUIC Connection, void* Context, QUIC_CONNECTION_EVEN
 }
 
 
-BOOLEAN client_conf()
-{
-    QUIC_SETTINGS Settings = {0};
+int client_conf(){
+    QUIC_SETTINGS settings = {0};
 
-    Settings.IdleTimeoutMs = quic_idle_timeoutms;
-    Settings.IsSet.IdleTimeoutMs = TRUE;
+    settings.IdleTimeoutMs = quic_idle_timeoutms;
+    settings.IsSet.IdleTimeoutMs = TRUE;
 
-    QUIC_CREDENTIAL_CONFIG Config;
-    memset(&Config, 0, sizeof(Config));
-    Config.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
-    Config.Flags = QUIC_CREDENTIAL_FLAG_CLIENT;
-    Config.Flags |= QUIC_CREDENTIAL_FLAG_SET_CA_CERTIFICATE_FILE;
+    QUIC_CREDENTIAL_CONFIG config;
+    memset(&config, 0, sizeof(config));
+    config.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
+    config.Flags = QUIC_CREDENTIAL_FLAG_CLIENT;
+    config.Flags |= QUIC_CREDENTIAL_FLAG_SET_CA_CERTIFICATE_FILE;
+    config.Flags |= QUIC_CREDENTIAL_FLAG_SET_ALLOWED_CIPHER_SUITES;
+    config.AllowedCipherSuites = QUIC_ALLOWED_CIPHER_SUITE_AES_256_GCM_SHA384;
 
-    const char* Ca = CERT_CA;
-    const char* Cert = CERT_CLIENT;
-    const char* Key = KEY_CLIENT;
+    const char* ca = CERT_CA;
+    const char* cert = CERT_CLIENT;
+    const char* key = KEY_CLIENT;
 
-    QUIC_CERTIFICATE_FILE CertFile;    
-    CertFile.CertificateFile = (char*)Cert;
-    CertFile.PrivateKeyFile = (char*)Key;
-    Config.CertificateFile = &CertFile;
-    Config.CaCertificateFile = Ca;
+    QUIC_CERTIFICATE_FILE cert_file;    
+    cert_file.CertificateFile = (char*)cert;
+    cert_file.PrivateKeyFile = (char*)key;
+    config.CertificateFile = &cert_file;
+    config.CaCertificateFile = ca;
 
 
-    QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
-    if (QUIC_FAILED(Status = quic_api->ConfigurationOpen(quic_registration, &quic_alpn, 1, &Settings, sizeof(Settings), NULL, &quic_configuration))) {
-        printf("ConfigurationOpen failed, 0x%x!\n", Status);
-        return FALSE;
+    QUIC_STATUS status = QUIC_STATUS_SUCCESS;
+    if (QUIC_FAILED(status = quic_api->ConfigurationOpen(quic_registration, &quic_alpn, 1, &settings, sizeof(settings), NULL, &quic_configuration))) {
+        printf("ConfigurationOpen failed, 0x%x!\n", status);
+        return -1;
     }
 
-    if (QUIC_FAILED(Status = quic_api->ConfigurationLoadCredential(quic_configuration, &Config))) {
-        printf("ConfigurationLoadCredential failed, 0x%x!\n", Status);
-        return FALSE;
+    if (QUIC_FAILED(status = quic_api->ConfigurationLoadCredential(quic_configuration, &config))) {
+        printf("ConfigurationLoadCredential failed, 0x%x!\n", status);
+        return -1;
     }
 
-    return TRUE;
+    return 0;
 }
 
 void run_client() {
 
-    if (!client_conf()) {
+    if (client_conf() < 0) {
         return;
     }
 
-    QUIC_STATUS Status;
-    const char* ResumptionTicketString = NULL;
-    const char* SslKeyLogFile = getenv(quic_ssl_keylog_env);
-    HQUIC Connection = NULL;
+    QUIC_STATUS status;
+    const char* resumption_ticket_string = NULL;
 
-    if (QUIC_FAILED(Status = quic_api->ConnectionOpen(quic_registration, client_conn_cb, NULL, &Connection))) {
-        printf("ConnectionOpen failed, 0x%x!\n", Status);
-        goto Error;
+    HQUIC connection = NULL;
+
+    if (QUIC_FAILED(status = quic_api->ConnectionOpen(quic_registration, client_conn_cb, NULL, &connection))) {
+        printf("ConnectionOpen failed, 0x%x!\n", status);
+        goto error;
     }
 
-    const char* Target = SERVER_ADDR;
+    const char* target = SERVER_ADDR;
 
-    if (QUIC_FAILED(Status = quic_api->ConnectionStart(Connection, quic_configuration, QUIC_ADDRESS_FAMILY_UNSPEC, Target, quic_udp_port))) {
-        printf("ConnectionStart failed, 0x%x!\n", Status);
-        goto Error;
+    if (QUIC_FAILED(status = quic_api->ConnectionStart(connection, quic_configuration, QUIC_ADDRESS_FAMILY_UNSPEC, target, quic_udp_port))) {
+        printf("ConnectionStart failed, 0x%x!\n", status);
+        goto error;
     }
 
-Error:
+error:
 
-    if (QUIC_FAILED(Status) && Connection != NULL) {
-        quic_api->ConnectionClose(Connection);
+    if (QUIC_FAILED(status) && connection != NULL) {
+        quic_api->ConnectionClose(connection);
     }
 }
 
@@ -471,16 +474,16 @@ int main(int argc, char** argv){
         return -1;
     }
 
-    QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
+    QUIC_STATUS status = QUIC_STATUS_SUCCESS;
 
-    if (QUIC_FAILED(Status = MsQuicOpen2(&quic_api))) {
-        printf("MsQuicOpen2 failed, 0x%x!\n", Status);
-        goto Error;
+    if (QUIC_FAILED(status = MsQuicOpen2(&quic_api))) {
+        printf("MsQuicOpen2 failed, 0x%x!\n", status);
+        goto error;
     }
 
-    if (QUIC_FAILED(Status = quic_api->RegistrationOpen(&quic_reg_config, &quic_registration))) {
-        printf("RegistrationOpen failed, 0x%x!\n", Status);
-        goto Error;
+    if (QUIC_FAILED(status = quic_api->RegistrationOpen(&quic_reg_config, &quic_registration))) {
+        printf("RegistrationOpen failed, 0x%x!\n", status);
+        goto error;
     }
 
     if(strcmp(argv[1], "c") == 0){
@@ -489,10 +492,10 @@ int main(int argc, char** argv){
         run_server();
     } else {
         help();
-        return -1;
+        goto error;
     }
 
-Error:
+error:
 
     if (quic_api != NULL) {
         if (quic_configuration != NULL) {
@@ -504,5 +507,5 @@ Error:
         MsQuicClose(quic_api);
     }
 
-    return (int)Status;
+    return (int)status;
 }

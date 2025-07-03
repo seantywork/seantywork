@@ -1,6 +1,6 @@
 #include "tls.h"
 
-char* PREFERRED_CIPHERS = "HIGH:!aNULL:!kRSA:!SRP:!PSK:!CAMELLIA:!RC4:!MD5:!DSS";
+char* PREFERRED_CIPHERS = "AES256-GCM-SHA384";
 
 void init_openssl_library(void){
 
@@ -161,6 +161,10 @@ static int client(){
     const long flags = SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION;
     
     SSL_CTX_set_options(ctx, flags);
+    if(SSL_CTX_set_cipher_list(ctx, PREFERRED_CIPHERS) != 1){
+        printf("set cipher suite failed\n");
+        return -2;
+    }
     result = SSL_CTX_load_verify_locations(ctx, CERT_CA, NULL);
 
     if (result != 1){
@@ -308,6 +312,11 @@ static int server(){
     if (SSL_CTX_use_PrivateKey_file(ctx, KEY_SERVER, SSL_FILETYPE_PEM) <= 0 ) {
         printf("failed to use server key\n");
         return -3;
+    }
+
+    if(SSL_CTX_set_cipher_list(ctx, PREFERRED_CIPHERS) != 1){
+        printf("set cipher suite failed\n");
+        return -2;
     }
 
     ssl = SSL_new(ctx);
