@@ -248,14 +248,14 @@ static int client(){
 
         //printf("progress: %.2f\n", percent);
 
-        if(total_sent > INPUT_BUFF_MAX){
+        if(total_sent >= INPUT_BUFF_MAX){
             keepalive = 0;
             continue;
         }
 
     }
 
-    if(total_sent <= INPUT_BUFF_MAX){
+    if(total_sent < INPUT_BUFF_MAX){
         printf("connection closed before sending completed\n");
         return -4;
     }
@@ -263,10 +263,13 @@ static int client(){
     gettimeofday(&t2, NULL);
 
     uint32_t seconds = t2.tv_sec - t1.tv_sec;      
-    uint32_t ms = (t2.tv_usec - t1.tv_usec) / 1000;
+    int ms = (t2.tv_usec - t1.tv_usec) / 1000;
+    if(ms < 0){
+        ms = ms * -1;
+    }
     
-    printf("sec: %lu ms: %lu\n", seconds, ms);
-    printf("total sent: " "%" PRIu64 "\n", total_sent);
+    printf("client sent total: " "%" PRIu64 "\n", total_sent);
+    printf("sec: %u ms: %d\n", seconds, ms);
 
     return 0;
 }
@@ -275,6 +278,8 @@ static int client(){
 
 static int server(){
     
+    uint64_t server_recvd_total = 0;
+
     SSL *ssl;
     SSL_CTX *ctx;
     SSL_METHOD *method;
@@ -378,10 +383,14 @@ static int server(){
 
             }
 
+            server_recvd_total += (uint64_t)valread;
+
             if(keepalive == 0){
                 continue;
             }
         }
+
+        printf("server recvd total: " "%" PRIu64 "\n", server_recvd_total);
 
         close(connfd);
 

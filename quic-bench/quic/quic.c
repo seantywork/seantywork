@@ -41,7 +41,6 @@ void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len)
     server_total_recvd += buff_tot_len;
     for(int i = 0 ; i < buff_count; i++){
         server_this_recvd += qbuff[i].Length;        
-
     }
 
     //printf("server total buff count: %llu\n", server_total_recvd);
@@ -99,6 +98,7 @@ QUIC_STATUS server_conn_cb(HQUIC connection,void* context, QUIC_CONNECTION_EVENT
     case QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
         printf("connection done\n");
         quic_api->ConnectionClose(connection);
+        printf("server recvd total: %lu\n", server_this_recvd);
         server_done = 1;
         break;
     case QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED:
@@ -252,7 +252,7 @@ void* client_send(void* varg){
     QUIC_STATUS status;
     HQUIC stream = NULL;
     uint8_t* send_buffer_raw = NULL;
-    uint8_t* sb_fill = NULL;
+    //uint8_t* sb_fill = NULL;
     QUIC_BUFFER* send_buffer;
 
     if (QUIC_FAILED(status = quic_api->StreamOpen(connection, QUIC_STREAM_OPEN_FLAG_NONE, client_stream_cb, NULL, &stream))) {
@@ -315,7 +315,6 @@ void* client_send(void* varg){
             goto error;
         }
         client_total_sent += quic_send_buffer_len;
-        //printf("client sent: %lu\n", client_total_sent);
         if(client_total_sent >= INPUT_BUFF_MAX){
             send_buffer->Length = 0;
             if (QUIC_FAILED(status = quic_api->StreamSend(stream, send_buffer, 1, QUIC_SEND_FLAG_FIN, send_buffer))) {
@@ -327,12 +326,15 @@ void* client_send(void* varg){
             break;
         }
     }
+    printf("client sent total: %lu\n", client_total_sent);
     gettimeofday(&t2, NULL);
 
     uint32_t seconds = t2.tv_sec - t1.tv_sec;      
-    uint32_t ms = (t2.tv_usec - t1.tv_usec) / 1000;
-    
-    printf("sec: %lu ms: %lu\n", seconds, ms);
+    int ms = (t2.tv_usec - t1.tv_usec) / 1000;
+    if(ms < 0){
+        ms = ms * -1;
+    }
+    printf("sec: %u ms: %d\n", seconds, ms);
         
 error:
 
@@ -435,7 +437,7 @@ void run_client() {
     }
 
     QUIC_STATUS status;
-    const char* resumption_ticket_string = NULL;
+    //const char* resumption_ticket_string = NULL;
 
     HQUIC connection = NULL;
 
