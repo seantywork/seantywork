@@ -141,8 +141,10 @@ static int client(){
     float percent = 0;
     struct timeval t1, t2;
 
+
     uint64_t total_sent = 0;
     uint8_t data[INPUT_BUFF_CHUNK] = {0};
+
 
 
     method = SSLv23_method();
@@ -224,9 +226,10 @@ static int client(){
         return -5;
     }
 
+
     printf("connected, sending...\n");
 
-    gettimeofday(&t1, NULL);
+
 
     while(keepalive){
 
@@ -260,16 +263,8 @@ static int client(){
         return -4;
     }
 
-    gettimeofday(&t2, NULL);
 
-    uint32_t seconds = t2.tv_sec - t1.tv_sec;      
-    int ms = (t2.tv_usec - t1.tv_usec) / 1000;
-    if(ms < 0){
-        ms = ms * -1;
-    }
-    
     printf("client sent total: " "%" PRIu64 "\n", total_sent);
-    printf("sec: %u ms: %d\n", seconds, ms);
 
     return 0;
 }
@@ -278,7 +273,10 @@ static int client(){
 
 static int server(){
     
+    struct timeval t1, t2;
     uint64_t server_recvd_total = 0;
+    uint32_t seconds;      
+    int ms;
 
     SSL *ssl;
     SSL_CTX *ctx;
@@ -360,12 +358,15 @@ static int server(){
 
         SSL_set_fd(ssl, connfd);
 
+
         if(SSL_accept(ssl) != 1){
             fprintf(stderr, "server ssl accept failed\n"); 
             continue;
         };
 
         printf("client connected\n");
+        gettimeofday(&t1, NULL);
+
         printf("receiving...\n");
 
         while(keepalive){
@@ -385,12 +386,23 @@ static int server(){
 
             server_recvd_total += (uint64_t)valread;
 
+            if(server_recvd_total >= INPUT_BUFF_MAX){
+                gettimeofday(&t2, NULL);
+
+                seconds = t2.tv_sec - t1.tv_sec;      
+                ms = (t2.tv_usec - t1.tv_usec) / 1000;
+                if(ms < 0){
+                    ms = ms * -1;
+                }
+                printf("sec: %u ms: %d\n", seconds, ms);
+                printf("server recvd total: " "%" PRIu64 "\n", server_recvd_total);
+                server_recvd_total = 0;
+            }
+
             if(keepalive == 0){
                 continue;
             }
         }
-
-        printf("server recvd total: " "%" PRIu64 "\n", server_recvd_total);
 
         close(connfd);
 

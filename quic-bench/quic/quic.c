@@ -30,7 +30,7 @@ uint64_t client_total_sent = 0;
 uint64_t server_total_recvd = 0;
 uint64_t server_this_recvd = 0;
 int server_done = 0;
-
+struct timeval t1, t2;
 
 void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len){
 
@@ -42,7 +42,18 @@ void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len)
     for(int i = 0 ; i < buff_count; i++){
         server_this_recvd += qbuff[i].Length;        
     }
+    if(server_this_recvd >= INPUT_BUFF_MAX){
+        gettimeofday(&t2, NULL);
 
+        uint32_t seconds = t2.tv_sec - t1.tv_sec;      
+        int ms = (t2.tv_usec - t1.tv_usec) / 1000;
+        if(ms < 0){
+            ms = ms * -1;
+        }
+        printf("sec: %u ms: %d\n", seconds, ms);
+        printf("server recvd total: %lu\n", server_this_recvd);
+        server_this_recvd = 0;
+    }
     //printf("server total buff count: %llu\n", server_total_recvd);
     //printf("server this buff count: %llu\n", server_this_recvd);
     return;
@@ -83,6 +94,7 @@ QUIC_STATUS server_conn_cb(HQUIC connection,void* context, QUIC_CONNECTION_EVENT
     case QUIC_CONNECTION_EVENT_CONNECTED:
 
         printf("client connected\n");
+        gettimeofday(&t1, NULL);
         quic_api->ConnectionSendResumptionTicket(connection, QUIC_SEND_RESUMPTION_FLAG_NONE, 0, NULL);
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_TRANSPORT:
@@ -98,7 +110,6 @@ QUIC_STATUS server_conn_cb(HQUIC connection,void* context, QUIC_CONNECTION_EVENT
     case QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
         printf("connection done\n");
         quic_api->ConnectionClose(connection);
-        printf("server recvd total: %lu\n", server_this_recvd);
         server_done = 1;
         break;
     case QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED:
@@ -299,9 +310,6 @@ void* client_send(void* varg){
     }
 */
 
-    struct timeval t1, t2;
-    gettimeofday(&t1, NULL);
-
     printf("client sending...\n");
 
     for(;;){
@@ -327,14 +335,6 @@ void* client_send(void* varg){
         }
     }
     printf("client sent total: %lu\n", client_total_sent);
-    gettimeofday(&t2, NULL);
-
-    uint32_t seconds = t2.tv_sec - t1.tv_sec;      
-    int ms = (t2.tv_usec - t1.tv_usec) / 1000;
-    if(ms < 0){
-        ms = ms * -1;
-    }
-    printf("sec: %u ms: %d\n", seconds, ms);
         
 error:
 
