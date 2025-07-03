@@ -7,7 +7,7 @@ INCLUDES := -Imsquic/src/inc -Imsquic/build/_deps/opensslquic-build/quictls/incl
 LINKS := -Lmsquic/build/obj/Release -Lmsquic/build/bin/Release -Wl,-rpath=msquic/build/bin/Release
 LINKS += -Lmsquic/build/_deps/opensslquic-build/quictls/lib -Lmsquic/build/_deps/opensslquic-build/submodules/quictls
 
-LIBS := -lcore -lmsquic -lmsquic_platform -lssl -lcrypto 
+LIBS := -lcore -lmsquic -lmsquic_platform -lssl -lcrypto
 
 all:
 
