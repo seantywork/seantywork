@@ -97,14 +97,14 @@ void* server_complete(void* varg){
 
 
 void server_send_ack(HQUIC stream){
-
+#if ACK_CHECK
     QUIC_STATUS status;
 
     if (QUIC_FAILED(status = quic_api->StreamSend(stream, server_buffer_ack, 1, QUIC_SEND_FLAG_NONE, server_buffer_ack))) {
         printf("server StreamSend failed, 0x%x!\n", status);
         return;
     }
-    
+#endif
 }
 
 void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len, HQUIC stream){
@@ -122,11 +122,7 @@ void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len,
 
     if(server_this_recvd >= INPUT_BUFF_MAX){
         gettimeofday(&t2, NULL);
-
-#if ACK_CHECK
         server_send_ack(stream);
-#endif
-
         uint32_t seconds = t2.tv_sec - t1.tv_sec;      
         int ms = (t2.tv_usec - t1.tv_usec) / 1000;
         if(ms < 0){
@@ -352,7 +348,12 @@ QUIC_STATUS client_stream_cb(HQUIC stream, void* context, QUIC_STREAM_EVENT* eve
     return QUIC_STATUS_SUCCESS;
 }
 
-
+void client_recv_ack(){
+#if ACK_CHECK        
+    do{usleep(1);}while(!client_stream_ack);
+    client_stream_ack = 0;
+#endif     
+}
 
 void* client_send(void* varg){
 
@@ -425,10 +426,7 @@ void* client_send(void* varg){
     
         client_total_sent += quic_send_buffer_len;
         if(client_total_sent >= INPUT_BUFF_MAX){
-#if ACK_CHECK        
-            do{usleep(1);}while(!client_stream_ack);
-            client_stream_ack = 0;
-#endif     
+            client_recv_ack();
             send_buffer->Length = 0;
             if (QUIC_FAILED(status = quic_api->StreamSend(stream, send_buffer, 1, QUIC_SEND_FLAG_FIN, send_buffer))) {
                 printf("StreamSend failed, 0x%x!\n", status);
