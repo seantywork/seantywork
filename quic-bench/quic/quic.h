@@ -25,7 +25,7 @@
 #define UNREFERENCED_PARAMETER(P) (void)(P)
 #endif
 
-#define DATA_VALIDITY_CHECK 0
+#define DATA_VALIDITY_CHECK 1
 #define ACK_CHECK 1
 
 

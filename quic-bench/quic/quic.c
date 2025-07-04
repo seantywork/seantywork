@@ -41,10 +41,10 @@ int client_stream_ack = 0;
 int client_done = 0;
 struct timeval t1, t2;
 
-#if DATA_VALIDITY_CHECK
+
 void* server_complete(void* varg){
 
-
+#if DATA_VALIDITY_CHECK
     int total_chunks = INPUT_BUFF_MAX / INPUT_BUFF_CHUNK;
 
     int bound = INPUT_BUFF_CHUNK / 4;
@@ -89,12 +89,12 @@ void* server_complete(void* varg){
     if(!invalid){
         printf("all data is valid\n");
     }
-
+#endif
     server_done = 1;
 
     pthread_exit(NULL);
 }
-#endif
+
 
 void server_send_ack(HQUIC stream){
 
@@ -200,11 +200,7 @@ QUIC_STATUS server_conn_cb(HQUIC connection,void* context, QUIC_CONNECTION_EVENT
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
         printf("connection done\n");
-#if DATA_VALIDITY_CHECK
         pthread_create(&server_tid, NULL, server_complete, NULL);
-#else
-        server_done = 1;
-#endif
         quic_api->ConnectionClose(connection);
         break;
     case QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED:
