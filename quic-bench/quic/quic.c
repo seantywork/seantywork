@@ -25,25 +25,107 @@ QUIC_TLS_SECRETS quic_client_secrets = {0};
 
 
 pthread_t client_tid;
+pthread_t server_tid;
 uint64_t client_total_sent = 0;
-//uint8_t server_total_data[INPUT_BUFF_MAX + 65536 + 65536] = {0};
+#if DATA_VALIDITY_CHECK
+uint8_t server_total_data[INPUT_BUFF_MAX] = {0};
+#endif
 uint64_t server_total_recvd = 0;
 uint64_t server_this_recvd = 0;
+uint32_t this_chunk = 0;
+uint8_t* server_buffer_raw;
+QUIC_BUFFER* server_buffer_ack;
+char* server_ack = "ack";
 int server_done = 0;
+int client_stream_ack = 0;
+int client_done = 0;
 struct timeval t1, t2;
 
-void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len){
+#if DATA_VALIDITY_CHECK
+void* server_complete(void* varg){
 
 
-    //memcpy(server_total_data + server_total_recvd, qbuff->Buffer, qbuff->Length);
+    int total_chunks = INPUT_BUFF_MAX / INPUT_BUFF_CHUNK;
+
+    int bound = INPUT_BUFF_CHUNK / 4;
+
+    int invalid = 0;
+
+    for(int i = 0; i < total_chunks; i++){
+
+        for(int j = (i * INPUT_BUFF_CHUNK) ; j < ((i + 1 ) * INPUT_BUFF_CHUNK); j++){
+
+            if(j < ((i * INPUT_BUFF_CHUNK) + (bound * 1))){
+                if(server_total_data[j] != 'a'){
+                    invalid = 1;
+                    printf("invalid data at: %d: %c(a)\n", j, server_total_data[j]);
+
+                }
+            } else if(j < ((i * INPUT_BUFF_CHUNK) + (bound * 2))){
+                if(server_total_data[j] != 'b'){
+                    invalid = 1;
+                    printf("invalid data at: %d: %c(b)\n", j, server_total_data[j]);                
+
+                }
+            } else if(j < ((i * INPUT_BUFF_CHUNK) + (bound * 3))){
+                if(server_total_data[j] != 'c'){
+                    invalid = 1;
+                    printf("invalid data at: %d: %c(c)\n", j, server_total_data[j]);                
+
+                }
+            } else if(j < ((i * INPUT_BUFF_CHUNK) + (bound * 4))){
+                if(server_total_data[j] != 'd'){
+                    invalid = 1;
+                    printf("invalid data at: %d: %c(d)\n", j, server_total_data[j]);                
+
+                }
+            } 
+
+        }
+        if(invalid){
+            break;
+        }
+    }
+    if(!invalid){
+        printf("all data is valid\n");
+    }
+
+    server_done = 1;
+
+    pthread_exit(NULL);
+}
+#endif
+
+void server_send_ack(HQUIC stream){
+
+    QUIC_STATUS status;
+
+    if (QUIC_FAILED(status = quic_api->StreamSend(stream, server_buffer_ack, 1, QUIC_SEND_FLAG_NONE, server_buffer_ack))) {
+        printf("server StreamSend failed, 0x%x!\n", status);
+        return;
+    }
+    
+}
+
+void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len, HQUIC stream){
 
 
     server_total_recvd += buff_tot_len;
     for(int i = 0 ; i < buff_count; i++){
-        server_this_recvd += qbuff[i].Length;        
+#if DATA_VALIDITY_CHECK
+        memcpy(server_total_data + server_this_recvd, qbuff[i].Buffer, qbuff[i].Length);      
+#endif
+        server_this_recvd += qbuff[i].Length;
     }
+
+
+
     if(server_this_recvd >= INPUT_BUFF_MAX){
         gettimeofday(&t2, NULL);
+
+#if ACK_CHECK
+        server_send_ack(stream);
+#endif
 
         uint32_t seconds = t2.tv_sec - t1.tv_sec;      
         int ms = (t2.tv_usec - t1.tv_usec) / 1000;
@@ -54,8 +136,7 @@ void server_recv(QUIC_BUFFER* qbuff, uint32_t buff_count, uint64_t buff_tot_len)
         printf("server recvd total: %lu\n", server_this_recvd);
         server_this_recvd = 0;
     }
-    //printf("server total buff count: %llu\n", server_total_recvd);
-    //printf("server this buff count: %llu\n", server_this_recvd);
+
     return;
 
 }
@@ -65,10 +146,10 @@ QUIC_STATUS server_stream_cb(HQUIC stream, void* context, QUIC_STREAM_EVENT* eve
     UNREFERENCED_PARAMETER(context);
     switch (event->Type) {
     case QUIC_STREAM_EVENT_SEND_COMPLETE:
-        free(event->SEND_COMPLETE.ClientContext);
+        //free(event->SEND_COMPLETE.ClientContext);
         break;
     case QUIC_STREAM_EVENT_RECEIVE:
-        server_recv(event->RECEIVE.Buffers, event->RECEIVE.BufferCount, event->RECEIVE.TotalBufferLength);
+        server_recv(event->RECEIVE.Buffers, event->RECEIVE.BufferCount, event->RECEIVE.TotalBufferLength, stream);
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_SHUTDOWN:
         printf("client shut down\n");
@@ -94,6 +175,16 @@ QUIC_STATUS server_conn_cb(HQUIC connection,void* context, QUIC_CONNECTION_EVENT
     case QUIC_CONNECTION_EVENT_CONNECTED:
 
         printf("client connected\n");
+        server_buffer_raw = (uint8_t*)malloc(sizeof(QUIC_BUFFER) + 4);
+        if (server_buffer_raw == NULL) {
+            printf("server SendBuffer allocation failed!\n");
+            return -1;
+        }
+        server_buffer_ack = (QUIC_BUFFER*)server_buffer_raw;
+        server_buffer_ack->Buffer = server_buffer_raw + sizeof(QUIC_BUFFER);
+        server_buffer_ack->Length = 4;
+        strcpy((char*)server_buffer_ack->Buffer, server_ack);
+
         gettimeofday(&t1, NULL);
         quic_api->ConnectionSendResumptionTicket(connection, QUIC_SEND_RESUMPTION_FLAG_NONE, 0, NULL);
         break;
@@ -109,8 +200,12 @@ QUIC_STATUS server_conn_cb(HQUIC connection,void* context, QUIC_CONNECTION_EVENT
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
         printf("connection done\n");
-        quic_api->ConnectionClose(connection);
+#if DATA_VALIDITY_CHECK
+        pthread_create(&server_tid, NULL, server_complete, NULL);
+#else
         server_done = 1;
+#endif
+        quic_api->ConnectionClose(connection);
         break;
     case QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED:
         printf("client stream started\n");
@@ -237,6 +332,10 @@ QUIC_STATUS client_stream_cb(HQUIC stream, void* context, QUIC_STREAM_EVENT* eve
         break;
     case QUIC_STREAM_EVENT_RECEIVE:
 
+        if(strcmp((char*)event->RECEIVE.Buffers[0].Buffer, server_ack) == 0){
+            client_stream_ack = 1;
+        }
+
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_ABORTED:
 
@@ -257,13 +356,14 @@ QUIC_STATUS client_stream_cb(HQUIC stream, void* context, QUIC_STREAM_EVENT* eve
     return QUIC_STATUS_SUCCESS;
 }
 
+
+
 void* client_send(void* varg){
 
     HQUIC connection = (HQUIC)varg;
     QUIC_STATUS status;
     HQUIC stream = NULL;
     uint8_t* send_buffer_raw = NULL;
-    //uint8_t* sb_fill = NULL;
     QUIC_BUFFER* send_buffer;
 
     if (QUIC_FAILED(status = quic_api->StreamOpen(connection, QUIC_STREAM_OPEN_FLAG_NONE, client_stream_cb, NULL, &stream))) {
@@ -289,12 +389,13 @@ void* client_send(void* varg){
     send_buffer->Buffer = send_buffer_raw + sizeof(QUIC_BUFFER);
     send_buffer->Length = quic_send_buffer_len;
 
-/*
+#if DATA_VALIDITY_CHECK
+    uint8_t* sb_fill = NULL;
     int bound = INPUT_BUFF_CHUNK / 4;
 
     for(int i = 0 ; i < INPUT_BUFF_CHUNK; i++){
         
-        sb_fill = SendBuffer->Buffer + i;
+        sb_fill = send_buffer->Buffer + i;
 
         if(i < (bound * 1)){
             *sb_fill = 'a';
@@ -308,22 +409,30 @@ void* client_send(void* varg){
 
 
     }
-*/
+#endif
 
     printf("client sending...\n");
 
     for(;;){
+#if !DATA_VALIDITY_CHECK         
         if(getrandom(send_buffer->Buffer, quic_send_buffer_len, 0) < 0){
             printf("getrandom failed\n");
             goto error;
         }
+#endif        
+        
         if (QUIC_FAILED(status = quic_api->StreamSend(stream, send_buffer, 1, QUIC_SEND_FLAG_NONE, send_buffer))) {
             printf("StreamSend failed, 0x%x!\n", status);
             free(send_buffer_raw);
             goto error;
         }
+    
         client_total_sent += quic_send_buffer_len;
         if(client_total_sent >= INPUT_BUFF_MAX){
+#if ACK_CHECK        
+            do{usleep(1);}while(!client_stream_ack);
+            client_stream_ack = 0;
+#endif     
             send_buffer->Length = 0;
             if (QUIC_FAILED(status = quic_api->StreamSend(stream, send_buffer, 1, QUIC_SEND_FLAG_FIN, send_buffer))) {
                 printf("StreamSend failed, 0x%x!\n", status);
@@ -333,18 +442,23 @@ void* client_send(void* varg){
             printf("client send done\n");
             break;
         }
+
+
     }
     printf("client sent total: %lu\n", client_total_sent);
-        
+
+    
 error:
 
     if (QUIC_FAILED(status)) {
         quic_api->ConnectionShutdown(connection, QUIC_CONNECTION_SHUTDOWN_FLAG_NONE, 0);
     }
 
+    /*
     if(send_buffer_raw != NULL){
         free(send_buffer_raw);
     }
+        */
 
     pthread_exit(NULL);
 }
@@ -379,6 +493,7 @@ QUIC_STATUS client_conn_cb(HQUIC connection, void* context, QUIC_CONNECTION_EVEN
         if (!event->SHUTDOWN_COMPLETE.AppCloseInProgress) {
             quic_api->ConnectionClose(connection);
         }
+        client_done = 1;
         break;
     case QUIC_CONNECTION_EVENT_RESUMPTION_TICKET_RECEIVED:
         printf("resumption ticket received: %u bytes\n", event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength);
@@ -452,6 +567,11 @@ void run_client() {
         printf("ConnectionStart failed, 0x%x!\n", status);
         goto error;
     }
+
+    while(!client_done){
+        sleep(1);
+    }
+
 
 error:
 
