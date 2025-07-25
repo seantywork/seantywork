@@ -69,7 +69,21 @@ static void netlink_xfrm_message_processor(struct nlm_resp *rsp)
 	case XFRM_MSG_DELSA:
 		printf("xfrm del sa\n");
 		break;
+    case XFRM_MSG_NEWPOLICY:
+    case XFRM_MSG_UPDPOLICY:
+		printf("xfrm new policy\n");
+        struct xfrm_userpolicy_info* polinfo = (struct xfrm_userpolicy_info*) NLMSG_DATA(&rsp->n);
+        
+        uint32_t saddr_bep = 0;
+        memcpy(&saddr_bep, &polinfo->sel.saddr, sizeof(uint32_t));
+        uint32_t saddrp = ntohl(saddr_bep);
 
+        struct in_addr saddrp_in = {
+            .s_addr = saddr_bep
+        };
+        printf("saddr: %s\n", inet_ntoa(saddrp_in));
+
+	
 	case XFRM_MSG_ACQUIRE:
 		//netlink_acquire(&rsp->n, logger);
         printf("xfrm acquire\n");
@@ -144,7 +158,7 @@ static void* init_netlink_xfrm_fd(void* varg){
 	addr.nl_family = AF_NETLINK;
 	addr.nl_pid = getpid();
 	addr.nl_pad = 0; /* make coverity happy */
-	addr.nl_groups = XFRMGRP_ACQUIRE | XFRMGRP_EXPIRE | XFRMGRP_SA;
+	addr.nl_groups = XFRMGRP_ACQUIRE | XFRMGRP_EXPIRE | XFRMGRP_SA| XFRMGRP_POLICY;
 	if (bind(netlink_xfrm_fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
 		printf("failed to bind bcast socket in init_netlink() - perhaps kernel was not compiled with CONFIG_XFRM\n");
         return 0;
