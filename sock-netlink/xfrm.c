@@ -52,8 +52,23 @@ static void netlink_xfrm_message_processor(struct nlm_resp *rsp)
 	switch (rsp->n.nlmsg_type) {
 
     case XFRM_MSG_NEWSA:
+    case XFRM_MSG_UPDSA:
         printf("xfrm new sa\n");
+        struct xfrm_usersa_info* sainfo = (struct xfrm_usersa_info*) NLMSG_DATA(&rsp->n);
+
+        uint32_t spi_be = sainfo->id.spi;
+        uint32_t daddr_be = 0;
+        memcpy(&daddr_be, &sainfo->id.daddr, sizeof(uint32_t));
+        struct in_addr daddr = {
+            .s_addr = daddr_be
+        };
+        printf("spi: %4x\n", ntohl(spi_be));
+        printf("daddr: %s\n", inet_ntoa(daddr));
         break;
+
+	case XFRM_MSG_DELSA:
+		printf("xfrm del sa\n");
+		break;
 
 	case XFRM_MSG_ACQUIRE:
 		//netlink_acquire(&rsp->n, logger);
