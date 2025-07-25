@@ -54,16 +54,28 @@ void process_message(char *buf ,int raw_msg_len){
         }
 
         rtmp = (struct ndmsg *)NLMSG_DATA(nlmp);
-        rtatp = (struct rtattr *)IFA_RTA(rtmp);
+        //rtatp = (struct rtattr *)IFA_RTA(rtmp);
+        rtatp = (struct rtattr *)RTM_RTA(rtmp);
 
-        rtattrlen = IFA_PAYLOAD(nlmp) ;
+        //rtattrlen = IFA_PAYLOAD(nlmp) ;
+        rtattrlen = RTM_PAYLOAD(nlmp) ;
 
         for (;RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)){
             if(rtatp->rta_type == NDA_DST){
                 inp = (struct in_addr *) RTA_DATA(rtatp);
                 inet_ntop(AF_INET, inp, ipv4string, INET_ADDRSTRLEN);
                 printf("addr: %s\n", ipv4string);
+                continue;
             }
+            if(rtatp->rta_type == NDA_LLADDR){
+                printf("lladdr: ");
+                for(int i=0;i<RTA_PAYLOAD(rtatp);i++){
+                    printf("%02x ", ((unsigned char*)RTA_DATA(rtatp))[i]);
+                }
+                printf("\n");
+                continue;
+            }
+            printf("neigh nda: %d\n", rtatp->rta_type);
         }
 
         raw_msg_len -= NLMSG_ALIGN(len);
