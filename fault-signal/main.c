@@ -28,7 +28,7 @@ int main(int argc, char** argv){
 	char timebuf[128] = {0};
 
 	signal(SIGINT, ch_handler);
-	while(1){
+	while(counter < 100000000){
         timer = time(NULL);
 		localtime_r(&timer, &tm_info);
         strftime(timebuf, 128, "%Y-%m-%d %H:%M:%S", &tm_info);
