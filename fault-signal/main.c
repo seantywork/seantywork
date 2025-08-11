@@ -11,7 +11,7 @@ void ch_handler(int sig){
     time_t ch_timer = time(NULL);
     printf("sig received %d\n", sig);
 	localtime_r(&ch_timer, &tm_info);
-	strftime(timebuf, 128, "%Y-%m-%d %H:%M:%S", &tm_info);
+	strftime(timebuf, 32, "%Y-%m-%d %H:%M:%S", &tm_info);
 	printf("[%s][SIG] signal handled\n", timebuf);
 }
 
@@ -27,7 +27,7 @@ int main(int argc, char** argv){
 	while(counter < 100000000){
         timer = time(NULL);
 		localtime_r(&timer, &tm_info);
-        strftime(timebuf, 128, "%Y-%m-%d %H:%M:%S", &tm_info);
+        strftime(timebuf, 32, "%Y-%m-%d %H:%M:%S", &tm_info);
         counter += 1;
         if(counter % 100 == 0){
             printf("[%s][CNT] counting: %d\n", timebuf, counter);
