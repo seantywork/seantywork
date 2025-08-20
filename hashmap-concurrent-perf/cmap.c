@@ -2,6 +2,8 @@
 
 
 #define TOTAL_VAL_COUNT 1000000
+#define BUCK_SIZE 1024 
+#define DATA_SIZE 512
 
 #ifdef HASHCUSTOM
 static inline uint64_t _hashfunc(uint8_t* data, size_t size){}
@@ -25,14 +27,6 @@ static inline uint64_t _hashfunc(uint8_t* data, size_t size, uint64_t div){
 	return hashtrunc % div;
 }
 #endif
-
-uint64_t _getrandu64(){
-    uint8_t data[8];
-    uint64_t val;
-    getrandom(data, 8, 0);
-    memcpy(&val, data, 8);
-    return val;
-}
 
 BOGUS_CMAP* cmap_alloc(int buck_size, int data_size){
 
@@ -152,27 +146,110 @@ void cmap_free(BOGUS_CMAP* cm){
 
 }
 
-void _get_func(void* ret, void* data){
+pthread_mutex_t plock;
+
+void _inc_func(void* ret, void* data){
 
     BOGUS_DATA* retdata = (BOGUS_DATA*)ret;
     BOGUS_DATA* result = (BOGUS_DATA*)data;
-    retdata->value = result->value;
+    result->value += result->index;
 }
+void _dec_func(void* ret, void* data){
 
-
-void* setter_thread(void* varg){
-    pthread_exit(NULL);
+    BOGUS_DATA* retdata = (BOGUS_DATA*)ret;
+    BOGUS_DATA* result = (BOGUS_DATA*)data;
+    result->value -= result->index;
 }
 
 void* increase_thread(void* varg){
+    BOGUS_CMAP* cm = (BOGUS_CMAP*)varg;
+    BOGUS_DATA key;
+    for(int i = 0; i < 1; i++){
+        for(int j = 0; j < TOTAL_VAL_COUNT; j++){
+            key.index = j;
+            if(cmap_get(cm, &key, &key, _inc_func) < 0){
+                printf("error getting at inc thread\n");
+                goto done;
+            }
+        }
+        pthread_mutex_lock(&plock);
+        printf("inc done for: %d\n", i);
+        pthread_mutex_unlock(&plock);
+    }
+done:
     pthread_exit(NULL);
 }
 
 void* decrease_thread(void* varg){
+    BOGUS_CMAP* cm = (BOGUS_CMAP*)varg;
+    BOGUS_DATA key;
+    for(int i = 0; i < 1; i++){
+        for(int j = TOTAL_VAL_COUNT -1; j > -1; j--){
+            key.index = j;
+            if(cmap_get(cm, &key, &key, _dec_func) < 0){
+                printf("error getting at dec thread\n");
+                goto done;
+            }
+        }
+        pthread_mutex_lock(&plock);
+        printf("dec done for: %d\n", i);
+        pthread_mutex_unlock(&plock);
+    }
+done:
     pthread_exit(NULL);
 }
 
 int main(int argc, char** argv){
 
-    return 0;
+    pthread_t inc_t;
+    pthread_t dec_t;
+    struct timeval start;
+    struct timeval end;
+    int result = -1;
+
+    printf("inserting data...\n");
+    BOGUS_CMAP* cm = cmap_alloc(BUCK_SIZE, DATA_SIZE);
+    for(int i = 0 ; i < TOTAL_VAL_COUNT; i++){
+        BOGUS_DATA data;
+        data.index = i;
+        data.value = 0;
+        if(cmap_set(cm, &data) < 0){
+            printf("failed to set value: %d\n", i);
+            goto done;
+        }     
+    }
+    pthread_mutex_init(&plock, NULL);
+    if(pthread_create(&inc_t, NULL, increase_thread, (void*)cm) < 0){
+        printf("failed to create increase thread\n");
+        goto done;
+    }   
+    if(pthread_create(&dec_t, NULL, decrease_thread, (void*)cm) < 0){
+        printf("failed to create decrease thread\n");
+        goto done;
+    }
+    gettimeofday(&start, NULL);
+    printf("running...\n");
+    pthread_join(inc_t, NULL);
+    pthread_join(dec_t, NULL);
+    printf("completed\n");
+    gettimeofday(&end, NULL);
+    printf("took: %lu us\n", (end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec);
+    for(int i = 0 ; i < cm->buck_size; i++){
+        BOGUS_DATA* data = cm->buck[i].data;
+        for(;;){
+            if(data == NULL){
+                break;
+            }
+            if(data->value){
+                printf("data invalid at: buck: %d - index: %lu - value: %lu\n", i, data->index, data->value);
+                goto done;
+            }
+            data = data->next;
+        }
+    }
+    printf("all data is valid\n");
+    result = 0;
+done:
+    cmap_free(cm);
+    return result;
 }

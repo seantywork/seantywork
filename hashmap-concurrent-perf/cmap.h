@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <sys/random.h>
+#include <sys/time.h>
 
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
