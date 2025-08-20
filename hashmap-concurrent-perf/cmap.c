@@ -1,6 +1,8 @@
 #include "cmap.h"
 
 
+#define TOTAL_VAL_COUNT 1000000
+
 #ifdef HASHCUSTOM
 static inline uint64_t _hashfunc(uint8_t* data, size_t size){}
 
@@ -23,6 +25,14 @@ static inline uint64_t _hashfunc(uint8_t* data, size_t size, uint64_t div){
 	return hashtrunc % div;
 }
 #endif
+
+uint64_t _getrandu64(){
+    uint8_t data[8];
+    uint64_t val;
+    getrandom(data, 8, 0);
+    memcpy(&val, data, 8);
+    return val;
+}
 
 BOGUS_CMAP* cmap_alloc(int buck_size, int data_size){
 
@@ -142,10 +152,27 @@ void cmap_free(BOGUS_CMAP* cm){
 
 }
 
+void _get_func(void* ret, void* data){
+
+    BOGUS_DATA* retdata = (BOGUS_DATA*)ret;
+    BOGUS_DATA* result = (BOGUS_DATA*)data;
+    retdata->value = result->value;
+}
+
+
+void* setter_thread(void* varg){
+    pthread_exit(NULL);
+}
+
+void* increase_thread(void* varg){
+    pthread_exit(NULL);
+}
+
+void* decrease_thread(void* varg){
+    pthread_exit(NULL);
+}
 
 int main(int argc, char** argv){
-
-
 
     return 0;
 }
