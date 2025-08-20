@@ -1,6 +1,6 @@
 #include "cmap.h"
 
-
+#define TOTAL_THREAD_COUNT 10
 #define TOTAL_VAL_COUNT 1000000
 #define BUCK_SIZE 1024 
 #define DATA_SIZE 512
@@ -147,6 +147,8 @@ void cmap_free(BOGUS_CMAP* cm){
 }
 
 pthread_mutex_t plock;
+int inc_done_count = 0;
+int dec_done_count = 0;
 
 void _inc_func(void* ret, void* data){
 
@@ -164,18 +166,18 @@ void _dec_func(void* ret, void* data){
 void* increase_thread(void* varg){
     BOGUS_CMAP* cm = (BOGUS_CMAP*)varg;
     BOGUS_DATA key;
-    for(int i = 0; i < 1; i++){
-        for(int j = 0; j < TOTAL_VAL_COUNT; j++){
-            key.index = j;
-            if(cmap_get(cm, &key, &key, _inc_func) < 0){
-                printf("error getting at inc thread\n");
-                goto done;
-            }
+    for(int i = 0; i < TOTAL_VAL_COUNT; i++){
+        key.index = i;
+        if(cmap_get(cm, &key, &key, _inc_func) < 0){
+            printf("error getting at inc thread\n");
+            goto done;
         }
-        pthread_mutex_lock(&plock);
-        printf("inc done for: %d\n", i);
-        pthread_mutex_unlock(&plock);
     }
+    pthread_mutex_lock(&plock);
+    printf("inc done: %d\n", inc_done_count);
+    inc_done_count += 1;
+    pthread_mutex_unlock(&plock);
+
 done:
     pthread_exit(NULL);
 }
@@ -183,26 +185,26 @@ done:
 void* decrease_thread(void* varg){
     BOGUS_CMAP* cm = (BOGUS_CMAP*)varg;
     BOGUS_DATA key;
-    for(int i = 0; i < 1; i++){
-        for(int j = TOTAL_VAL_COUNT -1; j > -1; j--){
-            key.index = j;
-            if(cmap_get(cm, &key, &key, _dec_func) < 0){
-                printf("error getting at dec thread\n");
-                goto done;
-            }
+    for(int i = 0; i < TOTAL_VAL_COUNT; i++){
+        key.index = i;
+        if(cmap_get(cm, &key, &key, _dec_func) < 0){
+            printf("error getting at dec thread\n");
+            goto done;
         }
-        pthread_mutex_lock(&plock);
-        printf("dec done for: %d\n", i);
-        pthread_mutex_unlock(&plock);
     }
+    pthread_mutex_lock(&plock);
+    printf("dec done: %d\n", dec_done_count);
+    dec_done_count += 1;
+    pthread_mutex_unlock(&plock);
+
 done:
     pthread_exit(NULL);
 }
 
 int main(int argc, char** argv){
 
-    pthread_t inc_t;
-    pthread_t dec_t;
+    pthread_t inc_t[TOTAL_THREAD_COUNT];
+    pthread_t dec_t[TOTAL_THREAD_COUNT];
     struct timeval start;
     struct timeval end;
     int result = -1;
@@ -219,18 +221,22 @@ int main(int argc, char** argv){
         }     
     }
     pthread_mutex_init(&plock, NULL);
-    if(pthread_create(&inc_t, NULL, increase_thread, (void*)cm) < 0){
-        printf("failed to create increase thread\n");
-        goto done;
-    }   
-    if(pthread_create(&dec_t, NULL, decrease_thread, (void*)cm) < 0){
-        printf("failed to create decrease thread\n");
-        goto done;
+    for(int i = 0; i < TOTAL_THREAD_COUNT; i++){
+        if(pthread_create(&inc_t[i], NULL, increase_thread, (void*)cm) < 0){
+            printf("failed to create increase thread: %d\n", i);
+            goto done;
+        }   
+        if(pthread_create(&dec_t[i], NULL, decrease_thread, (void*)cm) < 0){
+            printf("failed to create decrease thread: %d\n", i);
+            goto done;
+        }
     }
     gettimeofday(&start, NULL);
     printf("running...\n");
-    pthread_join(inc_t, NULL);
-    pthread_join(dec_t, NULL);
+    for(int i = 0 ; i < TOTAL_THREAD_COUNT; i++){
+        pthread_join(inc_t[i], NULL);
+        pthread_join(dec_t[i], NULL);
+    }
     printf("completed\n");
     gettimeofday(&end, NULL);
     printf("took: %lu us\n", (end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec);
