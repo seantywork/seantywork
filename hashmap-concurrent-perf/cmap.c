@@ -5,10 +5,7 @@
 #define BUCK_SIZE 1024 
 #define DATA_SIZE 512
 
-#ifdef HASHCUSTOM
-static inline uint64_t _hashfunc(uint8_t* data, size_t size){}
 
-#else
 #define HASHLEN 32
 #define HASHTRUNCLEN 8
 static inline uint64_t _hashfunc(uint8_t* data, size_t size, uint64_t div){
@@ -26,7 +23,7 @@ static inline uint64_t _hashfunc(uint8_t* data, size_t size, uint64_t div){
 	
 	return hashtrunc % div;
 }
-#endif
+
 
 BOGUS_CMAP* cmap_alloc(int buck_size, int data_size){
 

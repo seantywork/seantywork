@@ -39,6 +39,8 @@ typedef struct BOGUS_CMAP{
     int buck_size;
 } BOGUS_CMAP;
 
+
+
 BOGUS_CMAP* cmap_alloc(int buck_size, int data_size);
 int cmap_set(BOGUS_CMAP* cm, BOGUS_DATA* val);
 int cmap_get(BOGUS_CMAP* cm, BOGUS_DATA* key, void* ret, void (*cb)(void* ret, void* data));
