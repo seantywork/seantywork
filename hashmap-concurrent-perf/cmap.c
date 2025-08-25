@@ -8,6 +8,7 @@
 
 #define HASHLEN 32
 #define HASHTRUNCLEN 8
+#if HASHSHA
 static inline uint64_t _hashfunc(uint8_t* data, size_t size, uint64_t div){
 
 	uint64_t hashtrunc = 0;
@@ -23,6 +24,34 @@ static inline uint64_t _hashfunc(uint8_t* data, size_t size, uint64_t div){
 	
 	return hashtrunc % div;
 }
+#elif HASHFNV
+#define FNV1_64_INIT ((uint64_t)0xcbf29ce484222325ULL)
+static inline uint64_t _hashfunc(uint8_t* data, size_t size, uint64_t div){
+    unsigned char *bp = (unsigned char *)data;	/* start of buffer */
+    unsigned char *be = bp + size;		/* beyond end of buffer */
+	uint64_t hval = FNV1_64_INIT;
+    /*
+     * FNV-1 hash each octet of the buffer
+     */
+    while (bp < be) {
+
+	/* multiply by the 64 bit FNV magic prime mod 2^64 */
+#if defined(NO_FNV_GCC_OPTIMIZATION)
+		hval *= FNV_64_PRIME;
+#else /* NO_FNV_GCC_OPTIMIZATION */
+		hval += (hval << 1) + (hval << 4) + (hval << 5) +
+			(hval << 7) + (hval << 8) + (hval << 40);
+#endif /* NO_FNV_GCC_OPTIMIZATION */
+
+	/* xor the bottom with the current octet */
+		hval ^= (uint64_t)*bp++;
+    }
+
+    /* return our new hash value */
+    return hval % div;
+}
+#endif
+
 
 
 BOGUS_CMAP* cmap_alloc(int buck_size, int data_size){

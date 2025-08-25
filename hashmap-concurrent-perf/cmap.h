@@ -14,6 +14,9 @@
 #include <openssl/hmac.h>
 #include <openssl/err.h>
 
+#define HASHSHA 0
+#define HASHFNV 1
+
 #define _BOGUS_KEY struct { \
     uint64_t index; \
 }
