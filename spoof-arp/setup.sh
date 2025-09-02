@@ -50,3 +50,8 @@ sudo ip netns exec vnet0 /bin/bash -c "echo 1 > /proc/sys/net/ipv4/conf/vbr0/arp
 sudo ip netns exec vnet0 /bin/bash -c "echo 1 > /proc/sys/net/ipv4/conf/veth02/arp_accept"
 sudo ip netns exec vnet0 /bin/bash -c "echo 1 > /proc/sys/net/ipv4/conf/veth12/arp_accept"
 sudo ip netns exec vnet0 /bin/bash -c "echo 1 > /proc/sys/net/ipv4/conf/veth22/arp_accept"
+sudo ip netns exec vnet2 /bin/bash -c "echo 0 > /proc/sys/net/ipv4/conf/veth21/send_redirects"
+sudo ip netns exec vnet2 /bin/bash -c "echo 0 > /proc/sys/net/ipv4/conf/veth21/accept_redirects"
+sudo ip netns exec vnet2 /bin/bash -c "echo 0 > /proc/sys/net/ipv4/conf/all/send_redirects"
+sudo ip netns exec vnet2 /bin/bash -c "echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects"
+sudo ip netns exec vnet2 iptables -P FORWARD DROP

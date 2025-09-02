@@ -238,7 +238,7 @@ int main(int argc, char** argv){
 			do_spoof_ng(fd, myhwaddr, its_ip_be, your_ethinfo.arp_sha, your_ip_be);
 			printf("spoofing...\n");
 		}
-		sleep(5);
+		sleep(1);
 	}
 
 	printf("exit\n");
