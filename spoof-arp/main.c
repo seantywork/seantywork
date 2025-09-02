@@ -233,10 +233,11 @@ int main(int argc, char** argv){
 	while(1){
 		if(mode == 0){
 			do_spoof_g(fd, myhwaddr, its_ip_be, your_ethinfo.arp_sha, your_ip_be);
+			printf("gratuitous arp...\n");
 		} else {
 			do_spoof_ng(fd, myhwaddr, its_ip_be, your_ethinfo.arp_sha, your_ip_be);
+			printf("spoofing...\n");
 		}
-		printf("spoofing...\n");
 		sleep(5);
 	}
 
