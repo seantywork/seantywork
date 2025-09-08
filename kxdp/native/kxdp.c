@@ -537,6 +537,7 @@ static int kxdp_xdp_set(struct net_device *dev, struct bpf_prog *prog, struct ne
 		}
 
 	}
+	printk("kxdp: loaded xdp prog\n");
 
 	return 0;
 err:
