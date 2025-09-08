@@ -293,58 +293,6 @@ void kxdp_hw_tx(char *buf, int len, struct net_device *dev){
 
 	ih = (struct iphdr*)(buf + sizeof(struct ethhdr));
 
-	/*
-	net = dev_net(dev);
-	
-	if(net == NULL){
-
-		printk("kxdp: failed to get dev net\n");
-
-		return;
-	}
-
-    rt = ip_route_output(net, ih->daddr,ih->saddr, 0 ,dev->ifindex);
-
-	if(IS_ERR(rt)){
-
-		printk("kxdp: failed to get rt\n");
-
-		return;
-
-	}
-	*/
-
-	n = __ipv4_neigh_lookup(dev,ih->daddr);
-
-	if(n == NULL){
-		n = neigh_create(&arp_tbl, &ih->daddr, dev);
-	}
-	if(IS_ERR(n)){
-
-		printk("kxdp: failed to lookup\n");
-
-		return;
-	}        
-
-	printk(KERN_INFO "[kxdp] got neigh mac [%pM] ",n->ha);
-
-	printk("eth src: %02X:%02X:%02X:%02X:%02X:%02X\n", 
-		eh->h_source[0],  
-		eh->h_source[1],  
-		eh->h_source[2],  
-		eh->h_source[3],  
-		eh->h_source[4],  
-		eh->h_source[5]);
-	printk("eth dst: %02X:%02X:%02X:%02X:%02X:%02X\n", 
-		eh->h_dest[0], 
-		eh->h_dest[1], 
-		eh->h_dest[2], 
-		eh->h_dest[3], 
-		eh->h_dest[4], 
-		eh->h_dest[5]);
-
-	neigh_release(n);
-
 	if(ih->protocol == IPPROTO_UDP){
 
 		uh = (struct udphdr*)(buf + sizeof(struct ethhdr) + sizeof(struct iphdr));
@@ -473,6 +421,139 @@ void kxdp_tx_timeout(struct net_device *dev, unsigned int txqueue)
 	return;
 }
 
+static bool kxdp_gro_requested(const struct net_device *dev){
+	return !!(dev->wanted_features & NETIF_F_GRO);
+}
+
+static void kxdp_disable_xdp_range(struct net_device *dev, int start, int end, bool delete_napi){
+
+	struct kxdp_priv *priv = netdev_priv(dev);
+	int i;
+
+	for (i = start; i < end; i++) {
+		priv->xdp_rxq.mem = priv->xdp_mem;
+		xdp_rxq_info_unreg(&priv->xdp_rxq);
+
+		if (delete_napi)
+			netif_napi_del(&priv->napi);
+	}
+}
+
+static int kxdp_enable_xdp_range(struct net_device *dev, int start, int end, bool napi_already_on){
+
+	struct kxdp_priv *priv = netdev_priv(dev);
+	int err, i;
+
+	for (i = start; i < end; i++) {
+
+		if (!napi_already_on){
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
+			netif_napi_add(dev, &priv->napi, kxdp_poll,2);
+#else 
+			netif_napi_add_weight(dev, &priv->napi, kxdp_poll,2);
+#endif
+		}
+		err = xdp_rxq_info_reg(&priv->xdp_rxq, dev, i, priv->napi.napi_id);
+		if (err < 0)
+			goto err_rxq_reg;
+
+		err = xdp_rxq_info_reg_mem_model(&priv->xdp_rxq, MEM_TYPE_PAGE_SHARED, NULL);
+		if (err < 0)
+			goto err_reg_mem;
+
+		/* Save original mem info as it can be overwritten */
+		priv->xdp_mem = priv->xdp_rxq.mem;
+	}
+	return 0;
+
+err_reg_mem:
+	xdp_rxq_info_unreg(&priv->xdp_rxq);
+err_rxq_reg:
+	for (i--; i >= start; i--) {
+		xdp_rxq_info_unreg(&priv->xdp_rxq);
+		if (!napi_already_on)
+			netif_napi_del(&priv->napi);
+	}
+
+	return err;
+}
+
+static int kxdp_enable_xdp(struct net_device *dev){
+
+	bool napi_already_on = kxdp_gro_requested(dev) && (dev->flags & IFF_UP);
+	struct kxdp_priv *priv = netdev_priv(dev);
+	int err, i;
+
+	if (!xdp_rxq_info_is_reg(&priv->xdp_rxq)) {
+		err = kxdp_enable_xdp_range(dev, 0, dev->real_num_rx_queues, napi_already_on);
+		if (err)
+			return err;
+
+	}
+
+	return 0;
+}
+
+static int kxdp_xdp_set(struct net_device *dev, struct bpf_prog *prog, struct netlink_ext_ack *extack){
+
+	struct kxdp_priv *priv = netdev_priv(dev);
+	struct bpf_prog *old_prog;
+	struct net_device *peer;
+	int err;
+
+	old_prog = priv->xdp_prog;
+	priv->xdp_prog = prog;
+	peer = kxdp_devs[dev == kxdp_devs[0] ? 1 : 0];
+
+	if (prog) {
+		if (!peer) {
+			NL_SET_ERR_MSG_MOD(extack, "Cannot set XDP when peer is detached");
+			err = -ENOTCONN;
+			goto err;
+		}
+
+		if (dev->real_num_rx_queues < peer->real_num_tx_queues) {
+			NL_SET_ERR_MSG_MOD(extack, "XDP expects number of rx queues not less than peer tx queues");
+			err = -ENOSPC;
+			goto err;
+		}
+
+		if (dev->flags & IFF_UP) {
+			err = kxdp_enable_xdp(dev);
+			if (err) {
+				NL_SET_ERR_MSG_MOD(extack, "Setup for XDP failed");
+				goto err;
+			}
+		}
+
+		if (!old_prog) {
+			if (!kxdp_gro_requested(dev)) {
+				/* user-space did not require GRO, but adding
+				 * XDP is supposed to get GRO working
+				 */
+				dev->features |= NETIF_F_GRO;
+				netdev_features_change(dev);
+			}
+		}
+
+	}
+
+	return 0;
+err:
+	priv->xdp_prog = old_prog;
+
+	return err;
+}
+
+static int kxdp_xdp(struct net_device *dev, struct netdev_bpf *xdp)
+{
+	switch (xdp->command) {
+	case XDP_SETUP_PROG:
+		return kxdp_xdp_set(dev, xdp->prog, xdp->extack);
+	default:
+		return -EINVAL;
+	}
+}
 
 
 const struct net_device_ops kxdp_netdev_ops = {
@@ -480,6 +561,7 @@ const struct net_device_ops kxdp_netdev_ops = {
 	.ndo_stop            = kxdp_stop,
 	.ndo_start_xmit      = kxdp_xmit,
 	.ndo_tx_timeout      = kxdp_tx_timeout,
+	.ndo_bpf             = kxdp_xdp,
 };
 
 

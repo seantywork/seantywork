@@ -31,6 +31,7 @@
 #include <net/neighbour.h>
 #include <net/route.h>
 #include <net/arp.h>
+#include <net/xdp.h>
 
 
 #define DRV_NAME	"kxdp"
@@ -44,6 +45,12 @@
 #define KXDP_TIMEOUT 5   
 
 #define RT_GC_TIMEOUT (300*HZ)
+
+#define KXDP_XDP_FLAG		BIT(0)
+#define KXDP_XDP_HEADROOM	(XDP_PACKET_HEADROOM + NET_IP_ALIGN)
+
+#define KXDP_XDP_TX_BULK_SIZE	16
+#define KDXP_XDP_BATCH		16
 
 struct kxdp_packet {
 	struct kxdp_packet *next;
@@ -64,6 +71,9 @@ struct kxdp_priv {
     spinlock_t lock;
 	struct net_device *dev;
 	struct napi_struct napi;
+    struct bpf_prog *xdp_prog;
+    struct xdp_rxq_info xdp_rxq;
+    struct xdp_mem_info	xdp_mem;
 };
 
 
