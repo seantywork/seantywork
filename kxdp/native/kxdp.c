@@ -181,35 +181,82 @@ int kxdp_poll(struct napi_struct *napi, int budget){
 	struct net_device *dev = priv->dev;
 	struct kxdp_packet *pkt;
 
-    printk(KERN_INFO "polling\n");
+	void *orig_data, *orig_data_end;
+	struct bpf_prog *xdp_prog = priv->xdp_prog;
+	struct xdp_buff xdp_buff;
+	u32 frame_sz;
+	u32 act;
+	int off;
 
-	while (npackets < budget && priv->rx_queue) {
-		pkt = kxdp_rx_cons_buf(dev);
-		skb = dev_alloc_skb(NET_IP_ALIGN + pkt->datalen);
-		if (! skb) {
-			if (printk_ratelimit()){
-                printk(KERN_INFO "kxdp: packet dropped\n");
-            }
-			priv->stats.rx_dropped++;
-			npackets++;
-			kxdp_tx_release_buffer(pkt);
-			continue;
-		}
-		skb_reserve(skb, NET_IP_ALIGN);  
-		memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
-		skb->dev = dev;
-		skb->protocol = eth_type_trans(skb, dev);
-		skb->ip_summed = CHECKSUM_UNNECESSARY;
-		netif_receive_skb(skb);
+    printk(KERN_INFO "xdp polling\n");
 
-		npackets++;
-		priv->stats.rx_packets++;
-		priv->stats.rx_bytes += pkt->datalen;
-		kxdp_tx_release_buffer(pkt);
+	xdp_set_return_frame_no_direct();
+
+	pkt = kxdp_rx_cons_buf(dev);
+	skb = dev_alloc_skb(NET_IP_ALIGN + pkt->datalen);
+	skb_reserve(skb, NET_IP_ALIGN);  
+	memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
+	skb->dev = dev;
+	skb->protocol = eth_type_trans(skb, dev);
+	skb->ip_summed = CHECKSUM_UNNECESSARY;
+
+	if(unlikely(!xdp_prog)){
+		goto noxdpprog;
 	}
 
-    printk(KERN_INFO "polling done\n");
+	frame_sz = skb_end_pointer(skb) - skb->head;
+	frame_sz = SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
+	xdp_init_buff(&xdp_buff, frame_sz, &priv->xdp_rxq);
+	xdp_prepare_buff(&xdp_buff, skb->head, skb_headroom(skb), skb_headlen(skb), true);
+	if (skb_is_nonlinear(skb)) {
+		skb_shinfo(skb)->xdp_frags_size = skb->data_len;
+		xdp_buff_set_frags_flag(&xdp_buff);
+	} else {
+		xdp_buff_clear_frags_flag(&xdp_buff);
+	}
 
+	orig_data = xdp_buff.data;
+	orig_data_end = xdp_buff.data_end;
+
+	act = bpf_prog_run_xdp(xdp_prog, &xdp_buff);
+	switch(act){
+		case XDP_PASS:
+			printk(KERN_INFO "kxdp: XDP_PASS\n");
+			break;
+		default:
+			printk(KERN_INFO "kxdp: XDP_DROP\n");
+			goto exit;
+	}
+	off = orig_data - xdp_buff.data;
+	if (off > 0)
+		__skb_push(skb, off);
+	else if (off < 0)
+		__skb_pull(skb, -off);
+
+	skb_reset_mac_header(skb);
+
+	off = xdp_buff.data_end - orig_data_end;
+	if (off != 0){
+		__skb_put(skb, off); 
+	}
+
+	if (xdp_buff_has_frags(&xdp_buff)){
+		skb->data_len = skb_shinfo(skb)->xdp_frags_size;
+	} else {
+		skb->data_len = 0;
+	}
+
+noxdpprog:
+
+	netif_receive_skb(skb);
+
+	npackets++;
+	priv->stats.rx_packets++;
+	priv->stats.rx_bytes += pkt->datalen;
+
+    printk(KERN_INFO "xdp polling done\n");
+
+exit:
 	if (npackets < budget) {
         printk(KERN_INFO "npackets smaller than budget\n");
 		unsigned long flags;
@@ -221,7 +268,9 @@ int kxdp_poll(struct napi_struct *napi, int budget){
 		spin_unlock_irqrestore(&priv->lock, flags);
 	}
 
-    printk(KERN_INFO "polling end\n");
+    printk(KERN_INFO "xdp polling end\n");
+	kxdp_tx_release_buffer(pkt);
+	xdp_clear_return_frame_no_direct();
 
 	return npackets;
 

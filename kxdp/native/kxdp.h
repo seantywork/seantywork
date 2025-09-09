@@ -31,7 +31,9 @@
 #include <net/neighbour.h>
 #include <net/route.h>
 #include <net/arp.h>
+
 #include <net/xdp.h>
+#include <linux/filter.h>
 
 
 #define DRV_NAME	"kxdp"
@@ -74,6 +76,11 @@ struct kxdp_priv {
     struct bpf_prog *xdp_prog;
     struct xdp_rxq_info xdp_rxq;
     struct xdp_mem_info	xdp_mem;
+};
+
+struct kxdp_xdp_buff {
+	struct xdp_buff xdp;
+	struct sk_buff *skb;
 };
 
 
