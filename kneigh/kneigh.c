@@ -50,7 +50,7 @@ void kneigh_teardown_pool(struct net_device *dev){
 }    
 
 
-struct kneigh_packet *kneigh_tx_cons_buffer(struct net_device *dev){
+struct kneigh_packet *kneigh_tx_reserve_buffer(struct net_device *dev){
 
 	struct kneigh_priv *priv = netdev_priv(dev);
 	unsigned long flags;
@@ -370,7 +370,7 @@ void kneigh_hw_tx(char *buf, int len, struct net_device *dev){
 
 	priv = netdev_priv(dest);
 
-	tx_buffer = kneigh_tx_cons_buffer(dev);
+	tx_buffer = kneigh_tx_reserve_buffer(dev);
 
 	if(!tx_buffer) {
 		printk(KERN_INFO "out of tx buffer, len is %i\n",len);

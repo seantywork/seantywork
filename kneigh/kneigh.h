@@ -89,7 +89,7 @@ void kneigh_setup_pool(struct net_device *dev);
 
 void kneigh_teardown_pool(struct net_device *dev);
 
-struct kneigh_packet *kneigh_tx_cons_buffer(struct net_device *dev);
+struct kneigh_packet *kneigh_tx_reserve_buffer(struct net_device *dev);
 
 void kneigh_tx_release_buffer(struct kneigh_packet *pkt);
 

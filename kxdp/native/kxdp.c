@@ -50,7 +50,7 @@ void kxdp_teardown_pool(struct net_device *dev){
 }    
 
 
-struct kxdp_packet *kxdp_tx_cons_buffer(struct net_device *dev){
+struct kxdp_packet *kxdp_tx_reserve_buffer(struct net_device *dev){
 
 	struct kxdp_priv *priv = netdev_priv(dev);
 	unsigned long flags;
@@ -367,7 +367,7 @@ void kxdp_hw_tx(char *buf, int len, struct net_device *dev){
 
 	priv = netdev_priv(dest);
 
-	tx_buffer = kxdp_tx_cons_buffer(dev);
+	tx_buffer = kxdp_tx_reserve_buffer(dev);
 
 	if(!tx_buffer) {
 		printk(KERN_INFO "out of tx buffer, len is %i\n",len);
@@ -407,12 +407,12 @@ int kxdp_open(struct net_device *dev){
 
 	if (dev == kxdp_devs[1]){
 
-        memcpy((void*)dev->dev_addr, "KNEI01", ETH_ALEN);
+        memcpy((void*)dev->dev_addr, "KXDP01", ETH_ALEN);
 
 
     } else {
 
-		memcpy((void*)dev->dev_addr, "KNEI00", ETH_ALEN);
+		memcpy((void*)dev->dev_addr, "KXDP00", ETH_ALEN);
 	}
 
 	struct kxdp_priv *priv = netdev_priv(dev);
