@@ -11,10 +11,14 @@
 
 #define OP_COUNT 10
 
-struct 
+struct myelement {
+  
+	struct list_head node;
+	struct rcu_head rcu;
+};
 
-static LIST_HEAD();
-static spinlock_t 
+static LIST_HEAD(myelements);
+static spinlock_t myelements_lock;
 
 static struct task_struct *task_write;
 static struct task_struct *task_read;
@@ -47,6 +51,8 @@ static int task_reader(void *arg){
 
 
 static int __init rcu_deadly_init(void){
+
+    spin_lock_init(&myelements_lock);
 
     task_write = kthread_run(task_writer, (void*)&w, "tw/%d", w);
     if(IS_ERR(task_write)){
