@@ -30,7 +30,7 @@ static int task_writer(void *arg){
     int v = *(int *)arg;
 
     for(int i = 0; i < OP_COUNT; i++){
-        printk(KERN_INFO "rcudeadly: v: %d: w: %d\n", v, i);
+        printk(KERN_INFO "rcucmap: v: %d: w: %d\n", v, i);
         mdelay(1000);
     }
 
@@ -42,7 +42,7 @@ static int task_reader(void *arg){
     int v = *(int *)arg;
 
     for(int i = 0; i < OP_COUNT; i++){
-        printk(KERN_INFO "rcudeadly: v: %d: r: %d\n", v, i);
+        printk(KERN_INFO "rcucmap: v: %d: r: %d\n", v, i);
         mdelay(1000);
     }
 
@@ -50,37 +50,37 @@ static int task_reader(void *arg){
 }
 
 
-static int __init rcu_deadly_init(void){
+static int __init rcu_cmap_init(void){
 
     spin_lock_init(&myelements_lock);
 
     task_write = kthread_run(task_writer, (void*)&w, "tw/%d", w);
     if(IS_ERR(task_write)){
-        printk(KERN_ERR "rcudeadly: failed to create task_write thread\n");
+        printk(KERN_ERR "rcucmap: failed to create task_write thread\n");
         return -1;
     }
     task_read = kthread_run(task_reader, (void*)&r, "tr/%d", r);
     if(IS_ERR(task_read)){
-        printk(KERN_ERR "rcudeadly: failed to create task_read thread\n");
+        printk(KERN_ERR "rcucmap: failed to create task_read thread\n");
         return -1;
     }
     get_task_struct(task_write);
     get_task_struct(task_read);
 
-    printk(KERN_INFO "rcudeadly: loaded\n");
+    printk(KERN_INFO "rcucmap: loaded\n");
 
     return 0;
 }
 
-static void __exit rcu_deadly_exit(void){
+static void __exit rcu_cmap_exit(void){
     kthread_stop(task_write);
     kthread_stop(task_read);
 
-    printk(KERN_INFO "rcudeadly: unloaded\n");
+    printk(KERN_INFO "rcucmap: unloaded\n");
 
 }
 
-module_init(rcu_deadly_init);
-module_exit(rcu_deadly_exit);
+module_init(rcu_cmap_init);
+module_exit(rcu_cmap_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("seantywork");
