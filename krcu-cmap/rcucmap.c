@@ -29,11 +29,6 @@ struct cc_map {
 };
 
 static struct cc_map* cmap;
-static struct task_struct *task_write;
-static struct task_struct *task_read;
-static int w = 10;
-static int r = 11;
-
 
 static int _hashfunc(__u32 key, __u32 bcount){
     __u32 hash = ((key >> 16) ^ key) * 0x45d9f3bu;
@@ -131,6 +126,20 @@ done:
     return result;
 }
 
+// needs rcu before and after
+static struct node* get_ccmap_rcu(struct cc_map* cmap, int key){
+    struct node* n = NULL;
+    struct node* found_n = NULL;
+    __u32 idx = _hashfunc((__u32)key, (__u32)cmap->count);
+    list_for_each_entry_rcu(n, &cmap->buckets[idx].nodes, _node) {
+        if(n->key == key){
+            found_n = n;
+            break;
+        }
+    }
+    return found_n;
+}
+
 static void delete_ccmap(struct cc_map* cmap){
     if(cmap == NULL){
         return;
@@ -144,31 +153,77 @@ static void delete_ccmap(struct cc_map* cmap){
             kfree(n);
         }
         spin_unlock(&cmap->buckets[i].lock);
-        kfree(&cmap->buckets[i]);
     }
+    kfree(cmap->buckets);
     kfree(cmap);
 
 }
 
+int task_init_val = 0;
+static struct task_struct *task_write = NULL;
+static struct task_struct *task_read = NULL;
+
 static int task_writer(void *arg){
 
-    int v = *(int *)arg;
-
-    for(int i = 0; i < OP_COUNT; i++){
-        printk(KERN_INFO "rcucmap: v: %d: w: %d\n", v, i);
-        mdelay(1000);
+    printk(KERN_INFO "w: init\n");
+    cmap = make_ccmap(OP_COUNT);
+    printk(KERN_INFO "w: updating cmap\n");
+    for(int i = 0 ; i < OP_COUNT; i++){
+        int idx = update_ccmap(cmap, i, i);
+        printk(KERN_INFO "w: update cmap: %d\n", idx);
     }
 
+    int step = 1;
+    int limit = OP_COUNT / 2;
+
+    task_init_val = 1;
+    printk(KERN_INFO "w: ready\n");
+    
+    while(step < limit){
+        mdelay(1000);
+        for(int i = 0; i < OP_COUNT; i++){
+            update_ccmap(cmap, i, i * step);
+        }
+        step += 1;
+    }
+    printk(KERN_INFO "w: removing from cmap\n");
+    for(int i = 0 ; i < OP_COUNT; i++){
+        int idx = remove_ccmap(cmap, i);
+        printk(KERN_INFO "w: remove cmap: %d\n", idx);
+    }
+    printk(KERN_INFO "w: done\n");
     return 0;
 }
 
 static int task_reader(void *arg){
 
-    int v = *(int *)arg;
-
-    for(int i = 0; i < OP_COUNT; i++){
-        printk(KERN_INFO "rcucmap: v: %d: r: %d\n", v, i);
-        mdelay(1000);
+    int sum = 0;
+    struct node* n = NULL;
+    printk(KERN_INFO "r: init\n");
+    do{
+        printk(KERN_INFO "r: wait...\n");
+        msleep(100);
+    }while(task_init_val != 1);
+    printk(KERN_INFO "r: run\n");
+    while(1){
+        sum = 0;
+        for(int i = 0; i < OP_COUNT; i++){
+            rcu_read_lock();
+            n = get_ccmap_rcu(cmap, i);
+            if(n == NULL){
+                rcu_read_unlock();
+                continue;
+            }
+            sum += n->value;
+            rcu_read_unlock();
+            
+        }
+        if(sum == 0){
+            printk(KERN_INFO "r: done: sum == 0\n");
+            break;
+        }
+        printk(KERN_INFO "r: continue: sum: %d\n", sum);
+        mdelay(100);
     }
 
     return 0;
@@ -177,44 +232,31 @@ static int task_reader(void *arg){
 
 static int __init rcu_cmap_init(void){
 
-
-    /*
-    task_write = kthread_run(task_writer, (void*)&w, "tw/%d", w);
-    if(IS_ERR(task_write)){
-        printk(KERN_ERR "rcucmap: failed to create task_write thread\n");
-        return -1;
-    }
-    task_read = kthread_run(task_reader, (void*)&r, "tr/%d", r);
+    task_read = kthread_run(task_reader, NULL, "tr/%d", 2);
     if(IS_ERR(task_read)){
         printk(KERN_ERR "rcucmap: failed to create task_read thread\n");
         return -1;
     }
-    get_task_struct(task_write);
     get_task_struct(task_read);
-    */
-
-    printk(KERN_INFO "rcucmap: init\n");
-    cmap = make_ccmap(OP_COUNT);
-    printk(KERN_INFO "rcucmap: updating cmap\n");
-    for(int i = 0 ; i < OP_COUNT; i++){
-        int idx = update_ccmap(cmap, i, i);
-        printk(KERN_INFO "update cmap: %d\n", idx);
+    
+    task_write = kthread_run(task_writer, NULL, "tw/%d", 1);
+    if(IS_ERR(task_write)){
+        printk(KERN_ERR "rcucmap: failed to create task_write thread\n");
+        return -1;
     }
-    printk(KERN_INFO "rcucmap: removing from cmap\n");
-    for(int i = 0 ; i < OP_COUNT; i++){
-        int idx = remove_ccmap(cmap, i);
-        printk(KERN_INFO "remove cmap: %d\n", idx);
-    }
-    printk(KERN_INFO "rcucmap: done\n");
+    get_task_struct(task_write);
 
     return 0;
 }
 
 static void __exit rcu_cmap_exit(void){
-    /*
-    kthread_stop(task_write);
-    kthread_stop(task_read);
-    */
+
+    if(task_write != NULL){
+        kthread_stop(task_write);
+    }
+    if(task_read != NULL){
+        kthread_stop(task_read);
+    }
 
     printk(KERN_INFO "rcucmap: deleting cmap\n");
     delete_ccmap(cmap);
