@@ -3,13 +3,13 @@
 - source: [linuxyz/krcu-cmap](https://github.com/seantywork/linuxyz/tree/main/krcu-cmap)
 - date: 2509-24
 
-In user space on Linux, we can utilize pthread_rwlock to design a read-heavy data structure.
+In user space on Linux, we can utilize `pthread_rwlock` to design a read-heavy data structure.
 
 A similar thing in the Linux kernel space is called `rcu`, a shorthand for "read, copy, update".
 
 Full documentation on it is [here](https://www.kernel.org/doc/html/next/RCU/whatisRCU.html)
 
-However, with pthread_rwlock in mind, it could be a little bit puzzling (at least it was for me) \
+However, with `pthread_rwlock` in mind, it could be a little bit puzzling (at least it was for me) \
 to grasp the proper use and order of apis unlike in the case of \
 pthread_rwlock where you simply call *_rdlock on read and *_wrlock \
 on update

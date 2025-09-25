@@ -2125,7 +2125,7 @@ sudo iptables -t nat -A POSTROUTING -o wlo1 -p tcp -j MASQUERADE
 
 # outgoing postrouting
 
-sudo iptables -t nat -A POSTROUTING -o wlo1 -p tcp -s 192.168.10.50 -j SNAT 192.168.10.5
+sudo iptables -t nat -A POSTROUTING -o wlo1 -p tcp -s 192.168.10.50 -j SNAT --to-source 192.168.10.5
 
 
 # permanent rule
