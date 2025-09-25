@@ -55,10 +55,57 @@ struct node {
 };
 ```
 
+With all these, our scenario will flow like the diagram below.
+The critical part to look for (in my opinion) is \
+`delete all nodes` part from writer thread.
 
+If this `rcu` thing cannot guarantee the basic functionality\
+we expect from things such as `pthread_rwlock`, then this part\
+will cause the GD kernel panic.
 
 ```shell
 
+|---(r)eader thread------------|---(w)riter thread-----------|
+|    wait for cmap to be ready |                             |
+|                              |   create cmap               |
+|                              |   update cmap (fill up)     |
+|                              |   ready!                    |
+|                              |                             |
+|    read values from cmap     |   update cmap               |
+|    (interval 100ms)          |   (interval 1000ms)         |
+|    continue                  |   continue                  |
+|    continue                  |   continue                  |
+|    continue                  |   continue                  |
+|    continue                  |   delete all nodes          |
+|    continue...               |   exit                      |
+|    untile there is no value  |                             |
+|    (sum == 0)                |                             |
+|    exit                      |                             |
+--------------------------------------------------------------
+```
+
+Now, let's compile the kernel module.
+
+```shell
+$ make
+```
+Pop up another terminal, and use `dmesg` command to follow.
+
+```shell
+
+$ sudo dmesg -wH
+```
+
+Load the kernel module with `insmod` command. \
+As soon as you do this, `dmesg` will output the result \
+described in the diagram above.
+
+```shell
+$ sudo insmod rcucmap.ko
+```
+
+```shell
+# `dmesg -wH` outpu
 [Sep24 09:06] r: init
 [  +0.000007] r: wait...
 [  +0.000087] w: init
@@ -129,6 +176,15 @@ struct node {
 [  +0.003755] r: done: sum == 0
 
 
+```
+
+As you can see, the program is working as expected and (thank god) \
+there is no kernel panic!
+
+Pleased, unload the kernel module.
+
+```shell
+$ sudo rmmod rcucmap
 ```
 
 ```shell
