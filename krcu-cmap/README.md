@@ -105,7 +105,7 @@ $ sudo insmod rcucmap.ko
 ```
 
 ```shell
-# `dmesg -wH` outpu
+# `dmesg -wH` output
 [Sep24 09:06] r: init
 [  +0.000007] r: wait...
 [  +0.000087] w: init
