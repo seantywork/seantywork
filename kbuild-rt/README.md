@@ -1,4 +1,4 @@
-# how to patch linux kernel? example using realtime patch for linux kernel 
+# how to patch linux kernel? realtime patch example 
 
 
 ```shell
@@ -10,40 +10,30 @@ $ sudo apt install build-essential git libssl-dev libelf-dev flex bison debhelpe
 ```shell
 
 $ uname -a
-Linux ubuntu24-server 6.8.0-71-generic #71-Ubuntu SMP PREEMPT_DYNAMIC Tue Jul 22 16:52:38 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Linux thy-Z370-HD3 6.14.0-33-generic #33~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep 19 17:02:30 UTC 2 x86_64 x86_64 x86_64 GNU/Linux
 
 
 ```
 
 
 ```shell
-$ curl -L https://mirrors.edge.kernel.org/pub/linux/kernel/v6.x/linux-6.8.tar.gz -o linux-6.8.tar.gz
+$ curl -L https://mirrors.edge.kernel.org/pub/linux/kernel/v6.x/linux-6.8.2.tar.gz -o linux-6.8.2.tar.gz
 
-$ tar xzf linux-6.8.tar.gz
+$ tar xzf linux-6.8.2.tar.gz
 ```
 
 ```shell
+
 $ curl -L https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.8/patch-6.8.2-rt11.patch.xz -o patch-6.8.2-rt11.patch.xz
 
-$ curl -L https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.8/older/patch-6.8-rt8.patch.xz -o patch-6.8-rt8.patch.xz
-
-$ cd linux-6.8
+$ cd linux-6.8.2
 
 ```
-
 
 ```shell
 $ xzcat ../patch-6.8.2-rt11.patch.xz | patch -p1
-1 out of 23 hunks FAILED -- saving rejects to file net/core/dev.c.rej
-
-$ cd ../
-
-$ rm -r linux-6.8
-```
-
-```shell
-$ xzcat ../patch-6.8-rt8.patch.xz | patch -p1
 ...
+patching file kernel/time/hrtimer.c
 patching file kernel/time/tick-sched.c
 patching file kernel/time/timer.c
 patching file kernel/trace/trace.c
@@ -56,7 +46,7 @@ patching file net/core/skbuff.c
 ```
 
 ```shell
-$ cp /boot/config-6.8.0-71-generic .config
+$ cp /boot/config-6.14.0-33-generic .config
 $ make oldconfig
 ```
 
@@ -103,11 +93,11 @@ CONFIG_MODULE_SIG_ALL
 
 ```shell
 $ nproc
-4
+12
 ```
 
 ```shell
 
-# $ make -j2 deb-pkg
-$ make -j2 bindeb-pkg
+# $ make -j4 deb-pkg
+$ make -j4 bindeb-pkg
 ```
