@@ -431,8 +431,10 @@ CONFIG_DEBUG_INFO_BTF
 CONFIG_MODULE_SIG_ALL
 
 # build kernel
-
+# with git repo
 make -j4 deb-pkg
+# not with git repo
+make -j4 bindeb-pkg
 
 # install
 
