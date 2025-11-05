@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEV_NAME "./mem_storage"
+#define DEV_NAME "./chr_store"
 
 void print_help(){
     printf("r $number: reads $number of characters from the beginning\n");
@@ -24,8 +24,28 @@ int main(int argc, char** argv){
         return -1;
     }
     if(strcmp(argv[1], "r") == 0){
+        long fsize = 0;
         sscanf(argv[2], "%d", &number);
-        buff = calloc(number, sizeof(char)); 
+        if(fseek(f, 0L, SEEK_END) == 0){
+            fsize = ftell(f);
+            if(fsize < 0){
+                printf("failed to seek size\n");
+                goto out;
+            } 
+            if(fseek(f, 0L, SEEK_SET) != 0){
+                printf("failed to reset pos\n");
+                goto out;
+            }
+        } else {
+            printf("failed to seek eof\n");
+            goto out;
+        }
+        if(fsize == 0){
+            printf("nothing to read\n");
+            return 0;
+        }
+        printf("current chr_storage size: %ld\n", fsize);
+        buff = calloc(fsize, sizeof(char)); 
         int n = fread(buff, sizeof(char), number, f);
         printf("read: %d: %s\n", n, buff);
         free(buff);
@@ -38,6 +58,7 @@ int main(int argc, char** argv){
         print_help();
         return -1;
     }
+out: 
     fclose(f);
 
     return 0;
