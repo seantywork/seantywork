@@ -19,9 +19,11 @@ static __u8* msg = NULL;
 
 static int device_open(struct inode *inode, struct file *filp){
   if (device_open_counter){
+    printk(KERN_INFO "not possible to open: already occupied: %d\n", device_open_counter);
     return -EBUSY;
   }
   device_open_counter++;
+  printk(KERN_INFO "file opened: %d\n", device_open_counter);
   try_module_get(THIS_MODULE);
   return SUCCESS;
 }
@@ -29,6 +31,7 @@ static int device_open(struct inode *inode, struct file *filp){
 
 static int device_release(struct inode *inode, struct file *filp){
   device_open_counter--;
+  printk(KERN_INFO "file closed: %d\n", device_open_counter);
   module_put(THIS_MODULE);
   return SUCCESS;
 }
@@ -97,6 +100,7 @@ static ssize_t device_write(struct file *filp, const char *buf, size_t len, loff
 static loff_t device_llseek(struct file* filp, loff_t offset, int whence){
 
   loff_t retval = 0;
+  printk(KERN_INFO "chr_store: seek: %d\n", whence);
   if(blk_count == 0){
     return 0;
   }
@@ -132,7 +136,7 @@ static int __init init_chr_store(void){
     printk(KERN_ALERT "registering char device failed with %d\n", dev_major);
     return dev_major;
   }
-  printk(KERN_INFO "dev_major number: %d\n", dev_major);
+  printk(KERN_INFO "chr_store: dev_major number: %d: init\n", dev_major);
   return SUCCESS;
 }
 
@@ -142,7 +146,7 @@ static void __exit exit_chr_store(void){
   if(msg != NULL){
     kfree(msg);
   }
-  printk(KERN_INFO "dev_major: %d: gone\n", dev_major);
+  printk(KERN_INFO "chr_store: dev_major: %d: gone\n", dev_major);
 }
 
 module_init(init_chr_store);
