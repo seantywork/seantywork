@@ -38,7 +38,7 @@ static int __init kdev_gpio_init(void){
         return -1;
     }
     gd = gpiod_get(d, "GPIO88", 0);
-    if(gd == NULL){
+    if(IS_ERR(gd)){
         printk("failed to get desc\n");
         return -1;
     }
