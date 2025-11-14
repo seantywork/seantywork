@@ -37,6 +37,10 @@ static int __init kdev_gpio_init(void){
     }
     n = gpiod_count(d, NULL);
     printk("gpio number: %d\n", n);
+    if(n < 0){
+        printk("failed to get gpio count: %d\n", n);
+        return -1;
+    }
     for(int i = 0; i < n; i++){
         gpio_target = of_get_named_gpio(dn, TARGET_NAME, i);
         printk("gpio_target: %d\n", gpio_target);
@@ -53,9 +57,6 @@ static int __init kdev_gpio_init(void){
             continue;
         }
     }
-
-    
-
     return 0;
 }
 
