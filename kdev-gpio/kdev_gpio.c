@@ -23,9 +23,9 @@ static int __init kdev_gpio_init(void){
     int gpio_target = 0;
     struct device_node* dn = NULL;
     struct device* d = NULL;
-    dn = of_find_node_by_name(NULL, "gpio0");
+    dn = of_find_node_by_name(NULL, "gpio");
     if(dn == NULL){
-        printk("failed to find device node: %s\n", TARGET_NAME);
+        printk("failed to find device node: gpio\n");
         return -1;
     }
     gpio_target = of_get_named_gpio(dn, TARGET_NAME, 0);
