@@ -16,10 +16,12 @@
 #include <linux/of_gpio.h>
 #include <linux/device.h>
 #include <linux/container_of.h>
+#include <linux/gpio/consumer.h>
 
 #define TARGET_NAME	"GPIO17"
 
 static int __init kdev_gpio_init(void){
+    int n = 0;
     int gpio_target = 0;
     struct device_node* dn = NULL;
     struct device* d = NULL;
@@ -28,30 +30,30 @@ static int __init kdev_gpio_init(void){
         printk("failed to find device node: gpio\n");
         return -1;
     }
-    gpio_target = of_get_named_gpio(dn, TARGET_NAME, 0);
-    if(gpio_target == -EPROBE_DEFER){
-        printk("EPROBE DEFER\n");
+    d = container_of(&dn, struct device, of_node);
+    if(d == NULL){
+        printk("failed to get device from node\n");
         return -1;
     }
-    printk("gpio_target: %d\n", gpio_target);
-    if(gpio_is_valid(gpio_target)){
-        d = container_of(&dn, struct device, of_node);
-        if(d == NULL){
-            printk("failed to get device from node\n");
-            return -1;
+    n = gpiod_count(d, NULL);
+    printk("gpio number: %d\n", n);
+    for(int i = 0; i < n; i++){
+        gpio_target = of_get_named_gpio(dn, TARGET_NAME, i);
+        printk("gpio_target: %d\n", gpio_target);
+        if(gpio_target == -EPROBE_DEFER){
+            printk("EPROBE DEFER\n");
+            continue;
         }
-        // deprecated
-        //gpio_target = devm_gpio_request(d, gpio_target, TARGET_NAME);
-        if(gpio_target){
+        if(gpio_is_valid(gpio_target)){
+            // deprecated
+            //gpio_target = devm_gpio_request(d, gpio_target, TARGET_NAME);
             printk("SUCESS: gpio_target: %d\n", gpio_target);
         } else {
-            printk("failed to request gpio target\n");
-            return -1;
+            printk("gpio is not valid\n");
+            continue;
         }
-    } else {
-        printk("gpio is not valid\n");
-        return -1;
     }
+
     
 
     return 0;
