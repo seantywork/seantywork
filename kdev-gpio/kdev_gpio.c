@@ -27,7 +27,7 @@ static int __init kdev_gpio_init(void){
     struct device_node* dn = NULL;
     struct device* d = NULL;
     struct gpio_desc* gd = NULL;
-    dn = of_find_node_by_name(NULL, "gpio");
+    dn = of_find_node_by_name(NULL, "gpiochip0");
     if(dn == NULL){
         printk("failed to find device node: gpio\n");
         return -1;
@@ -37,7 +37,7 @@ static int __init kdev_gpio_init(void){
         printk("failed to get device from node\n");
         return -1;
     }
-    gd = gpiod_get(d, NULL, 0);
+    gd = gpiod_get(d, "GPIO17", 0);
     if(IS_ERR(gd)){
         printk("failed to get desc\n");
         return -1;
