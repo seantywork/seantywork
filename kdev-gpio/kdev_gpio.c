@@ -33,7 +33,7 @@ static int __init kdev_gpio_init(void){
         return -1;
     }
     d = container_of(&dn, struct device, of_node);
-    if(d == NULL){
+    if(IS_ERR(d)){
         printk("failed to get device from node\n");
         return -1;
     }
