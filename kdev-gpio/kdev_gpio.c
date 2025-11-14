@@ -16,6 +16,7 @@
 #include <linux/of_gpio.h>
 #include <linux/device.h>
 #include <linux/container_of.h>
+#include <linux/gpio/machine.h>
 #include <linux/gpio/consumer.h>
 
 #define TARGET_NAME	"GPIO17"
@@ -25,6 +26,7 @@ static int __init kdev_gpio_init(void){
     int gpio_target = 0;
     struct device_node* dn = NULL;
     struct device* d = NULL;
+    struct gpio_desc* gd = NULL;
     dn = of_find_node_by_name(NULL, "gpio");
     if(dn == NULL){
         printk("failed to find device node: gpio\n");
@@ -35,12 +37,14 @@ static int __init kdev_gpio_init(void){
         printk("failed to get device from node\n");
         return -1;
     }
-    n = gpiod_count(d, NULL);
-    printk("gpio number: %d\n", n);
-    if(n < 0){
-        printk("failed to get gpio count: %d\n", n);
+    gd = gpiod_get(d, "GPIO17", 0);
+    if(gd == NULL){
+        printk("failed to get desc\n");
         return -1;
     }
+    printk("got desc\n");
+
+    /*
     for(int i = 0; i < n; i++){
         gpio_target = of_get_named_gpio(dn, TARGET_NAME, i);
         printk("gpio_target: %d\n", gpio_target);
@@ -57,6 +61,7 @@ static int __init kdev_gpio_init(void){
             continue;
         }
     }
+    */
     return 0;
 }
 
