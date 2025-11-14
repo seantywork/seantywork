@@ -33,6 +33,7 @@ static int __init kdev_gpio_init(void){
         printk("EPROBE DEFER\n");
         return -1;
     }
+    printk("gpio_target: %d\n", gpio_target);
     if(gpio_is_valid(gpio_target)){
         d = container_of(&dn, struct device, of_node);
         if(d == NULL){
