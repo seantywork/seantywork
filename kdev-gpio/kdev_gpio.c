@@ -12,61 +12,35 @@
 #include <linux/string.h>
 #include <linux/version.h> 
 
-#include <linux/of.h>
-#include <linux/of_gpio.h>
-#include <linux/device.h>
-#include <linux/container_of.h>
-#include <linux/gpio/machine.h>
+#include <linux/gpio/driver.h>
 #include <linux/gpio/consumer.h>
 
-#define TARGET_NAME	"GPIO17"
+#define TARGET_LABEL "pinctrl-bcm2711"
+#define TARGET_PIN_NAME	"GPIO17"
 
-static int __init kdev_gpio_init(void){
+
+static int _gc_match(struct gpio_chip *gc, const void *data){
     int n = 0;
-    int gpio_target = 0;
-    struct device_node* dn = NULL;
-    struct device* d = NULL;
-    struct gpio_desc* gd = NULL;
-    dn = of_find_node_by_name(NULL, "fe200000.gpio");
-    if(dn == NULL){
-        printk("failed to find device node: gpio\n");
-        return -1;
+    if(gc->label != NULL){
+        printk("kdev_gpio: label: %s\n", gc->label);
+        if(strcmp(gc->label, TARGET_LABEL) == 0){
+            printk("base: %d\n", gc->base);
+            printk("ngpio: %d\n", gc->ngpio);
+        }
+    } else {
+        printk("kdev_gpio: label: not available\n");
     }
-    d = container_of(&dn, struct device, of_node);
-    if(IS_ERR(d)){
-        printk("failed to get device from node\n");
-        return -1;
-    }
-    gd = gpiod_get(d, NULL, 0);
-    if(IS_ERR(gd)){
-        printk("failed to get desc\n");
-        return -1;
-    }
-    printk("got desc\n");
 
-    /*
-    for(int i = 0; i < n; i++){
-        gpio_target = of_get_named_gpio(dn, TARGET_NAME, i);
-        printk("gpio_target: %d\n", gpio_target);
-        if(gpio_target == -EPROBE_DEFER){
-            printk("EPROBE DEFER\n");
-            continue;
-        }
-        if(gpio_is_valid(gpio_target)){
-            // deprecated
-            //gpio_target = devm_gpio_request(d, gpio_target, TARGET_NAME);
-            printk("SUCESS: gpio_target: %d\n", gpio_target);
-        } else {
-            printk("gpio is not valid\n");
-            continue;
-        }
-    }
-    */
+    return 0;
+}
+static int __init kdev_gpio_init(void){
+    gpio_device_find(NULL, _gc_match);
+
     return 0;
 }
 
 static void __exit kdev_gpio_exit(void){
-    printk("bye\n");
+    printk("kdev_gpio: bye\n");
 }
 
 module_init(kdev_gpio_init);

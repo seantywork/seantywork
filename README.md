@@ -11684,7 +11684,37 @@ sudo irsend SEND_ONCE LG_AC AC_ON
 
 ```
 
+# DTS DT DTB 
 
+```shell
+# gpiosk.dts
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2711";
+
+    fragment@0 {
+        target = <&gpio>;
+        __overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&gpiosk_pins_in>;
+
+            gpiosk_pins_in: gpiosk_pins_in {
+                brcm,pins = <17>;     /* GPIO17 */
+                brcm,function = <0>; /* Input */
+            };
+        };
+    };
+};
+
+```
+
+```shell
+# compile 
+dtc -@ -I dts -O dtb -o gpiosk.dtb gpiosk.dts
+
+```
 
 # JETSON XAVIER NX
 
