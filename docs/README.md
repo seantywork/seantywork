@@ -11684,7 +11684,7 @@ sudo irsend SEND_ONCE LG_AC AC_ON
 
 ```
 
-# DTS DT DTB 
+# DT DTS DTBO 
 
 ```shell
 # gpiosk.dts
@@ -11712,7 +11712,7 @@ sudo irsend SEND_ONCE LG_AC AC_ON
 
 ```shell
 # compile 
-dtc -@ -I dts -O dtb -o gpiosk.dtb gpiosk.dts
+dtc -@ -I dts -O dtb -o gpiosk.dtbo gpiosk.dts
 
 ```
 
