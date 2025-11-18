@@ -14,6 +14,7 @@
 
 #include <linux/device.h>
 #include <linux/of.h>
+#include <linux/of_platform.h>
 #include <linux/of_gpio.h>
 #include <linux/gpio/driver.h>
 #include <linux/gpio/consumer.h>
@@ -41,24 +42,7 @@ static int __init kdev_gpio_init(void){
             }
         }
     }
-    struct device* d = container_of(&dn,struct device, of_node);
-    if(d == NULL){
-        of_node_put(dn);
-        printk("failed to get device\n");
-        return -1;
-    }
-    if(d->init_name != NULL){
-        printk("device init name: %s\n", d->init_name);
-    }
-    struct gpio_chip* gc = container_of(&d,struct gpio_chip, parent);
-    if(gc != NULL){
-        printk("got gc\n");
-        if(gc->label != NULL){
-            printk("gc label: %d\n", gc->base);
-        }
-    }
 
-    printk("kdev_gpio: init\n");
     return 0;
 }
 
