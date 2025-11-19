@@ -1,4 +1,7 @@
+
+INCLUDES := -I../
+
 all:
-	gcc -g -o user.out user.c -lpthread
+	gcc -g $(INCLUDES) -o user.out user.c -lpthread
 clean:
 	rm -rf *.out *.o

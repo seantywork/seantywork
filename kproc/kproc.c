@@ -16,8 +16,6 @@
 
 #include "kproc.h"
 
-#define DEVICE_NAME "kproc_f"
-
 static struct work_struct job;
 
 static int dev_major;
