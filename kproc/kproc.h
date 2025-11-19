@@ -3,5 +3,6 @@
 
 #define DEVICE_NAME "kproc_f"
 #define KPROC_BUFF_LEN 128
+#define DEVICE_NODNAME "./kproc_f_nod"
 
 #endif

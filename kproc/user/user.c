@@ -58,7 +58,7 @@ int main(int argc, char** argv){
     }
     result = -1;
     signal(SIGINT, sig_hdl);
-    fp = fopen(DEVICE_NAME, "r+");
+    fp = fopen(DEVICE_NODNAME, "r+");
     if(fp == NULL){
         printf("failed to open\n");
         return -1;
