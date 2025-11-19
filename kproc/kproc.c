@@ -28,9 +28,9 @@ static void show_proc_context(char* buf){
     unsigned int uid;
     if(likely(in_task())){
         uid = from_kuid(&init_user_ns, current_uid());
-        snprintf(buf, KPROC_BUFF_LEN, "kproc: ctx: process: uid: %u: pid: %d\n", uid, task_pid_nr(current));
+        snprintf(buf, KPROC_BUFF_LEN, "kproc: ctx: process: uid: %u: pid: %d", uid, task_pid_nr(current));
     } else {
-        snprintf(buf, KPROC_BUFF_LEN, "kproc: ctx: interrupt\n");
+        snprintf(buf, KPROC_BUFF_LEN, "kproc: ctx: interrupt");
     }
 }
 
