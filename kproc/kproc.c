@@ -17,7 +17,7 @@
 #include "kproc.h"
 
 #define IRQ_1 1
-#define IRQ_1_DEV "irq_1_dev"
+#define IRQ_1_DEV "keyboard"
 #define IRQ_1_ID "0001"
 
 static int dev_major;
