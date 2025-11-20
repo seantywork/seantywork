@@ -11,16 +11,17 @@
 #include <linux/fs.h>
 #include <linux/uaccess.h> 
 
-#include <linux/delay.h>
-#include <linux/workqueue.h>
+#include <linux/interrupt.h>
+
 
 #include "kproc.h"
 
-static struct work_struct job;
+#define IRQ_1 1
+#define IRQ_1_DEV "irq_1_dev"
+#define IRQ_1_ID "0001"
 
 static int dev_major;
 static int device_open_counter = 0;
-static int work_done = 0;
 
 static void show_proc_context(char* buf){
     unsigned int uid;
@@ -54,8 +55,8 @@ static int device_release(struct inode *inode, struct file *filp){
 static ssize_t device_read(struct file *filp, char *buffer, size_t len, loff_t *offset){
     char tmp_msg_buffer[KPROC_BUFF_LEN] = {0};
     show_proc_context(tmp_msg_buffer);
-    ssize_t n = copy_to_user(buffer, tmp_msg_buffer, len);
-    (*offset) += len;
+    ssize_t n = copy_to_user(buffer, tmp_msg_buffer, KPROC_BUFF_LEN);
+    (*offset) += KPROC_BUFF_LEN;
     return KPROC_BUFF_LEN - n;
 }
 
@@ -64,17 +65,16 @@ static ssize_t device_write(struct file *filp, const char *buf, size_t len, loff
     return -EINVAL;
 }
 
-static void job_handler(struct work_struct* work){
-    printk("kproc: job scheduled\n");
-    char tmp_msg_buffer[KPROC_BUFF_LEN] = {0};
-    while(!work_done){
-        show_proc_context(tmp_msg_buffer);
-        printk("kproc: job: %s\n", tmp_msg_buffer);
-        memset(tmp_msg_buffer, 0, KPROC_BUFF_LEN);
-        msleep(3000);
-    }
-    printk("kproc: job done\n");
+
+char tmp_msg_buffer[KPROC_BUFF_LEN] = {0};
+
+static irq_handler_t irq_1_handler(unsigned int irq, void* dev_id, struct pt_regs *regs){
+    show_proc_context(tmp_msg_buffer);
+    printk("kproc: isr: %s\n", tmp_msg_buffer);
+    memset(tmp_msg_buffer, 0, KPROC_BUFF_LEN);
+    return (irq_handler_t)IRQ_HANDLED;
 }
+
 
 static struct file_operations fops = {
   .read = device_read,
@@ -84,21 +84,21 @@ static struct file_operations fops = {
 };
 
 static int __init kproc_init(void){
+    if (request_irq(IRQ_1, (irq_handler_t)irq_1_handler, IRQF_SHARED, IRQ_1_DEV, IRQ_1_ID) != 0){
+        printk("can't request interrupt number %d\n", IRQ_1);
+    }
     dev_major = register_chrdev(0, DEVICE_NAME, &fops);
     if (dev_major < 0) {
+        free_irq(IRQ_1, IRQ_1_ID);
         printk(KERN_ALERT "registering char device failed with %d\n", dev_major);
         return dev_major;
     }
-    INIT_WORK(&job, job_handler);
-    schedule_work(&job);
     printk("kproc: hello\n");
     return 0;
 }
 
 static void __exit kproc_exit(void){
-    work_done = 1;
-    printk("kproc: exit: waiting 5 seconds\n");
-    msleep(5000);
+    free_irq(IRQ_1, IRQ_1_ID);
     unregister_chrdev(dev_major, DEVICE_NAME);
     printk("kproc: bye\n");
 }
