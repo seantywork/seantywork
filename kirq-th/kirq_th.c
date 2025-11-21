@@ -5,7 +5,7 @@
 #define DEV_NAME    "kirq_key"
 #define DEV_ID    	"0001"
 // in vm, virtio
-#define IRQ_1		11
+#define IRQ_1		1
 
 MODULE_LICENSE("GPL");
 
