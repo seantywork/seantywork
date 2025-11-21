@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/seantywork/0xgo/grpc/chatpb";
+option go_package = "github.com/seantywork/go/grpc/chatpb";
 
 
 package chatpb;

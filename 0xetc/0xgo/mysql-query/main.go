@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	pkgdbquery "github.com/seantywork/0xgo/mysql-query/core"
+	pkgdbquery "github.com/seantywork/go/mysql-query/core"
 )
 
 type DB_User struct {
