@@ -1,8 +1,8 @@
 package main
 
 /*
-#cgo CFLAGS: -g -Wall -I../../go-c-lib/c2go
-#cgo LDFLAGS: -L../../go-c-lib/c2go -Wl,-rpath=../../go-c-lib/c2go -lc2go
+#cgo CFLAGS: -g -Wall -I../../../go-c-lib/c2go
+#cgo LDFLAGS: -L../../../go-c-lib/c2go -Wl,-rpath=../../../go-c-lib/c2go -lc2go
 #include "c2go.h"
 */
 import "C"
