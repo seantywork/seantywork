@@ -132,23 +132,21 @@ static int run_kcrypt(void) {
         printk("kcrypt: encrypt: failed: %d.\n", err);
         goto kcrypt_end;
     }
-
-    printk("cryptogram: ");
-
-    bp = buffer2 + aes_gcm_assoclen;
-    bp_end = bp + test_datalen - aes_gcm_taglen;
-    while (bp != bp_end) {
-        printk("%c\n", isprint(*bp) ? *bp : '.');
-        bp++;
-    }
-
     printk("authentication tag: ");
-
+    bp = buffer2;
     bp_end += aes_gcm_taglen;
     while (bp != bp_end) {
         printk("%c\n", isprint(*bp) ? *bp : '.');
         bp++;
     }
+
+    printk("cryptogram: ");
+    bp_end += test_datalen;
+    while (bp != bp_end) {
+        printk("%c\n", isprint(*bp) ? *bp : '.');
+        bp++;
+    }
+
 
     aead_request_set_crypt(req, &sg2, &sg, test_datalen + aes_gcm_taglen, nonce + nonce_saltlen);
     aead_request_set_ad(req, aes_gcm_taglen);
