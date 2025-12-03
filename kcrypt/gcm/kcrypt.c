@@ -34,6 +34,12 @@ static int run_kcrypt(void) {
     struct scatterlist sg2 = { 0 };
     DECLARE_CRYPTO_WAIT(wait);
 
+    u8 assoc_msg[16] = { 
+        0x11, 0x22, 0x33, 0x44,
+        0x11, 0x22, 0x33, 0x44,
+        0x11, 0x22, 0x33, 0x44,
+        0x11, 0x22, 0x33, 0x44,
+    };
     u8 nonce[12] = { 
         0xcc, 0xdd, 0xee, 0xff,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -104,7 +110,7 @@ static int run_kcrypt(void) {
         goto kcrypt_end;
     }
     
-    memset(buffer, 0, aes_gcm_assoclen);
+    memcpy(buffer, assoc_msg, aes_gcm_assoclen);
     memcpy(buffer + aes_gcm_assoclen, test_data, test_datalen);
     bp = buffer + aes_gcm_assoclen;
     bp_end = bp + test_datalen;
@@ -123,7 +129,7 @@ static int run_kcrypt(void) {
 
 
     aead_request_set_crypt(req, &sg, &sg2, test_datalen, nonce + nonce_saltlen);
-    aead_request_set_ad(req, aes_gcm_taglen);
+    aead_request_set_ad(req, aes_gcm_assoclen);
 
     // aead_request_set_ad(req, 0);
 
@@ -132,9 +138,10 @@ static int run_kcrypt(void) {
         printk("kcrypt: encrypt: failed: %d.\n", err);
         goto kcrypt_end;
     }
-    printk("authentication tag: ");
+    memcpy(buffer2, assoc_msg, aes_gcm_assoclen);
+    printk("assoc: ");
     bp = buffer2;
-    bp_end += aes_gcm_taglen;
+    bp_end = bp + aes_gcm_assoclen;
     while (bp != bp_end) {
         printk("%c\n", isprint(*bp) ? *bp : '.');
         bp++;
@@ -147,6 +154,12 @@ static int run_kcrypt(void) {
         bp++;
     }
 
+    printk("authentication tag: ");
+    bp_end += aes_gcm_taglen;
+    while (bp != bp_end) {
+        printk("%c\n", isprint(*bp) ? *bp : '.');
+        bp++;
+    }
 
     aead_request_set_crypt(req, &sg2, &sg, test_datalen + aes_gcm_taglen, nonce + nonce_saltlen);
     aead_request_set_ad(req, aes_gcm_taglen);
