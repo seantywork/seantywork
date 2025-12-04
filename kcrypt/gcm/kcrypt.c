@@ -9,60 +9,55 @@
 #include <linux/string.h>
 #include <linux/ip.h>
 
-
-
-
-
+#define MAX_MSG_LEN 128
+#define GCM_ASSOCLEN 16
+#define GCM_TAGLEN 16
+#define GCM_NONCE_SALTLEN 4
+#define GCM_NONCE_BODYLEN 8
+#define GCM_NONCELEN GCM_NONCE_SALTLEN + GCM_NONCE_BODYLEN
+#define GCM_KEY_BODYLEN 32
+#define GCM_KEY_SALTLEN 4
+#define GCM_KEYLEN GCM_KEY_BODYLEN + GCM_KEY_SALTLEN
 
 static int run_kcrypt(void) {
-
-
+    char print_messge[MAX_MSG_LEN] = {0};
     char *test_data = "this is test data for kcrypt";
     int test_datalen = 0;
-    int aes_gcm_assoclen = 16;
-    int aes_gcm_taglen = 16;
-    int nonce_saltlen = 4;
-    test_datalen = strlen(test_data);
+    int aes_gcm_assoclen = GCM_ASSOCLEN;
+    int aes_gcm_taglen = GCM_TAGLEN;
+    int nonce_saltlen = GCM_NONCE_SALTLEN;
+    size_t buffer_size = MAX_MSG_LEN;
 
     struct crypto_aead *tfm = NULL;
     struct aead_request *req = NULL;
     u8 *buffer = NULL;
     u8 *buffer2 = NULL;
-    size_t buffer_size = 1024;
-    u8 *bp = NULL, *bp_end = NULL;
+    u8 *bp = NULL, *bp_end = NULL, *bp_print = NULL;
     struct scatterlist sg = { 0 };
     struct scatterlist sg2 = { 0 };
     DECLARE_CRYPTO_WAIT(wait);
+    test_datalen = strlen(test_data);
 
-    u8 assoc_msg[16] = { 
+    u8 assoc_msg[GCM_ASSOCLEN] = { 
         0x11, 0x22, 0x33, 0x44,
         0x11, 0x22, 0x33, 0x44,
         0x11, 0x22, 0x33, 0x44,
         0x11, 0x22, 0x33, 0x44,
     };
-    u8 nonce[12] = { 
-        0xcc, 0xdd, 0xee, 0xff,
+    u8 nonce[GCM_NONCELEN] = { 
+        0x99, 0x99, 0x99, 0x99,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     };
-    u8 key[36] = { 
+    u8 key[GCM_KEYLEN] = { 
         0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
         0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
         0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
         0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
         0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
         0xaa, 0xbb, 
-        0xcc, 0xdd, 0xee, 0xff,
+        0x00, 0x00, 0x00, 0x00,
     }; 
-/*
-    u8 key[36] = { 
-        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
-        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
-        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
-        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
-        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
-        0xaa, 0xbb,
-    }; 
-*/
+
     int err = -1;
 
     tfm = crypto_alloc_aead("rfc4106(gcm(aes))", 0, 0);
@@ -81,8 +76,9 @@ static int run_kcrypt(void) {
         goto kcrypt_end;
     }
 
-    get_random_bytes(nonce + 4, 8);
-    err = crypto_aead_setkey(tfm, key, 36);
+    memcpy(key + GCM_KEY_BODYLEN, nonce, nonce_saltlen);
+    get_random_bytes(nonce + nonce_saltlen, GCM_NONCE_BODYLEN);
+    err = crypto_aead_setkey(tfm, key, GCM_KEYLEN);
     if (err != 0) {
         printk("kcrypt: set key failed: %d.\n", err);
         goto kcrypt_end;
@@ -115,12 +111,16 @@ static int run_kcrypt(void) {
     bp = buffer + aes_gcm_assoclen;
     bp_end = bp + test_datalen;
 
-    printk("original data: ");
+    memset(print_messge, 0, MAX_MSG_LEN);
+    bp_print = print_messge;
     while (bp != bp_end) {
-        printk("%c\n", isprint(*bp) ? *bp : '.');
+        *bp_print =  isprint(*bp) ? *bp : '.';
         bp++;
+        bp_print++;
     }
-
+    printk("original data: %s\n", print_messge);
+    bp_print = NULL;
+    memset(print_messge, 0, MAX_MSG_LEN);
 
     sg_init_one(&sg, buffer, buffer_size);
     sg_init_one(&sg2, buffer2, buffer_size);
@@ -131,63 +131,69 @@ static int run_kcrypt(void) {
     aead_request_set_crypt(req, &sg, &sg2, test_datalen, nonce + nonce_saltlen);
     aead_request_set_ad(req, aes_gcm_assoclen);
 
-    // aead_request_set_ad(req, 0);
-
     err = crypto_wait_req(crypto_aead_encrypt(req), &wait);
     if (err != 0) {
         printk("kcrypt: encrypt: failed: %d.\n", err);
         goto kcrypt_end;
     }
+    
+    printk("kcrypt: encryption completed\n");
+
+    bp_print = print_messge;
     memcpy(buffer2, assoc_msg, aes_gcm_assoclen);
-    printk("assoc: ");
     bp = buffer2;
     bp_end = bp + aes_gcm_assoclen;
     while (bp != bp_end) {
-        printk("%c\n", isprint(*bp) ? *bp : '.');
+        *bp_print = isprint(*bp) ? *bp : '.';
         bp++;
+        bp_print++;
     }
 
-    printk("cryptogram: ");
+    printk("  - assoc: %s\n", print_messge);
+    bp_print = NULL;
+    memset(print_messge, 0, MAX_MSG_LEN);
+
+    bp_print = print_messge;
     bp_end += test_datalen;
     while (bp != bp_end) {
-        printk("%c\n", isprint(*bp) ? *bp : '.');
+        *bp_print = isprint(*bp) ? *bp : '.';
         bp++;
+        bp_print++;
     }
+    printk("  - cryptogram: %s\n", print_messge);
+    bp_print = NULL;
+    memset(print_messge, 0, MAX_MSG_LEN);
 
-    printk("authentication tag: ");
+    bp_print = print_messge;
     bp_end += aes_gcm_taglen;
     while (bp != bp_end) {
-        printk("%c\n", isprint(*bp) ? *bp : '.');
+        *bp_print = isprint(*bp) ? *bp : '.';
         bp++;
+        bp_print++;
     }
+    printk("  - auth tag: %s\n", print_messge);
+    bp_print = NULL;
+    memset(print_messge, 0, MAX_MSG_LEN);
 
     aead_request_set_crypt(req, &sg2, &sg, test_datalen + aes_gcm_taglen, nonce + nonce_saltlen);
     aead_request_set_ad(req, aes_gcm_taglen);
-
-    /*
-    err = crypto_aead_setkey(tfm, key, 36);
-    if (err != 0) {
-        printk("kcrypt: setkey again: %d.\n", err);
-        goto kcrypt_end;
-    }
-    */
 
     err = crypto_wait_req(crypto_aead_decrypt(req), &wait);
     if (err != 0) {
         printk("kcrypt: decrypt: %d\n", err);
         goto kcrypt_end;
     }
+    printk("kcrypt: decryption completed\n");
 
-
-    printk("authenticated plaintext: ");
+    bp_print = print_messge;
     bp = buffer + aes_gcm_assoclen;
     bp_end = bp + test_datalen;
- 
     while (bp != bp_end) {
-        printk("%c\n", isprint(*bp) ? *bp : '.');
+        *bp_print = isprint(*bp) ? *bp : '.';
         bp++;
+        bp_print++;
     }
-
+    printk("authenticated plaintext: %s\n", print_messge);
 
 kcrypt_end:
 
