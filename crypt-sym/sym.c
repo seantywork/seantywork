@@ -56,7 +56,7 @@ int sym_keygen(char* key_path, char* iv_path){
 }
 
 
-int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char* enc_path){
+int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char* enc_path, char* ad){
 
     FILE* fp;
 
@@ -64,7 +64,7 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
     int outlen, rv = 0;
     unsigned char outbuf[MAX_OUT] = {0};
-    
+    int adlen = strlen(ad);
 
 #if CBC
 
@@ -133,6 +133,26 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
     cbc_auth = hex2char(&outlen, (unsigned char*)cbc_auth_hex);
 
+    result = HMAC(EVP_sha256(), cbc_auth, KEYLEN, enc_msg, enc_len, result, &resultlen);
+
+    if(result == NULL){
+
+        printf("hmac failed\n");
+    } else {
+
+        printf("hmac success\n");
+    }
+
+    unsigned char* auth_result_hex = char2hex(resultlen, result);
+
+    fp = fopen("./auth.data", "w");
+
+    fputs(auth_result_hex, fp);
+
+    fclose(fp);
+
+    resultlen = 0;
+
     ctx = EVP_CIPHER_CTX_new();
 
     //EVP_CIPHER_CTX_set_padding(ctx, 0);
@@ -159,24 +179,6 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
     fclose(fp);
 
-    result = HMAC(EVP_sha256(), cbc_auth, KEYLEN, outbuf, outlen, result, &resultlen);
-
-    if(result == NULL){
-
-        printf("hmac failed\n");
-    } else {
-
-        printf("hmac success\n");
-    }
-
-    unsigned char* auth_result_hex = char2hex(resultlen, result);
-
-    fp = fopen("./auth.data", "w");
-
-    fputs(auth_result_hex, fp);
-
-    fclose(fp);
-
     free(inbuf);
 
     EVP_CIPHER_CTX_free(ctx);
@@ -197,8 +199,6 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
     unsigned char* gcm_key;
 
     unsigned char* gcm_iv;
-
-    unsigned char gcm_aad[8] = {0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,};
 
 
     fp = fopen(key_path, "r");
@@ -228,7 +228,7 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
     EVP_EncryptInit(ctx, NULL, gcm_key, gcm_iv);
 
     
-    // EVP_EncryptUpdate(ctx, NULL, &outlen, gcm_aad, 8);
+    EVP_EncryptUpdate(ctx, NULL, &outlen, ad, adlen);
 
     EVP_EncryptUpdate(ctx, outbuf, &outlen, enc_msg, enc_len);
 
@@ -271,7 +271,7 @@ int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char*
 
 
 
-int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
+int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg, char* ad){
 
     FILE* fp;
 
@@ -281,6 +281,7 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
 
 	int outlen, tmplen, rv;
     int bin_outlen = 0;
+    int adlen = strlen(ad);
 
     char inbuf[MAX_OUT] = {0};
 
@@ -348,27 +349,6 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
 
     unsigned char* inbuf_bin = hex2char(&bin_outlen, (unsigned char*)inbuf);
 
-    result = HMAC(EVP_sha256(), cbc_auth, KEYLEN, inbuf_bin, bin_outlen, result, &resultlen);
-
-    if(result == NULL){
-
-        printf("hmac failed\n");
-
-    } else {
-
-        printf("hmac success\n");
-
-    }
-
-    if(memcmp(result, cbc_auth_val, 32) == 0){
-
-        printf("authenticated\n");
-    } else {
-        printf("authentication failed\n");
-    }
-
-
-
     ctx = EVP_CIPHER_CTX_new();
 
     //EVP_CIPHER_CTX_set_padding(ctx, 0);
@@ -390,6 +370,26 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
     plaintext_len += outlen;
 
     strcpy(dec_msg, outbuf);
+
+    result = HMAC(EVP_sha256(), cbc_auth, KEYLEN, dec_msg, plaintext_len, result, &resultlen);
+
+    if(result == NULL){
+
+        printf("hmac failed\n");
+
+    } else {
+
+        printf("hmac success\n");
+
+    }
+
+    if(memcmp(result, cbc_auth_val, 32) == 0){
+
+        printf("authenticated\n");
+    } else {
+        printf("authentication failed\n");
+    }
+
 
     printf("decrypt rv: %d\n", rv);
 
@@ -415,9 +415,6 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
     unsigned char* gcm_iv;
 
     unsigned char* gcm_tag;
-
-    unsigned char gcm_aad[8] = {0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,};
-
 
     fp = fopen(key_path, "r");
 
@@ -463,7 +460,7 @@ int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg){
 
     EVP_DecryptInit(ctx, NULL, gcm_key, gcm_iv);
 
-    //EVP_DecryptUpdate(ctx, NULL, &outlen, gcm_aad, 8);
+    EVP_DecryptUpdate(ctx, NULL, &outlen, ad, adlen);
 
     printf("%d\n", bin_outlen);
 

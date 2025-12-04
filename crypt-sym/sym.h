@@ -35,11 +35,11 @@ extern EVP_CIPHER* cipher;
 int sym_keygen(char* key_path, char* iv_path);
 
 
-int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char* enc_path);
+int sym_encrypt(char* key_path, char* iv_path, int enc_len, char* enc_msg, char* enc_path, char* ad);
 
 
 
-int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg);
+int sym_decrypt(char* key_path, char* iv_path, char* enc_path, char* dec_msg, char* ad);
 
 
 unsigned char* gen_random_bytestream (size_t num_bytes);

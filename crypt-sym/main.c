@@ -51,6 +51,7 @@ int main(int argc, char** argv){
 
         char* key_path = "./key.data";
         char* iv_path = "./iv.data";
+        char* ad = "vvvvvvvv";
 
         char* enc_msg = "cryptoinc";
         
@@ -58,7 +59,7 @@ int main(int argc, char** argv){
 
         char* enc_path = "./enc.bin";
 
-        int result = sym_encrypt(key_path, iv_path, enc_len, enc_msg, enc_path);
+        int result = sym_encrypt(key_path, iv_path, enc_len, enc_msg, enc_path, ad);
 
 
     } else if (strcmp(argv[1], "decrypt") == 0){
@@ -66,10 +67,10 @@ int main(int argc, char** argv){
         char* key_path = "./key.data";
         char* iv_path = "./iv.data";
         char* enc_path = "./enc.bin";
-
+        char* ad = "vvvvvvvv";
         char dec_msg[MAX_OUT] = {0};
 
-        int result = sym_decrypt(key_path, iv_path, enc_path, dec_msg);
+        int result = sym_decrypt(key_path, iv_path, enc_path, dec_msg, ad);
 
         printf("%s\n", dec_msg);
 
