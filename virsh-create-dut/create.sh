@@ -27,13 +27,13 @@ virsh net-start net2
 # virsh net-autostart net1
 # virsh net-autostart net2
 
-sudo /bin/cp -Rf /var/lib/libvirt/images/ubuntu24.04-4.qcow2 /var/lib/libvirt/images/dev1-4.qcow2
+sudo /bin/cp -Rf /var/lib/libvirt/images/ubuntu24-8.qcow2 /var/lib/libvirt/images/dev1.qcow2
 
-sudo /bin/cp -Rf /var/lib/libvirt/images/ubuntu24.04-2.qcow2 /var/lib/libvirt/images/dev2-2.qcow2
+sudo /bin/cp -Rf /var/lib/libvirt/images/ubuntu24-4.qcow2 /var/lib/libvirt/images/dev2.qcow2
 
 
-virsh define host/dev1-4.xml
+virsh define host/dev1.xml
 
-virsh define host/dev2-2.xml
+virsh define host/dev2.xml
 
 sudo sysctl -w net.ipv4.ip_forward=1
