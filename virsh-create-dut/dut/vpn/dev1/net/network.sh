@@ -2,6 +2,8 @@
 
 set -exo pipefail
 
+sudo modprobe br_netfilter
+
 sudo ip netns add net1
 sudo ip netns add net2
 sudo ip link add dev veth1 type veth peer name veth2 netns net1
