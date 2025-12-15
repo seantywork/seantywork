@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -exo pipefail
+
 sudo ovs-vsctl add-br ovs-br0
 
 sudo ip netns add net1
