@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -exo pipefail
+
 sudo apt update 
 sudo apt install build-essential make autoconf libtool
 git clone https://github.com/openvswitch/ovs.git
