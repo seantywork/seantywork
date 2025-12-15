@@ -22,7 +22,7 @@ sudo ip netns exec net2 ip addr add 192.168.64.22/24 dev veth22
 
 sudo ip netns exec net1 ip link set veth12 up
 
-sudo ip netns exec net1 ip link set veth22 up
+sudo ip netns exec net2 ip link set veth22 up
 
 sudo ip link set up veth11
 
