@@ -19,7 +19,7 @@ int main( void ) {
 		execvp( "ls", argv );
 	}
 
-	wait( 2 );
+	sleep(2);
 
 	printf( "child pid: %d\n", pid);
 	printf( "parent process pid: %d\n", (int)getpid() );
