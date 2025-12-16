@@ -42,17 +42,16 @@
   shell
   build-essential
   go
+  rust
   make
   git
   curl
   podman
-  chrome
   libreoffice
-  vscode
+  vscodium
+  firefox
   virsh
   wireshark
-  gh
-
 
 harware (interrupt)
 
