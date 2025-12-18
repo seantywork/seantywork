@@ -3900,6 +3900,11 @@ sudo xfs_growfs /dev/ubuntu-box-1-vg
 /etc/fstab 
 
 ```
+# RSYNC
+
+```shell
+rsync -chavzP --stats user@remote.host:/path/to/copy /path/to/local/storage
+```
 
 # NFS
 
