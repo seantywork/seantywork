@@ -47,11 +47,11 @@
   git
   curl
   podman
+  neovim
   libreoffice
-  vscodium
-  chromium
   virsh
   wireshark
+  chrome
 
 harware (interrupt)
 
