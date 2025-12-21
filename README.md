@@ -13669,7 +13669,12 @@ tun(192.168.0.0/16 + 20000)
 
 ```shell
 
-sudo apt install neovim
+curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+sudo rm -rf /opt/nvim-linux-x86_64
+sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
+
+# profile
+export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
 
 # nerd font
 # hack nerd font
