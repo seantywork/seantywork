@@ -13664,3 +13664,25 @@ tun(192.168.0.0/16 + 20000)
 
 
 ```
+
+# NEOVIM NVIM
+
+```shell
+
+sudo apt install neovim
+
+# nerd font
+# hack nerd font
+# unzip to ~/.fonts
+fc-cache -fv
+
+# tree-sitter cli
+cargo install --locked tree-sitter-cli
+
+# install 
+
+git clone https://github.com/LazyVim/starter ~/.config/nvim
+rm -rf ~/.config/nvim/.git 
+
+
+```
