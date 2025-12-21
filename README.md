@@ -49,7 +49,7 @@
   podman
   libreoffice
   vscodium
-  firefox
+  chromium
   virsh
   wireshark
 
