@@ -40,6 +40,7 @@
      rsync
 # syscall & user mode (os)
   shell
+  vim
   build-essential
   go
   rust
