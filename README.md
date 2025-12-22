@@ -47,11 +47,11 @@
   git
   curl
   podman
-  neovim
-  libreoffice
   virsh
   wireshark
+  libreoffice
   chrome
+  vscode
 
 harware (interrupt)
 
@@ -13665,29 +13665,3 @@ tun(192.168.0.0/16 + 20000)
 
 ```
 
-# NEOVIM NVIM
-
-```shell
-
-curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
-sudo rm -rf /opt/nvim-linux-x86_64
-sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
-
-# profile
-export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
-
-# nerd font
-# hack nerd font
-# unzip to ~/.fonts
-fc-cache -fv
-
-# tree-sitter cli
-cargo install --locked tree-sitter-cli
-
-# install 
-
-git clone https://github.com/LazyVim/starter ~/.config/nvim
-rm -rf ~/.config/nvim/.git 
-
-
-```
