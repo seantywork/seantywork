@@ -1,4 +1,4 @@
-module feebdaed.xyz/git/linuxyz.git/0xetc/0xgo
+module github.com/seantywork/linuxyz/go
 
 go 1.25.4
 

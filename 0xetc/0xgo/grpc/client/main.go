@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	pb "feebdaed.xyz/git/linuxyz.git/0xetc/0xgo/grpc/chatpb"
+	pb "github.com/seantywork/linuxyz/go/grpc/chatpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
