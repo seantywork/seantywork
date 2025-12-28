@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
 
-	"github.com/seantywork/go/webrtc/webrtc"
+	"feebdaed.xyz/git/linuxyz.git/0xetc/0xgo/webrtc/webrtc"
 )
 
 type Config struct {
