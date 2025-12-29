@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	pkgsym "github.com/seantywork/linuxyz/go/crypt/sym"
+	pkgsym "feebdaed.xyz/git/linuxyz.git/0xetc/0xgo/crypt/sym"
 )
 
 func main() {

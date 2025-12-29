@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	pkgdbquery "github.com/seantywork/linuxyz/go/mysql-query/core"
+	pkgdbquery "feebdaed.xyz/git/linuxyz.git/0xetc/0xgo/mysql-query/core"
 )
 
 type DB_User struct {

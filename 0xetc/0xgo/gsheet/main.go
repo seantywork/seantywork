@@ -9,7 +9,7 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 
-	gshcore "github.com/seantywork/linuxyz/go/gsheet/core"
+	gshcore "feebdaed.xyz/git/linuxyz.git/0xetc/0xgo/gsheet/core"
 )
 
 func main() {

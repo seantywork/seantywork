@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	etcqcore "github.com/seantywork/linuxyz/go/etcd-query/core"
+	etcqcore "feebdaed.xyz/git/linuxyz.git/0xetc/0xgo/etcd-query/core"
 )
 
 func main() {
