@@ -1,4 +1,4 @@
-module feebdaed.xyz/git/linuxyz.git/0xetc/0xgo
+module 0xgo
 
 go 1.25.4
 

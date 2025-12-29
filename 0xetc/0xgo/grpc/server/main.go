@@ -10,7 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	pb "feebdaed.xyz/git/linuxyz.git/0xetc/0xgo/grpc/chatpb"
+	pb "0xgo/grpc/chatpb"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
