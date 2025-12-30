@@ -1,13 +1,13 @@
 
 GCC_FLAGS := -Wall
 
-INCLUDES := -I../0xetc/0xgo/c-lib/go2c
+INCLUDES := -I../0xetc/go/c-lib/go2c
 
-LIBS := ../0xetc/0xgo/c-lib/go2c/go2c.so
+LIBS := ../0xetc/go/c-lib/go2c/go2c.so
 
-LINKS := -L../0xetc/0xgo/c-lib/go2c
+LINKS := -L../0xetc/go/c-lib/go2c
 
-LOADS := -Wl,-rpath=../0xetc/0xgo/c-lib/go2c
+LOADS := -Wl,-rpath=../0xetc/go/c-lib/go2c
 
 all:
 
