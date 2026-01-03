@@ -1,1 +1,5 @@
 ovs
+*.tar.gz
+apache-maven-*
+karaf-*
+certs

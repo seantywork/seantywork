@@ -3,6 +3,7 @@
 set -exo pipefail
 
 mkdir -p /usr/local/etc/openvswitch
+sudo rm -rf /usr/local/etc/openvswitch/conf.db
 
 pushd ovs
 

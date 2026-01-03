@@ -13,11 +13,13 @@ mvnbin="$(pwd)/bin"
 
 echo export PATH="$mvnbin:$PATH" >> ~/.profile
 
+cd ../
+
 wget https://nexus.opendaylight.org/content/repositories/opendaylight.release/org/opendaylight/integration/karaf/0.22.1/karaf-0.22.1.tar.gz
 
 tar xzf karaf-0.22.1.tar.gz
 
 cd karaf-0.22.1
 
-echo "source ~/.profile"
-echo "./bin/karaf"
+echo "USE: source ~/.profile"
+echo "THEN: ./bin/karaf"

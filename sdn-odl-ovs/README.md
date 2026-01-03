@@ -2,6 +2,8 @@
 # installed openjdk-21, maven
 
 ```shell
+$ cd controller
+$ ./setup.sh
 $ source ~/.profile
 $ mvn -v 
 Apache Maven 3.9.12 (848fbb4bf2d427b72bdb2471c22fced7ebd9a7a1)
@@ -55,15 +57,9 @@ odl-openflowplugin-nxm-extensions \
 odl-openflowplugin-onf-extensions \
 odl-openflowplugin-flow-services-rest
 
-# then
-logout
-
-# then, again
-$ ./bin/karaf
 
 # on another terminal 
 $ lsof -i -P -n
-seantywork@instance-20260102-074011:~$ lsof -i -P -n
 COMMAND  PID       USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
 java    5968 seantywork   88u  IPv6  20533      0t0  TCP *:8101 (LISTEN)
 java    5968 seantywork   94u  IPv6  20535      0t0  TCP *:8181 (LISTEN)
@@ -75,3 +71,44 @@ java    5968 seantywork  205u  IPv6  20233      0t0  TCP *:8182 (LISTEN)
 java    5968 seantywork  230u  IPv6  20608      0t0  TCP *:6653 (LISTEN)
 java    5968 seantywork  255u  IPv6  20609      0t0  TCP *:6633 (LISTEN)
 ```
+# running  switch, connect to controller over tcp
+
+```shell
+$ cd switch
+$ ./setup.sh
+$ sudo ovs-vsctl show
+dcfdf8b0-edb9-4081-b273-6add0400cf66
+    Bridge ovs-br0
+        Port ovs-br0
+            Interface ovs-br0
+                type: internal
+        Port veth21
+            Interface veth21
+        Port veth11
+            Interface veth11
+    ovs_version: "3.6.2"
+```
+
+```shell
+# connect to controller
+
+$ sudo ovs-vsctl set-controller ovs-br0 tcp:localhost:6653
+$ sudo ovs-vsctl show
+dcfdf8b0-edb9-4081-b273-6add0400cf66
+    Bridge ovs-br0
+        Controller "tcp:localhost:6653"
+        Port ovs-br0
+            Interface ovs-br0
+                type: internal
+        Port veth21
+            Interface veth21
+        Port veth11
+            Interface veth11
+    ovs_version: "3.6.2"
+
+# unconnect 
+$ sudo ovs-vsctl del-controller ovs-br0
+
+```
+
+# running switch, over ssl

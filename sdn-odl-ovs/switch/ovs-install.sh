@@ -3,7 +3,7 @@
 set -exo pipefail
 
 sudo apt update 
-sudo apt install build-essential make autoconf libtool
+sudo apt install -y build-essential make autoconf libtool libssl-dev
 git clone https://github.com/openvswitch/ovs.git
 
 cd ovs 
@@ -12,7 +12,7 @@ git switch -c myovs origin/branch-3.6
 
 ./boot.sh 
 
-./configure
+./configure --enable-ssl
 
 make 
 
