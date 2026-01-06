@@ -2,7 +2,7 @@
 
 rm -rf raylib
 
-git clone --depth 1 https://github.com/seantywork/raylib.git
+git clone --depth 1 https://github.com/raysan5/raylib.git
 
 
 

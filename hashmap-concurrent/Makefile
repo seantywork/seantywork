@@ -1,10 +1,7 @@
-all:
+sha:
 
-#	gcc -O2 -g3 -fsanitize=thread,undefined -o test.out main.c
-
-
-	gcc -o test.out main.c -lpthread
+	gcc -g -O2 -o cmap.out cmap.c -lpthread -lcrypto -lssl
 
 clean:
-
-	rm -rf *.out
+	
+	rm -rf *.out *.o

@@ -5,7 +5,7 @@ sudo apt-get update
 sudo apt-get install cmake build-essential liblttng-ust-dev lttng-tools
 
 
-git clone https://github.com/seantywork/msquic.git 
+git clone https://github.com/microsoft/msquic.git
 
 
 mkdir -p msquic/build

@@ -4,9 +4,9 @@ GCC_OBJ_FLAGS := -Wall -c
 
 DEP_PACKAGES := libssl-dev 
 
-DEP_CIVETWEB := git clone https://github.com/seantywork/civetweb.git
+DEP_CIVETWEB := git clone https://github.com/civetweb/civetweb.git
 
-DEP_CJSON := git clone https://github.com/seantywork/cJSON.git
+DEP_CJSON := git clone https://github.com/DaveGamble/cJSON.git
 
 INCLUDES := -I./server -I./client -I./civetweb/include -I./cJSON
 
