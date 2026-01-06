@@ -6,12 +6,11 @@ import (
 	"unsafe"
 )
 
-const TESTCASE = 100000000
+const TESTCASE = 1000000
 const BUFFSIZE = 2048
 
 var THEN time.Time
 var NOW time.Time
-var TOTAL int = 0
 
 type testdata struct {
 	top    uint32

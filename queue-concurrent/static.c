@@ -181,10 +181,6 @@ inline void dequeue(bucket* q, void* data, uint32_t datalen){
 
 void* do_enqueue(void* varg){
     testdata td;
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(0, &cpuset);
-    pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     bucket* q = (bucket*)varg;
     clock_gettime(CLOCK_MONOTONIC_RAW, &THEN);
     for(int i = 0 ; i < TESTCASE; i++){

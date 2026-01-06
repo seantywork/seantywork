@@ -203,6 +203,7 @@ struct coro_t_ {
     ucontext_t          resume_context;     // Stores coroutine context
     int                 yield_value;        // Coroutine return/yield value
     bool                is_coro_finished;   // To indicate the current coroutine status
+    void* data;
 };
 
 /* 
@@ -210,6 +211,7 @@ struct coro_t_ {
 */
 void _coro_entry_point(coro_t *coro);
 coro_t *coro_new(coro_function_t function);
+coro_t *coro_new_with_data(coro_function_t function, void* data);
 int coro_resume(coro_t *coro);    
 void coro_yield(coro_t *coro, int value);
 void coro_free(coro_t *coro);
