@@ -12,7 +12,7 @@
 
 #define LOCK_SPIN 0
 
-#define TESTCASE 100000000
+#define TESTCASE 1000000
 #define BUFFSIZE 2048
 struct timespec THEN;
 struct timespec NOW;

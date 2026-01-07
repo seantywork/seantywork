@@ -10,70 +10,22 @@
 #include <pthread.h>
 #include <time.h>
 
+#define USE_CORO 0
 
-#define LOCK_SPIN 0
-
-#define TESTCASE 100000000
+#define TESTCASE 1000000
 #define BUFFSIZE 2048
 struct timespec THEN;
 struct timespec NOW;
 
-struct spinlock {
-    int locked;
-
-};
-#define SPINLOCK_INIT { 0 };  
-
-
-bool _atomic_compare_exchange(int* ptr, int compare, int exchange) {
-
-    return __atomic_compare_exchange_n(ptr, &compare, exchange,
-            0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-}
-void _atomic_store(int* ptr, int value) {
-    __atomic_store_n(ptr, value, __ATOMIC_SEQ_CST);
-}
-
-
-void spinlock_init(struct spinlock* spinlock, void* none) {
-    _atomic_store(&spinlock->locked, 0);
-}
-void spinlock_lock(struct spinlock* spinlock) {
-    while (!_atomic_compare_exchange(&spinlock->locked, 0, 1)) {
-    }
-}
-void spinlock_unlock(struct spinlock* spinlock) {
-    _atomic_store(&spinlock->locked, 0);
-}
-
-void spinlock_cond_wait(struct spinlock* sig, struct spinlock* lock){
-    _atomic_store(&lock->locked, 0);
-    while (!_atomic_compare_exchange(&sig->locked, 1, 0)) {
-    }
-    while (!_atomic_compare_exchange(&lock->locked, 0, 1)) {
-    }
-}
-
-void spinlock_cond_signal(struct spinlock* sig){
-    _atomic_store(&sig->locked, 1);
-}
-
-
-#if LOCK_SPIN
-#define LOCK_INIT spinlock_init
-#define LOCK_SIG_INIT spinlock_init
-#define LOCK spinlock_lock
-#define UNLOCK spinlock_unlock
-#define LOCK_SIG_WAIT spinlock_cond_wait
-#define LOCK_SIG_SEND spinlock_cond_signal
-#else 
 #define LOCK_INIT pthread_mutex_init
 #define LOCK_SIG_INIT pthread_cond_init
 #define LOCK pthread_mutex_lock
+#define LOCK_TRY pthread_mutex_trylock
 #define UNLOCK pthread_mutex_unlock
 #define LOCK_SIG_WAIT pthread_cond_wait
 #define LOCK_SIG_SEND pthread_cond_signal
-#endif
+
+
 
 typedef struct node node;
 
@@ -85,13 +37,8 @@ struct node {
 
 typedef struct bucket {
 	uint32_t limit;
-#if LOCK_SPIN
-    struct spinlock lock;
-    struct spinlock sig;
-#else
 	pthread_mutex_t lock;
 	pthread_cond_t sig;
-#endif
     node* arr;
     uint32_t head; 
 	uint32_t tail;
@@ -138,7 +85,7 @@ void delete_queue(bucket* q){
     free(q);
 }
 
-inline void enqueue(bucket* q, void* data, uint32_t datalen){
+void enqueue(bucket* q, void* data, uint32_t datalen){
     for(;;){
         LOCK(&q->lock);
         uint32_t hidx = q->head % q->limit;
@@ -161,7 +108,7 @@ inline void enqueue(bucket* q, void* data, uint32_t datalen){
     }
 }
 
-inline void dequeue(bucket* q, void* data, uint32_t datalen){
+void dequeue(bucket* q, void* data, uint32_t datalen){
     for(;;){
         LOCK(&q->lock);
         uint32_t hidx = q->head % q->limit;
@@ -184,6 +131,126 @@ inline void dequeue(bucket* q, void* data, uint32_t datalen){
     }
 }
 
+#if USE_CORO
+
+int unlocked = 0;
+#define DEFAULT_TASKS 4
+#define DEFAULT_COTHREADS 4
+
+
+typedef struct cotask {
+    atomic_int lock;
+    void (*func)(void* ret, void* data);
+    void* ret;
+    void* data;
+} cotask;
+
+typedef struct coman {
+    pthread_mutex_t task_lock;
+    int task_count;
+    cotask* tasks;
+    int thread_count;
+    pthread_t* tids;
+} coman;
+
+void* _co_run(void* varg){
+    coman* cm = (coman*)varg;
+    while(1){
+        for(int i = 0 ; i < cm->task_count; i++){
+            if(atomic_compare_exchange_strong(&cm->tasks[i].lock, &unlocked, 1)){
+                if(cm->tasks[i].func != NULL){
+                    printf("fENTER: %p: i: %d: locked: %d\n", cm->tasks[i].func, i, cm->tasks[i].lock);
+                    cm->tasks[i].func(cm->tasks[i].ret, cm->tasks[i].data);
+                    cm->tasks[i].func = NULL;
+                    cm->tasks[i].ret = NULL;
+                    cm->tasks[i].data = NULL;
+                }
+                atomic_store(&cm->tasks[i].lock, 0);
+            }
+        }
+    }
+    pthread_exit(NULL);
+}
+
+coman* co_init(int task_count, int thread_count){
+    coman* cm = (coman*)malloc(sizeof(coman));
+    LOCK_INIT(&cm->task_lock, NULL);
+    cm->task_count = task_count;
+    cm->thread_count = thread_count;
+    cm->tasks = (cotask*)malloc(sizeof(cotask) * cm->task_count);
+    cm->tids = (pthread_t*)malloc(sizeof(pthread_t) * cm->thread_count);
+    for(int i = 0; i < cm->task_count; i++){
+        memset(&cm->tasks[i], 0, sizeof(cotask));
+        atomic_store(&cm->tasks[i].lock, 0);
+    }
+    for(int i = 0; i < cm->thread_count; i++){
+        pthread_create(&cm->tids[i], NULL, _co_run, (void*)cm);
+    }
+    return cm;
+}
+
+int co(coman* cm, void (*f)(void* ret, void* data), void* ret, void* data){
+    int result = -1;
+    for(int i = 0 ; i < cm->task_count; i++){
+        if(atomic_compare_exchange_strong(&cm->tasks[i].lock, &unlocked, 1)){
+            cm->tasks[i].func = f;
+            cm->tasks[i].ret = ret;
+            cm->tasks[i].data = data;
+            atomic_store(&cm->tasks[i].lock, 0);
+            result = i;
+            break;
+        }
+    }
+    return result;
+}
+
+void co_wait(void* ret, int (*cb)(void* ret)){
+   struct timespec tim, tim2;
+   while(!cb(ret)){
+        tim.tv_sec = 0;
+        tim.tv_nsec = 1000;
+        nanosleep(&tim , &tim2);
+        //sleep(1);
+   }
+}
+
+void do_enqueue(void* ret, void* data){
+    testdata td;
+    bucket* q = (bucket*)data;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &THEN);
+    for(int i = 0; i < TESTCASE; i++){
+        td.top = i + 1;
+        td.bottom =  i -1;
+        printf("en: %d %d\n", td.top, td.bottom);
+        enqueue(q, &td, sizeof(testdata));
+    }
+    *(int *)ret = 1;
+    return;
+}
+int entry = 0;
+void do_dequeue(void* ret,void* data){
+    entry += 1;
+    printf("ENTRY: %d\n", entry);
+    testdata td;
+    bucket* q = (bucket*)data;
+    for(int i = 0; i < TESTCASE; i++){
+        dequeue(q, &td, sizeof(testdata));
+        printf("de: %d %d\n", td.top, td.bottom);
+        if(td.top != (uint32_t)(i + 1)){
+            *(int *)ret = -1;
+            return;
+        }
+        if(td.bottom != (uint32_t)(i - 1)){
+            *(int *)ret = -2;
+            return;
+        }
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &NOW);
+    *(int *)ret = 1;
+    return;
+}
+
+#else
 void* do_enqueue(void* varg){
     testdata td;
     bucket* q = (bucket*)varg;
@@ -215,16 +282,43 @@ void* do_dequeue(void* varg){
     clock_gettime(CLOCK_MONOTONIC_RAW, &NOW);
     pthread_exit(NULL);
 }
+#endif
 
+int _check_cb(void* ret){
+    int val = *(int *)ret;
+    if(!val){
+        return val;
+    }
+    return 0;
+}
 
 int main(){
 
     int lapsed_ms = 0;
+    bucket* q = make_queue(sizeof(testdata),BUFFSIZE);
+#if USE_CORO
+    int* enret = (int*)malloc(sizeof(int));
+    int* deret = (int*)malloc(sizeof(int));
+    *enret = 0;
+    *deret = 0;
+    coman* cm = co_init(DEFAULT_TASKS, DEFAULT_COTHREADS);
+    int result = co(cm, do_enqueue, (void*)enret, (void*)q);
+    if(result < 0){
+        printf("failed to create enqueue\n");
+        goto exit;
+    }
+    result = co(cm, do_dequeue, (void*)deret, (void*)q);
+    if(result < 0){
+        printf("failed to create dequeue\n");
+        goto exit;
+    }
+    co_wait((void*)enret, _check_cb);
+    co_wait((void*)deret, _check_cb);
+#else 
     void* result = NULL;
     thread_data thd;
     pthread_t tid_en;
     pthread_t tid_de;
-    bucket* q = make_queue(sizeof(testdata),BUFFSIZE);
     thd.b = q;
     thd.result = 0;
     pthread_create(&tid_en, NULL, do_enqueue, (void *)q);
@@ -235,6 +329,7 @@ int main(){
         printf("error: %d\n", thd.result);
         goto exit;
     }
+#endif
     lapsed_ms = ((NOW.tv_sec - THEN.tv_sec) * 1000 + (NOW.tv_nsec - THEN.tv_nsec) / 1000000);
     printf("%d-entry, sized %d-byte, took %dms\n", TESTCASE, sizeof(testdata), lapsed_ms);
 exit:
