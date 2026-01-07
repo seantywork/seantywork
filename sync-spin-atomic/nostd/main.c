@@ -45,26 +45,18 @@ struct spinlock lock;
 
 int counter = 0;
 
-void* trythis(void* arg) 
-{ 
-    spinlock_lock(&lock); 
-  
-    unsigned long i = 0; 
-    counter += 1; 
-    printf("\n Job %d has started\n", counter); 
-  
-    for (i = 0; i < (0xFFFFFFFF); i++) 
-        ; 
-  
-    printf("\n Job %d has finished\n", counter); 
-  
-    spinlock_unlock(&lock); 
+void* trythis(void* arg) { 
+    printf("job started\n"); 
+    for (int i = 0; i < 100000000; i++){
+        spinlock_lock(&lock);
+        counter += 1;
+        spinlock_unlock(&lock);
+    }
   
     return NULL; 
 } 
   
-int main(void) 
-{ 
+int main(void) { 
     int i = 0; 
     int error; 
   
@@ -82,7 +74,7 @@ int main(void)
   
     pthread_join(tid[0], NULL); 
     pthread_join(tid[1], NULL); 
-
+    printf("counter: %d\n", counter);
   
     return 0; 
 } 
