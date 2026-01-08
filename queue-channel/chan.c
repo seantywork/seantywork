@@ -55,37 +55,6 @@ void spinlock_unlock(struct spinlock* spinlock) {
     atomic_store(&spinlock->locked, 0);
 }
 
-void spinlock_cond_wait(struct spincond* sig, struct spinlock* spinlock) {
-    struct timespec request, remaing; 
-    atomic_store(&spinlock->locked, 0);
-    while (!atomic_compare_exchange(&sig->sig, 1, 0)) {
-/*
-        request.tv_sec = 0;
-        request.tv_nsec = 100;
-        remaing.tv_sec = 0;
-        remaing.tv_nsec = 100;
-        if(nanosleep(&request , &remaing) < 0){
-            continue;
-        }
-*/
-    }
-    while (!atomic_compare_exchange(&spinlock->locked, 0, 1)) {
-/*
-        request.tv_sec = 0;
-        request.tv_nsec = 100;
-        remaing.tv_sec = 0;
-        remaing.tv_nsec = 100;
-        if(nanosleep(&request , &remaing) < 0){
-            continue;
-        }
-*/
-    }
-}
-
-void spinlock_cond_signal(struct spincond* sig) {
-    atomic_store(&sig->sig, 1);
-}
-
 
 #if USE_SPIN
 #define LOCK_INIT spinlock_init
