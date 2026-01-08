@@ -11,7 +11,7 @@
 
 #define USE_SPIN 0
 
-#define TESTCASE 100000000
+#define TESTCASE 1000000
 #define BUFFSIZE 2048
 struct timespec THEN;
 struct timespec NOW;
@@ -78,8 +78,9 @@ typedef struct node node;
 
 struct node {
     uint8_t in_use;
+    uint8_t rsvd[3];
+    uint32_t datalen;
 	void* data;
-	uint32_t datalen;
 };
 
 typedef struct bucket {
