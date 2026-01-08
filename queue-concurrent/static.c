@@ -24,12 +24,12 @@ struct spinlock {
 #define SPINLOCK_INIT { 0 };  
 
 
-bool _atomic_compare_exchange(int* ptr, int compare, int exchange) {
+static inline bool _atomic_compare_exchange(int* ptr, int compare, int exchange) {
 
     return __atomic_compare_exchange_n(ptr, &compare, exchange,
             0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 }
-void _atomic_store(int* ptr, int value) {
+static inline void _atomic_store(int* ptr, int value) {
     __atomic_store_n(ptr, value, __ATOMIC_SEQ_CST);
 }
 

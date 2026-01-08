@@ -9,6 +9,8 @@
 #include <pthread.h>
 #include <time.h>
 
+#define USE_SPIN 0
+
 #define TESTCASE 1000000
 #define BUFFSIZE 2048
 struct timespec THEN;
@@ -20,7 +22,7 @@ static inline bool atomic_compare_exchange(int* ptr, int compare, int exchange) 
 }
 
 static inline void atomic_store(int* ptr, int value) {
-    __atomic_store_n(ptr, 0, __ATOMIC_SEQ_CST);
+    __atomic_store_n(ptr, value, __ATOMIC_SEQ_CST);
 }
 
 static inline int atomic_add_fetch(int* ptr, int d) {
@@ -31,9 +33,18 @@ struct spinlock {
     int locked;
 };
 
-void spinlock_init(struct spinlock* spinlock) {
+struct spincond {
+    int sig;
+};
+
+void spinlock_init(struct spinlock* spinlock, void* none) {
     atomic_store(&spinlock->locked, 0);
 }
+
+void spinlock_cond_init(struct spincond* spincond, void* none) {
+    atomic_store(&spincond->sig, 0);
+}
+
 
 void spinlock_lock(struct spinlock* spinlock) {
     while (!atomic_compare_exchange(&spinlock->locked, 0, 1)) {
@@ -44,15 +55,54 @@ void spinlock_unlock(struct spinlock* spinlock) {
     atomic_store(&spinlock->locked, 0);
 }
 
+void spinlock_cond_wait(struct spincond* sig, struct spinlock* spinlock) {
+    struct timespec request, remaing; 
+    atomic_store(&spinlock->locked, 0);
+    while (!atomic_compare_exchange(&sig->sig, 1, 0)) {
+/*
+        request.tv_sec = 0;
+        request.tv_nsec = 100;
+        remaing.tv_sec = 0;
+        remaing.tv_nsec = 100;
+        if(nanosleep(&request , &remaing) < 0){
+            continue;
+        }
+*/
+    }
+    while (!atomic_compare_exchange(&spinlock->locked, 0, 1)) {
+/*
+        request.tv_sec = 0;
+        request.tv_nsec = 100;
+        remaing.tv_sec = 0;
+        remaing.tv_nsec = 100;
+        if(nanosleep(&request , &remaing) < 0){
+            continue;
+        }
+*/
+    }
+}
 
+void spinlock_cond_signal(struct spincond* sig) {
+    atomic_store(&sig->sig, 1);
+}
+
+
+#if USE_SPIN
+#define LOCK_INIT spinlock_init
+#define LOCK_SIG_INIT spinlock_cond_init
+#define LOCK spinlock_lock
+#define UNLOCK spinlock_unlock
+#define LOCK_SIG_WAIT(sig, lock)    UNLOCK(lock); \
+                                    continue;
+#define LOCK_SIG_SEND(sig) do{} while(0);
+#else
 #define LOCK_INIT pthread_mutex_init
 #define LOCK_SIG_INIT pthread_cond_init
 #define LOCK pthread_mutex_lock
-#define LOCK_TRY pthread_mutex_trylock
 #define UNLOCK pthread_mutex_unlock
 #define LOCK_SIG_WAIT pthread_cond_wait
 #define LOCK_SIG_SEND pthread_cond_signal
-
+#endif
 
 
 typedef struct node node;
@@ -65,8 +115,13 @@ struct node {
 
 typedef struct bucket {
 	uint32_t limit;
+#if USE_SPIN
+    struct spinlock lock;
+    struct spincond sig;
+#else 
 	pthread_mutex_t lock;
 	pthread_cond_t sig;
+#endif
     node* arr;
     uint32_t head; 
 	uint32_t tail;
@@ -86,7 +141,7 @@ typedef struct testdata {
 
 bucket* make_queue(uint32_t datalen, int max){
     bucket* q = (bucket*)malloc(sizeof(bucket));
-    memset(q, 0, sizeof(bucket));
+    //memset(q, 0, sizeof(bucket));
     LOCK_INIT(&q->lock, NULL);
     LOCK_SIG_INIT(&q->sig, NULL);
     node* n = (node*)malloc(sizeof(node) * max);
@@ -120,10 +175,6 @@ void enqueue(bucket* q, void* data, uint32_t datalen){
         uint32_t tidx = q->tail % q->limit;
         if((hidx == tidx) && (q->arr[hidx].in_use == 1)){
             LOCK_SIG_WAIT(&q->sig, &q->lock);
-            if((hidx == tidx) && (q->arr[hidx].in_use == 1)){
-                UNLOCK(&q->lock);
-                continue;
-            }
         }
         memcpy(q->arr[tidx].data, data, q->arr[tidx].datalen);
         if((hidx == tidx) && (q->arr[hidx].in_use != 1)){
@@ -143,10 +194,6 @@ void dequeue(bucket* q, void* data, uint32_t datalen){
         uint32_t tidx = q->tail % q->limit;
         if((hidx == tidx) && (q->arr[hidx].in_use != 1)){
             LOCK_SIG_WAIT(&q->sig, &q->lock);
-            if((hidx == tidx) && (q->arr[hidx].in_use != 1)){
-                UNLOCK(&q->lock);
-                continue;
-            }
         }
         memcpy(data, q->arr[hidx].data, q->arr[hidx].datalen);
         if((hidx == tidx) && (q->arr[hidx].in_use == 1)){
@@ -204,8 +251,8 @@ int main(){
     pthread_t tid_de;
     thd.b = q;
     thd.result = 0;
-    pthread_create(&tid_en, NULL, do_enqueue, (void *)q);
     pthread_create(&tid_de, NULL, do_dequeue, (void *)&thd);
+    pthread_create(&tid_en, NULL, do_enqueue, (void *)q);
     pthread_join(tid_en, NULL);
     pthread_join(tid_de, NULL);
     if(thd.result < 0){

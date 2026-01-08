@@ -14,7 +14,7 @@ static inline bool atomic_compare_exchange(int* ptr, int compare, int exchange) 
 }
 
 static inline void atomic_store(int* ptr, int value) {
-    __atomic_store_n(ptr, 0, __ATOMIC_SEQ_CST);
+    __atomic_store_n(ptr, value, __ATOMIC_SEQ_CST);
 }
 
 static inline int atomic_add_fetch(int* ptr, int d) {
