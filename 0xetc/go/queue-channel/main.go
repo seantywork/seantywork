@@ -6,7 +6,7 @@ import (
 	"unsafe"
 )
 
-const TESTCASE = 1000000
+const TESTCASE = 100000000
 const BUFFSIZE = 2048
 
 var THEN time.Time
