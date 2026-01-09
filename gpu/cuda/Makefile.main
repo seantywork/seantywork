@@ -1,7 +1,0 @@
-all:
-
-	@echo "gpu c"
-
-build:
-
-	nvcc -o main.out main.cu
