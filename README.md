@@ -13,8 +13,6 @@ Here is the basic description of the stuff below.
     - 0x*: 
         directories beginning with `0x` are ones with special meaning,
         such as:
-            - 0xadmin: 
-                meta directory of this repository
             - 0xdocs:
                 documents that are not related to linux
             - 0xetc:
@@ -41,7 +39,6 @@ Enjoy!
 ## stuff
 <details>
     <ul>
-        <li><a href="https://seanty.work/0xadmin/">0xadmin</a></li>
         <li><a href="https://seanty.work/0xdocs/">0xdocs</a></li>
         <li><a href="https://seanty.work/0xetc/">0xetc</a></li>
         <li><a href="https://seanty.work/data-array/">data-array</a></li>
