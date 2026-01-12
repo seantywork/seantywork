@@ -1,24 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
-
+#define MAX_NAME_LEN sizeof(uint64_t)
 #define MAX_MEMBER_ARR_LEN 1024
 #define MAX_CHAR_ARR_LEN 1024
 #define MAX_ROW_NUM 128
 
 struct arr_one{
-    int name;
+    union {
+        char name[MAX_NAME_LEN];
+        uint64_t id;
+    };
     char comment[MAX_MEMBER_ARR_LEN];
 };
 
 struct ptr_one{
-    int name;
+    union {
+        char name[MAX_NAME_LEN];
+        uint64_t id;
+    };
     char* comment;
 };
 
 void receive_struct_with_arr(struct arr_one a){
-
     strcpy(a.comment, "modified array 1");
 }
 
@@ -40,20 +46,21 @@ int main (){
     strcpy(src_a.comment, "original array 1");
     strcpy(comment_ptr, "original array 2");
     src_p.comment = comment_ptr;
-    src_a.name = 1;
-    src_p.name = 2;
+    strncpy(src_a.name,"abcdefg", MAX_NAME_LEN);
+    strncpy(src_p.name,"ijklmno", MAX_NAME_LEN);
+    src_p.id = src_a.id;
     
-    printf("start: name for arr: %d\n", src_a.name);
+    printf("start: name for arr: %s\n", src_a.name);
     printf("start: comment for arr: %s\n", src_a.comment);
-    printf("start: name for ptr: %d\n", src_p.name);
+    printf("start: name for ptr: %s\n", src_p.name);
     printf("start: comment for ptr: %s\n", src_p.comment);
 
     receive_struct_with_arr(src_a);
     receive_struct_with_ptr(src_p);
 
-    printf("end: name for arr: %d\n", src_a.name);
+    printf("end: name for arr: %s\n", src_a.name);
     printf("end: comment for arr: %s\n", src_a.comment);
-    printf("end: name for ptr: %d\n", src_p.name);
+    printf("end: name for ptr: %s\n", src_p.name);
     printf("end: comment for ptr: %s\n", src_p.comment);
     return 0;
 }

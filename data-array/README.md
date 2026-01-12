@@ -1,5 +1,7 @@
 # array
 
+- [code](https://github.com/seantywork/seantywork/tree/main/data-array)
+
 In a C program, array is one of the most common type of data container \
 that can hold data in a contiguous (virtually, in a user space in this case) and same-sized memory spaces.
 
