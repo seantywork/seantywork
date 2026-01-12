@@ -45,9 +45,6 @@ Enjoy!
         <li><a href="https://seanty.work/0xdocs/">0xdocs</a></li>
         <li><a href="https://seanty.work/0xetc/">0xetc</a></li>
         <li><a href="https://seanty.work/data-array/">data-array</a></li>
-        <li><a href="https://seanty.work/data-asm-bind-rand-tcp-port/">.data-asm-bind-rand-tcp-port</a></li>
-        <li><a href="https://seanty.work/data-asm-execve-bin-sh/">.data-asm-execve-bin-sh</a></li>
-        <li><a href="https://seanty.work/data-asm-reverse-listen/">.data-asm-reverse-listen</a></li>
         <li><a href="https://seanty.work/data-byte-align/">.data-byte-align</a></li>
         <li><a href="https://seanty.work/data-cgroup/">.data-cgroup</a></li>
         <li><a href="https://seanty.work/data-container-kube-net/">.data-container-kube-net</a></li>
