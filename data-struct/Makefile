@@ -1,17 +1,8 @@
 
-GCC_FLAGS := -std=c99 -g -Wall
-GCC_GNU_FLAGS := -std=gnu99 -g -Wall
+FLAGS := -g -Wall
 
 all:
-
-	gcc $(GCC_GNU_FLAGS) -c -I. -o c_struct.o c_struct.c
-
-	gcc $(GCC_GNU_FLAGS) -c -I. -o interface.o interface.c
-
-	gcc $(GCC_GNU_FLAGS) -I. -o main.out main.c c_struct.o interface.o 
-
-	./main.out
-
+	gcc $(FLAGS) -I. -o struct.out main.c 
 
 clean:
-	rm -r *.o *.a *.so *.out *.txt
+	rm -rf *.o *.a *.so *.out *.txt
