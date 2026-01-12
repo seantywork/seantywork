@@ -6,7 +6,6 @@
 
 void receive_char_arr(char arg[MAX_CHAR_ARR_LEN]){
     strcpy(arg, "modified array 1");
-
 }
 
 void receive_char_ptr(char* arg){
@@ -15,7 +14,7 @@ void receive_char_ptr(char* arg){
 
 void receive_char_ptr_print(char* arg){
     printf("before: %s\n", arg);
-    strcpy(arg, "modified array 4");
+    strcpy(arg, "modified array 3");
     printf("after: %s\n", arg);
 }
 
