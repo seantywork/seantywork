@@ -1,3 +1,3 @@
 # rs
-- [hello](hello)
-- [ncat](ncat)
+- [.hello](hello)
+- [.ncat](ncat)
