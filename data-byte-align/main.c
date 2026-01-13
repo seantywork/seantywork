@@ -57,7 +57,7 @@ typedef struct align_or_not {
 } align_or_not;
 #endif
 
-#define ROUND 100000
+#define ROUND 1000000
 #define ROUND_LENGTH 2048
 
 uint64_t lapse_sum_one = 0;
