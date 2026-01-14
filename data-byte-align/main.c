@@ -43,7 +43,7 @@ typedef struct __attribute__((packed)) packed_tuple_struct {
 } packed_tuple_struct;
 
 #ifndef ALIGNIT
-typedef struct align_or_not {
+typedef struct __attribute__((packed)) align_or_not {
 	uint32_t number1;
 	uint16_t number2;
 	uint32_t number3;
@@ -140,7 +140,7 @@ int main(){
 	pthread_t t1;
 	pthread_t t2;
 
-    printf("expect: 16\n");
+    printf("expect: 14\n");
 	int data_size = sizeof(unaligned_tuple_struct);
 	printf("unaligned size: %d\n", data_size);
     data_size = sizeof(aligned_tuple_struct);
