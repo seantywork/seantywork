@@ -27,12 +27,12 @@ int main(){
     char cpu_max[CPU_MAX_LEN] = {0};
     int status = 0;
     FILE* fp = NULL;
-    signal(SIGUSR1,sig_usr1_hdl);
 	int pid = fork();
     if(pid < 0){
         printf("failed to create child\n");
         return -1;
     }else if (pid == 0) {
+        signal(SIGUSR1,sig_usr1_hdl);
         while(1){
             if(waitdone){
                 break;
