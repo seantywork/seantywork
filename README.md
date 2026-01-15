@@ -46,7 +46,7 @@ Enjoy!
         <li><a href="https://seanty.work/0xetc/">0xetc</a></li>
         <li><a href="https://seanty.work/data-array/">data-array</a></li>
         <li><a href="https://seanty.work/data-byte-align/">data-byte-align</a></li>
-        <li><a href="https://seanty.work/data-cgroup/">.data-cgroup</a></li>
+        <li><a href="https://seanty.work/data-cgroup/">data-cgroup</a></li>
         <li><a href="https://seanty.work/data-container-kube-net/">.data-container-kube-net</a></li>
         <li><a href="https://seanty.work/data-container-podman/">.data-container-podman</a></li>
         <li><a href="https://seanty.work/data-cpu-affinity-thread/">.data-cpu-affinity-thread</a></li>
