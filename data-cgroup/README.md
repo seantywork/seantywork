@@ -1,5 +1,8 @@
 # CGROUP
 
+
+# misc
+
 ```shell
 # cgroup 
 
@@ -26,9 +29,11 @@ echo "+$SOMETHING" >> /sys/fs/cgroup/cgroup.subtree_control
 mkdir /sys/fs/cgroup/$SOME_GROUP
 
 # give cpu max
+MAX_US=200000
+PER_US=1000000
 
-echo "$MAX $PERIOD" > /sys/fs/cgroup/$SOME_GROUP/cpu.max
-
+echo "$MAX_US $PER_US" > /sys/fs/cgroup/$SOME_GROUP/cpu.max
+echo "$PID" > /sys/fs/cgroup/$SOME_GROUP/cgroup.procs
 # revoke group
 
 rmdir /sys/fs/cgroup/$SOME_GROUP
