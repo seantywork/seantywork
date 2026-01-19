@@ -1,16 +1,16 @@
 # container-kube-net
 
+- [code](https://github.com/seantywork/seantywork/tree/main/data-container-kube-net)
 
+In here, I outlined how to install Kubernetes with Cilium CNI on Google Cloud (though also workable on \
+local VMs) and explored how communication between pods on different nodes works.
 
-# 01
+Let's suppose we created two VMs that can fully communicate with each other. We're going to make one of them \
+control node and the other worker node.
 
-```shell
+The full script to turn a VM into a control node is available as `node-ctl.sh`.
 
-# https://kubernetes.io/docs/reference/networking/ports-and-protocols/
-
-```
-
-# 01-1
+In the script at the start, we'll see the basic setup information defined as below.
 
 ```shell
 HOME="/root" 
@@ -19,6 +19,12 @@ VERSION="1.33"
 CILIUM_VERSION="1.17.4"
 
 ```
+
+We should take care of the version, because it's already approaching EOL \
+if we're going to use `1.33`. The IP address there refers to the VM's internal IP \
+assigned by the cloud provider (in this case )
+
+
 
 # 02
 
