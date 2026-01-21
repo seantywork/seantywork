@@ -22,15 +22,16 @@ CILIUM_VERSION="1.17.4"
 
 We should take care of the version, because it's already approaching EOL \
 if we're going to use `1.33`. The IP address there refers to the VM's internal IP \
-assigned by the cloud provider (in this case )
+assigned by the cloud provider (in this case Google cloud)
 
+If those are correctly configure, and Kubernetes fellas didn't mess up \
+the releases once again, the `node-ctl.sh` script should work and we'd \
+be able to see something like below.
 
-
-# 02
 
 ```shell
 
-root@node-0:~# kubectl get nodes
+$ kubectl get nodes
 NAME     STATUS   ROLES           AGE   VERSION
 node-0   Ready    control-plane   73s   v1.33.1
 
