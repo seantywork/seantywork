@@ -31,7 +31,7 @@ be able to see something like below.
 
 ```shell
 
-$ kubectl get nodes
+root@node-0:~# kubectl get nodes
 NAME     STATUS   ROLES           AGE   VERSION
 node-0   Ready    control-plane   73s   v1.33.1
 
