@@ -37,14 +37,18 @@ node-0   Ready    control-plane   73s   v1.33.1
 
 ```
 
-# 03
+On the control node, we can create token for other nodes to join the cluster.
 
 ```shell
 
 root@node-0:~# kubeadm token create --print-join-command 
 kubeadm join 10.168.0.2:6443 --token r61w3k.oom2m7zqt6m8p0fc --discovery-token-ca-cert-hash sha256:9dcf53ebff2089c12cf3af75e4540e58674ccd44282ba0285420852e4ebc5114 
 ```
-# 04
+
+On the other node, we can run `node-wrk.sh` to turn it into a worker node. \
+As with the control node, the variables at the start of the script should be \
+configured correctly. If done, we can use token we've created on the control \
+node to join the worker node.
 
 ```shell
 
@@ -65,7 +69,8 @@ This node has joined the cluster:
 
 Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
 ```
-# 05
+
+Now, if we run the `kubectl` again, we'll see that the cluster is up and running.
 
 ```shell
 
@@ -76,7 +81,8 @@ node-1.us-east4-b.c.vpn-server-422904.internal   Ready    <none>          47s   
 
 ```
 
-# 06
+Using the same procedure, we're going to create one more worker node and join it \
+with the cluster as well.
 
 ```shell
 root@node-2:~# kubeadm join 10.168.0.2:6443 --token r61w3k.oom2m7zqt6m8p0fc --discovery-token-ca-cert-hash sha256:9dcf53ebff2089c12cf3af75e4540e58674ccd44282ba0285420852e4ebc5114
@@ -98,7 +104,7 @@ Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
 
 ```
 
-# 07
+Now we have a total of three nodes making up the cluster!
 
 ```shell
 
@@ -109,8 +115,11 @@ node-1.us-east4-b.c.vpn-server-422904.internal   Ready    <none>          5m3s  
 node-2.us-east4-b.c.vpn-server-422904.internal   Ready    <none>          51s    v1.33.1
 ```
 
+For our purpose of this tutorial where we want to track how a packet flows through \
+between two nodes, we're going to need a method to pin down a container on `node-1` \
+and the other on `node-2`.
 
-# 08
+To do so, we can use node labelling provided by Kubernetes.
 
 ```shell
 
@@ -120,7 +129,8 @@ root@node-0:~# kubectl label node node-2.us-east4-b.c.vpn-server-422904.internal
 node/node-2.us-east4-b.c.vpn-server-422904.internal labeled
 ```
 
-# 09
+Also, to add another layer of separation(though not needed for the purpose \
+of this tutorial), we're going create namespce for each as well. 
 
 ```shell
 
@@ -131,7 +141,13 @@ namespace/wrk-2 created
 root@node-0:~# vim 1.yaml
 ```
 
-# 09-1
+Look at the YAML file below (also available in the directory) with which we're \
+going to create. This is the YAML for creating a pod on `node1`. The other YAML \
+file looks similar except for names used for the pod.
+
+What it does is essentially opening up a port 9999 on TCP, UDP so that other pods \
+can talk to the pod using the channel.
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -181,7 +197,7 @@ spec:
 
 ```
 
-# 09-2
+Now, let's look at what exactly is going on inside the pod.
 
 ```Dockerfile
 FROM ubuntu:24.04
@@ -196,6 +212,10 @@ RUN apt-get install -y ncat tshark
 
 CMD ["tail", "-f","/dev/null"]
 ```
+
+Well, nothing at all. Because what we want to do is to capture the network packets \
+as they fly around, not actually up and running a service.
+
 
 # 09-3
 ```shell
