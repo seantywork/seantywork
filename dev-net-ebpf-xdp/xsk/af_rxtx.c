@@ -570,34 +570,7 @@ void *thread_func_poll(void *arg)
 				int sockfd = xsk_socket__fd(port_rx->xsk);
 
 				if(pollfds[i].fd == sockfd && (pollfds[i].revents & POLLIN)){
-
-					n_pkts = port_rx_burst(port_rx, brx);
-					
-					if (!n_pkts)
-						continue;
-
-
-					/* Process & TX. */
-					for (k = 0; k < n_pkts; k++) {
-
-						u64 addr = xsk_umem__add_offset_to_addr(brx->addr[k]);
-						u8 *pkt = xsk_umem__get_data(port_rx->params.bp->addr,
-										addr);
-
-
-						btx->addr[btx->n_pkts] = brx->addr[k];
-						btx->len[btx->n_pkts] = brx->len[k];
-						btx->n_pkts++;
-
-						if (btx->n_pkts == MAX_BURST_TX) {
-
-							port_tx_burst(port_tx, btx);
-							btx->n_pkts = 0;
-						}
-
-					}
-					
-
+					result = handle_port(port_rx, brx, port_tx, btx);
 				} else {
 
 					continue;
@@ -791,4 +764,242 @@ void print_port_stats_all(u64 ns_diff)
 	for (i = 0; i < n_ports; i++)
 		print_port_stats(i, ns_diff);
 	print_port_stats_trailer();
+}
+
+
+
+uint16_t ip_csum(uint16_t *addr, int len){
+	int sum = 0;
+	u_short answer = 0;
+	u_short *w = addr;
+	int nleft = len;
+	/*
+	 * Our algorithm is simple, using a 32 bit accumulator (sum), we add
+	 * sequential 16 bit words to it, and at the end, fold back all the
+	 * carry bits from the top 16 bits into the lower 16 bits.
+	 */
+	while (nleft > 1) {
+		sum += *w++;
+		nleft -= 2;
+	}
+	/* mop up an odd byte, if necessary */
+	if (nleft == 1) {
+		*(u_char *)(&answer) = *(u_char *)w;
+		sum += answer;
+	}
+	/* add back carry outs from top 16 bits to low 16 bits */
+	sum = (sum >> 16) + (sum & 0xffff); /* add hi 16 to low 16 */
+	sum += (sum >> 16);					/* add carry */
+	answer = ~sum;						/* truncate to 16 bits */
+	return (answer);
+}
+
+
+uint16_t udp_checksum(struct udphdr *p_udp_header, size_t len, uint32_t src_addr, uint32_t dest_addr){
+  const uint16_t *buf = (const uint16_t*)p_udp_header;
+  uint16_t *ip_src = (void*)&src_addr, *ip_dst = (void*)&dest_addr;
+  uint32_t sum;
+  size_t length = len;
+
+  // Calculate the sum
+  sum = 0;
+  while (len > 1){
+    sum += *buf++;
+    if (sum & 0x80000000){
+		sum = (sum & 0xFFFF) + (sum >> 16);
+	}
+    len -= 2;
+  }
+
+  if (len & 1){
+    // Add the padding if the packet lenght is odd
+    sum += *((uint8_t*)buf);
+  }
+  // Add the pseudo-header
+  sum += *(ip_src++);
+  sum += *ip_src;
+  sum += *(ip_dst++);
+  sum += *ip_dst;
+  sum += htons(IPPROTO_UDP);
+  sum += htons(length);
+  // Add the carries
+  while (sum >> 16){
+    sum = (sum & 0xFFFF) + (sum >> 16);
+  }
+  // Return the one's complement of sum
+  return (uint16_t)~sum;
+}
+
+uint16_t tcp_checksum(struct tcphdr *p_tcp_header, size_t len, uint32_t src_addr, uint32_t dest_addr) {
+	const uint16_t *buf = (const uint16_t*)p_tcp_header;
+    uint32_t sum = 0;
+    //add the pseudo header 
+    //the source ip
+	uint16_t tcplen = htons((uint16_t)len);
+    sum += (src_addr>>16)&0xFFFF;
+    sum += (src_addr)&0xFFFF;
+    //the dest ip
+    sum += (dest_addr>>16)&0xFFFF;
+    sum += (dest_addr)&0xFFFF;
+    //protocol and reserved: 6
+    sum += htons(IPPROTO_TCP);
+    //the length
+    sum += tcplen;
+    while (len > 1) {
+        sum += * buf++;
+        len -= 2;
+    }
+    //if any bytes left, pad the bytes and add
+    if(len > 0) {
+        //printf("+++++++++++padding, %dn", tcpLen);
+        sum += ((*buf)&htons(0xFF00));
+    }
+	//Fold 32-bit sum to 16 bits: add carrier to result
+	while (sum>>16) {
+		sum = (sum & 0xffff) + (sum >> 16);
+	}
+    //set computation result
+    return (uint16_t)~sum;
+}
+
+int handle_port(struct port* port_rx, struct burst_rx* brx, struct port* port_tx, struct burst_tx* btx){
+	u32 n_pkts, pos, i;
+	n_pkts = ARRAY_SIZE(brx->addr);
+	n_pkts = bcache_cons_check(port_rx->bc, n_pkts);
+	if (!n_pkts)
+		return 0;
+	/* RXQ. */
+	n_pkts = xsk_ring_cons__peek(&port_rx->rxq, n_pkts, &pos);
+	
+	if (!n_pkts) {
+		if (xsk_ring_prod__needs_wakeup(&port_rx->umem_fq)) {
+			struct pollfd pollfd = {
+				.fd = xsk_socket__fd(port_rx->xsk),
+				.events = POLLIN,
+			};
+			poll(&pollfd, 1, 0);
+		}
+		return 0;
+	}		
+
+
+	for (i = 0; i < n_pkts; i++) {
+		brx->addr[i] = xsk_ring_cons__rx_desc(&port_rx->rxq, pos + i)->addr;
+		brx->len[i] = xsk_ring_cons__rx_desc(&port_rx->rxq, pos + i)->len;
+	}
+	xsk_ring_cons__release(&port_rx->rxq, n_pkts);
+	port_rx->n_pkts_rx += n_pkts;
+	/* UMEM FQ. */
+	for ( ; ; ) {
+		int status;
+		status = xsk_ring_prod__reserve(&port_rx->umem_fq, n_pkts, &pos);
+		if (status == n_pkts)
+			break;
+
+		if (xsk_ring_prod__needs_wakeup(&port_rx->umem_fq)) {
+			struct pollfd pollfd = {
+				.fd = xsk_socket__fd(port_rx->xsk),
+				.events = POLLIN,
+			};
+			poll(&pollfd, 1, 0);
+		}			
+
+	}
+	for (i = 0; i < n_pkts; i++)
+		*xsk_ring_prod__fill_addr(&port_rx->umem_fq, pos + i) =
+			bcache_cons(port_rx->bc);
+	xsk_ring_prod__submit(&port_rx->umem_fq, n_pkts);
+
+
+    for(int k = 0 ; k < n_pkts; k ++){
+        u64 addr = xsk_umem__add_offset_to_addr(brx->addr[k]);
+        u32 pkt_len = brx->len[k];
+        u8 *pkt = xsk_umem__get_data(port_rx->params.bp->addr,
+                        addr);
+        int status;
+        u32 n_pkts_tx = 1;
+        u8 *pkt_tx;
+        u32 pkt_tx_len = 0;
+        pos = 0;
+        i = 0;
+
+		handle_packet(pkt, pkt_len);
+		/*
+		if(pkt_tx != NULL){
+			memset(pkt, 0, pkt_len);
+			brx->len[k] = pkt_tx_len;
+			pkt_len = pkt_tx_len;
+			memcpy(pkt, pkt_tx, pkt_tx_len);
+		}*/
+
+        for ( ; ; ) {
+            status = xsk_ring_prod__reserve(&port_tx->txq, n_pkts_tx, &pos);
+            if (status == n_pkts_tx)
+                break;
+
+            if (xsk_ring_prod__needs_wakeup(&port_tx->txq))
+                sendto(xsk_socket__fd(port_tx->xsk), NULL, 0, MSG_DONTWAIT,
+                    NULL, 0);
+        }        
+
+        for (i = 0; i < n_pkts_tx; i++) {
+            xsk_ring_prod__tx_desc(&port_tx->txq, pos + i)->addr = addr;
+            xsk_ring_prod__tx_desc(&port_tx->txq, pos + i)->len = pkt_len;
+        }
+        xsk_ring_prod__submit(&port_tx->txq, n_pkts_tx);
+        if (xsk_ring_prod__needs_wakeup(&port_tx->txq))
+            sendto(xsk_socket__fd(port_tx->xsk), NULL, 0, MSG_DONTWAIT, NULL, 0);
+
+        port_tx->n_pkts_tx += n_pkts_tx;
+        n_pkts_tx = port_tx->params.bp->umem_cfg.comp_size;
+        n_pkts_tx = xsk_ring_cons__peek(&port_tx->umem_cq, n_pkts_tx, &pos);
+        for (i = 0; i < n_pkts_tx; i++) {
+            addr = *xsk_ring_cons__comp_addr(&port_tx->umem_cq, pos + i);
+            bcache_prod(port_tx->bc, addr);
+        }
+        xsk_ring_cons__release(&port_tx->umem_cq, n_pkts_tx);
+    }
+
+    return 0;
+}
+
+
+#define PROTO_IP     0x0800
+int handle_packet(uint8_t* pkt, int pkt_len){
+	int datalen;
+    void *data;
+	struct ethhdr *eth_header;
+    struct iphdr *ip_header;
+	struct tcphdr *tcp_header;
+	struct udphdr *udp_header;
+	data = (void*)(long)pkt;
+	eth_header = data;
+	u16 h_proto = eth_header->h_proto;
+	if(htons(h_proto) != PROTO_IP){
+		printf("proto not ip\n");
+		return 0;
+	} 
+	ip_header = data + sizeof(*eth_header);
+	if(ip_header->protocol == IPPROTO_TCP){
+		printf("ip proto >> TCP\n");
+		tcp_header = data + sizeof(*eth_header) + sizeof(*ip_header);
+		printf("TCP original csum: %04X\n", tcp_header->check);
+		tcp_header->check = 0;
+		uint16_t tcplen = ntohs(ip_header->tot_len) - (ip_header->ihl<<2);
+		tcp_header->check = tcp_checksum(tcp_header, tcplen, ip_header->saddr, ip_header->daddr);
+		printf("TCP new csum: %04X\n", tcp_header->check);
+
+	} else if (ip_header->protocol == IPPROTO_UDP){
+		printf("ip proto >> UDP\n");
+		udp_header = data + sizeof(*eth_header) + sizeof(*ip_header);
+		printf("UDP original csum: %04X\n", udp_header->check);
+		udp_header->check = 0;
+		udp_header->check = udp_checksum(udp_header, ntohs(udp_header->len), ip_header->saddr, ip_header->daddr);
+		printf("UDP new csum: %04X\n", udp_header->check);
+	}
+//	printf("IP original csum: %04X\n", ip_header->check);
+//	ip_header->check = 0;
+//	ip_header->check = ip_csum((uint16_t*)&ip_header, sizeof(struct iphdr));
+//	printf("IP new csum: %04X\n", ip_header->check);
+	return 1;
 }

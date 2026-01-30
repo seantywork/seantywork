@@ -3,12 +3,12 @@
 
 // number of left, right queue pair
 //const int g_threads = 32;
-const int g_threads = 1;
+const int g_threads = 4;
 int g_ports = g_threads * 2;
 int g_cpu_core_id_len = 0;
 int g_queue_id_len = 0;
-char* left_ifname = "enp1s0";
-char* right_ifname = "enp7s0";
+char* left_ifname = "veth01";
+char* right_ifname = "veth11";
 
 int lr_count = 0;
 struct xdp_program *prog_l;

@@ -108,9 +108,9 @@ int xdp_def_prog(struct xdp_md *ctx)
 
         fib_params.family	= AF_INET;
         // use daddr as source in the lookup, so we refleect packet back (as if it wcame from us)
-        fib_params.ipv4_src	= ip_header->daddr;
+        fib_params.ipv4_src	= ip_header->saddr;
         // opposite here, the destination is the source of the icmp packet..remote end
-        fib_params.ipv4_dst	= ip_header->saddr;
+        fib_params.ipv4_dst	= ip_header->daddr;
         fib_params.ifindex = ctx->ingress_ifindex;
 
         bpf_printk("doing route lookup dst: %d\n", fib_params.ipv4_dst);
@@ -124,10 +124,6 @@ int xdp_def_prog(struct xdp_md *ctx)
             return XDP_PASS;
         }
         bpf_printk("route lookup success, ifindex: %d\n", fib_params.ifindex);
-
-        __u32 oldipdst = ip_header->daddr;
-        ip_header->daddr = ip_header->saddr;
-        ip_header->saddr = oldipdst;
 
         memcpy(eth_header->h_dest, fib_params.dmac, ETH_ALEN);
         memcpy(eth_header->h_source, fib_params.smac, ETH_ALEN);
@@ -145,7 +141,7 @@ int xdp_def_prog(struct xdp_md *ctx)
         // use daddr as source in the lookup, so we refleect packet back (as if it wcame from us)
         
         fib_params.ipv4_src	= ip_header->saddr;
-        //fib_params.ipv4_src = bpf_ntohl(3232243969);
+
         // opposite here, the destination is the source of the icmp packet..remote end
         fib_params.ipv4_dst	= ip_header->daddr;
 

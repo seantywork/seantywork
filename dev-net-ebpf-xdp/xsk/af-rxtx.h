@@ -56,6 +56,14 @@ void print_port_stats(int port_id, u64 ns_diff);
 
 void print_port_stats_all(u64 ns_diff);
 
+uint16_t ip_csum(uint16_t *addr, int len);
 
+uint16_t udp_checksum(struct udphdr *p_udp_header, size_t len, uint32_t src_addr, uint32_t dest_addr);
+
+uint16_t tcp_checksum(struct tcphdr *p_tcp_header, size_t len, uint32_t src_addr, uint32_t dest_addr);
+
+int handle_port(struct port* port_rx, struct burst_rx* brx, struct port* port_tx, struct burst_tx* btx);
+
+int handle_packet(uint8_t* pkt, int pkt_len);
 
 #endif 

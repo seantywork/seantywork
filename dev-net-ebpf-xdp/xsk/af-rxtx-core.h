@@ -19,6 +19,7 @@
 #include <getopt.h>
 #include <netinet/ether.h>
 #include <net/if.h>
+#include <stdint.h>
 
 
 #include <linux/if_link.h>
@@ -26,6 +27,11 @@
 
 #include <xdp/libxdp.h>
 #include <xdp/xsk.h>
+#include <arpa/inet.h>
+#include <linux/ip.h>
+#include <linux/udp.h>
+#include <linux/tcp.h>
+#include <linux/in.h>
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 /*
@@ -49,7 +55,8 @@
 #define MAX_PORTS_PER_THREAD 16
 #endif
 
-#define MAX_BPOOL 32
+//#define MAX_BPOOL 32
+#define MAX_BPOOL 16
 
 #define BPOOL_GRP 2
 
