@@ -270,13 +270,31 @@ Now, let's run the container with the network we've created.
 $ podman run --rm --name mydummy --network cbr0 docker.io/seantywork/mydummyimg
 ```
 
-All nice
+Running a container with whatever network we specify is all fun until we realize that \
+we cannot connect to the process inside the container from the host.
+
+To expose the process inside the container, we can specify `-p` option when executing `podman` command.\
+The command below will run the container, and host can access it on port 8080.
+
+Let's start the container and run `nc` server from inside.
 
 ```shell
 # run with port
+$ podman run --rm --name mydummy --network cbr0 -p 8080:8080 docker.io/seantywork/mydummyimg
+# execute nc server
+$ podman exec -t mydummy nc -l 0.0.0.0 8080
+```
+Let's access it from the host.
 
-podman run --rm -p 8080:80 localhost/image-name
+```shell
+$ nc localhost 8080
+hello
 
+```
+
+Now, it's time to use volume to make the data generated inside the container persist.
+
+```shell
 # run with volume
 
 podman run --rm -v ./local:/workspace localhost/image-name
