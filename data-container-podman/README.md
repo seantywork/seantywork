@@ -262,6 +262,49 @@ WARN[0010] StopSignal SIGTERM failed to stop container mydummy in 10 seconds, re
 mydummy
 
 ```
+You can also execute commands inside the container either interactively or not. After running the container \
+you can do something like below.
+
+```shell
+# interactively
+$ podman exec -it mydummy /bin/bash
+root@8881e8e3ee8d:/workspace# ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: tap0: <BROADCAST,UP,LOWER_UP> mtu 65520 qdisc fq_codel state UNKNOWN group default qlen 1000
+    link/ether ca:ac:a5:4c:16:da brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.100/24 brd 10.0.2.255 scope global tap0
+       valid_lft forever preferred_lft forever
+    inet6 fd00::c8ac:a5ff:fe4c:16da/64 scope global dynamic mngtmpaddr 
+       valid_lft 86392sec preferred_lft 14392sec
+    inet6 fe80::c8ac:a5ff:fe4c:16da/64 scope link 
+       valid_lft forever preferred_lft forever
+
+
+# not interctively
+$ podman exec -t mydummy ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: tap0: <BROADCAST,UP,LOWER_UP> mtu 65520 qdisc fq_codel state UNKNOWN group default qlen 1000
+    link/ether da:ec:e8:eb:5c:92 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.100/24 brd 10.0.2.255 scope global tap0
+       valid_lft forever preferred_lft forever
+    inet6 fd00::d8ec:e8ff:feeb:5c92/64 scope global dynamic mngtmpaddr 
+       valid_lft 86345sec preferred_lft 14345sec
+    inet6 fe80::d8ec:e8ff:feeb:5c92/64 scope link 
+       valid_lft forever preferred_lft forever
+
+```
+
+
 
 Now, let's run the container with the network we've created.
 
@@ -292,36 +335,42 @@ hello
 
 ```
 
-Now, it's time to use volume to make the data generated inside the container persist.
+Now, let's check out how data in and out of a container can persist using `volume`.
 
 ```shell
 # run with volume
+$ mkdir -p local
+$ podman run --rm --name mydummy -v ./local:/workspace docker.io/seantywork/mydummyimg
+```
+On host, if we create a file called `hellodummy` at `local` directory, \
+it will available inside the container at `/workspcace`.
 
-podman run --rm -v ./local:/workspace localhost/image-name
+```shell
+# on host
+$ echo "haha" > local/hellodummy
+# in the container 
+$ podman exec -t mydummy cat hellodummy
+haha
+```
+So far, we've run our containers foreground, which forced us to open another terminal to deal with the container. \
+There is a way to avoid this behavior using `-d` option.
 
+```shell
 # run detached
 
-podman run --rm -d localhost/image-name
+$ podman run --rm --name mydummy -d docker.io/seantywork/mydummyimg
+041b448d9dc43e82117f2981348d588c5a9e29dfa996dc9781fcbcef6f118e47
+```
 
-# run with command
+Lastly, it's also possible to pass environment variable using the syntax below.
 
-podman run --rm -t -v ./local:/usr/workspace localhost/image-name /bin/bash -c 'cd test && ./hello.sh'
-
-# run with interactive 
-
-podman run --rm -it -v ./local:/usr/workspace localhost/image-name /bin/bash -c 'cd test && ./hello.sh'
-
+```shell
 # run with environment 
-
-podman run --rm -e MYENV=hello localhost/image-name
-
-
-# exec
-
-podman exec -it container /bin/bash
-
-# stop 
-
-podman stop container
+$ podman run --rm --name mydummy -e MYENV=hello -d docker.io/seantywork/mydummyimg
+# enter the container
+$ podman exec -it mydummy /bin/bash
+# check out the environment variable value
+root@176bfa0f2297:/workspace# echo $MYENV
+hello
 
 ```
