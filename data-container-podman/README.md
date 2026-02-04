@@ -212,35 +212,67 @@ docker.io/library/nginx          1.29.4      248d2326f351  26 hours ago    164 M
 docker.io/library/ubuntu         24.04       493218ed0f40  3 weeks ago     80.6 MB
 ```
 
+Okay, I think we've seen enough about how to create and share images so far. Now is the time \
+to mess with how to run it.
+
+To keep things simple, we're going to focus on how to run a `container`, with `network` and `volume` along with \
+`command`.
+
+First, let's create a `network` that our container is going to use.
+
 ```shell
-
-# util
-
-podman image ...
-podman container ...
-podman network ...
-podman volume ... 
-
 # network
+# it doesn't have to be `cbr0` obviously.
+$ podman network create --driver=bridge cbr0
+cbr0
+```
 
-podman network create --driver=bridge cbr0
+Check what networks we have.
 
+```shell
 # network ls
+$ podman network ls
+NETWORK ID    NAME        DRIVER
+b619d159a124  cbr0        bridge
+2f259bab93aa  podman      bridge
+```
+We can delete network using the command below.
 
-podman network ls
-
+```shell
 # network rm 
 
-podman network rm cbr0
+$ podman network rm cbr0
+cbr0
+```
 
+We can run the container we've created using command below.
+
+```shell
 # run with name
+$ podman run --rm --name mydummy docker.io/seantywork/mydummyimg
+```
+Sadly, since we've specified the `CMD` in Dockerfile as "tail -f /dev/null", there is no process \
+interruptiple using Ctrl+C.
 
-podman run --rm --name name0  -p 8080:80 localhost/image-name
+So we have to open another terminal and use the command below to terminate the container.
 
+```shell
+$ podman stop mydummy
+WARN[0010] StopSignal SIGTERM failed to stop container mydummy in 10 seconds, resorting to SIGKILL 
+mydummy
+
+```
+
+Now, let's run the container with the network we've created.
+
+```shell
 # run with network
+$ podman run --rm --name mydummy --network cbr0 docker.io/seantywork/mydummyimg
+```
 
-podman run --rm --network cbr0  -p 8080:80 localhost/image-name
+All nice
 
+```shell
 # run with port
 
 podman run --rm -p 8080:80 localhost/image-name

@@ -6,6 +6,6 @@ WORKDIR /workspace
 
 RUN apt-get update 
 
-RUN apt-get install -y ncat curl ca-certificates
+RUN apt-get install -y ncat curl iproute2 ca-certificates
 
 CMD ["tail", "-f","/dev/null"]
