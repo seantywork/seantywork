@@ -176,7 +176,8 @@ Enjoy!
         <li><a href="https://seanty.work/var-spoof-arp/">.var-spoof-arp</a></li>
         <li><a href="https://seanty.work/var-sql/">.var-sql</a></li>
         <li><a href="https://seanty.work/var-stack-overflow/">.var-stack-overflow</a></li>
-        <li><a href="https://seanty.work/var-ten-k/">.var-ten-k</a></li>
+        <li><a href="https://seanty.work/var-templeos/">.var-templeos</a></li>
+        <li><a href="https://seanty.work/var-ten-k/">.var-tem</a></li>
         <li><a href="https://seanty.work/var-wc/">.var-wc</a></li>
     </ul>
 </details>
