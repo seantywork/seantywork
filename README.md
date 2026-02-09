@@ -49,7 +49,7 @@ Enjoy!
         <li><a href="https://seanty.work/data-cgroup/">data-cgroup</a></li>
         <li><a href="https://seanty.work/data-container-kube-net/">data-container-kube-net</a></li>
         <li><a href="https://seanty.work/data-container-podman/">data-container-podman</a></li>
-        <li><a href="https://seanty.work/data-cpu-affinity-thread/">.data-cpu-affinity-thread</a></li>
+        <li><a href="https://seanty.work/data-cpu-affinity-thread/">data-cpu-affinity-thread</a></li>
         <li><a href="https://seanty.work/data-crypt-asym/">.data-crypt-asym</a></li>
         <li><a href="https://seanty.work/data-crypt-asym-quantumsafe/">.data-crypt-asym-quantumsafe</a></li>
         <li><a href="https://seanty.work/data-crypt-sym/">.data-crypt-sym</a></li>
