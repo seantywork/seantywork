@@ -7,17 +7,19 @@ curl -L "https://github.com/openssl/openssl/releases/download/openssl-$OSSLV/ope
 
 tar -zxf "openssl-$OSSLV.tar.gz"
 
-cd "openssl-$OSSLV"
+mv "openssl-$OSSLV" "openssl-qs"
+
+cd "openssl-qs"
 
 ./config
 
 make
 
-make test
+#make test
 
-sudo make install
+#sudo make install
 
-sudo ldconfig /usr/local/lib64/
+#sudo ldconfig /usr/local/lib64/
 
 #mv /usr/bin/openssl /root/
 

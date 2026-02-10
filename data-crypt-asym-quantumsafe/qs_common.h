@@ -27,9 +27,6 @@
 
 #include "oqs/oqs.h"
 
-/* limit testing to just this guy */
-#define OQSPROV_PROPQ "provider=oqsprovider"
-
 /* For controlled success */
 #define T(e)                                                                   \
     if (!(e)) {                                                                \
