@@ -33,7 +33,7 @@ cmake -GNinja ..
 
 ninja 
 
-sudo ninja install
+#sudo ninja install
 
 popd 
 
