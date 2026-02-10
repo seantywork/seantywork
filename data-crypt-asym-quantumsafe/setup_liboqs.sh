@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-LIBOQSV="0.12.0"
+LIBOQSV="0.15.0"
 OQSPROVV="0.8.0"
 
 rm -rf liboqs* oqs-provider* *.tar.gz
