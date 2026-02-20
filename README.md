@@ -98,9 +98,8 @@ Enjoy!
         <li><a href="https://seanty.work/dev-net-http-server/">.dev-net-http-server</a></li>
         <li><a href="https://seanty.work/dev-net-ip-netfilter/">.dev-net-ip-netfilter</a></li>
         <li><a href="https://seanty.work/dev-net-quic-bench/">.dev-net-quic-bench</a></li>
-        <li><a href="https://seanty.work/dev-net-vpn-ipsec/">.dev-net-vpn-ipsec</a></li>
         <li><a href="https://seanty.work/dev-net-vpn-openvpn/">.dev-net-vpn-openvpn</a></li>
-        <li><a href="https://seanty.work/dev-net-vpn-wireguard/">.dev-net-vpn-wireguard</a></li>
+        <li><a href="https://seanty.work/dev-net-vpn-strongswan/">.dev-net-vpn-strongswan</a></li>
         <li><a href="https://seanty.work/dev-net-websocket/">.dev-net-websocket</a></li>
         <li><a href="https://seanty.work/dev-serial-i2c/">.dev-serial-i2c</a></li>
         <li><a href="https://seanty.work/dev-serial-pwm/">.dev-serial-pwm</a></li>
