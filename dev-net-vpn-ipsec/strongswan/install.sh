@@ -1,3 +1,6 @@
+#!/bin/bash 
+
+SSWAN_VERSION="6.0.4"
 
 sudo apt-get update
 
@@ -7,11 +10,11 @@ sudo apt-get -y install libgmp-dev libsystemd-dev libcurl4-openssl-dev libldap-d
 
 pushd ~
 
-curl -L https://github.com/strongswan/strongswan/releases/download/6.0.4/strongswan-6.0.4.tar.gz -o strongswan-6.0.4.tar.gz
+curl -L https://github.com/strongswan/strongswan/releases/download/$SSWAN_VERSION/strongswan-$SSWAN_VERSION.tar.gz -o strongswan-$SSWAN_VERSION.tar.gz
 
-tar -xzf strongswan-6.0.4.tar.gz
+tar -xzf strongswan-$SSWAN_VERSION.tar.gz
 
-pushd strongswan-6.0.4
+pushd strongswan-$SSWAN_VERSION
 
 ./configure --prefix=/usr --sysconfdir=/etc --enable-charon --enable-systemd \
 --disable-defaults \
