@@ -31,7 +31,9 @@ void* foo()
             sleep(1);
         }
 
-        pthread_cond_signal(&cond1);
+        pthread_cond_broadcast(&cond1);
+        // for single consumer
+        //pthread_cond_signal(&cond1);
     }
  
     pthread_mutex_unlock(&lock);
