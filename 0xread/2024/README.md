@@ -1,0 +1,12 @@
+# 2024
+- [21st century monetary policy](21st-century-monetary-policy)
+- [american nations](american-nations)
+- [china after mao](china-after-mao)
+- [chip war](chip-war)
+- [code breaker](code-breaker)
+- [how to be a dictator](how-to-be-a-dictator)
+- [misbehaving](misbehaving)
+- [prisoners of geography](prisoners-of-geography)
+- [the price of time](the-price-of-time)
+- [the spy and the traitor](the-spy-and-the-traitor)
+- [this is how they tell me the world ends](this-is-how-they-tell-me-the-world-ends)

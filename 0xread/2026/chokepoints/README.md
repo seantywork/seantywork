@@ -1,0 +1,6 @@
+- dollar
+- iran nuclear and access denial to dollar, escrow
+- russian crimea invasion, denial of access to dollar financial market by oil corporations
+- chinese tech companies, zte and fujian jinhua access denied to chips, huawei access denied to all technologies which use american technology
+- ukraine war, russian central bank access denied to dollar, russian oil price cap along with insurance denied
+- impossiple trinity(interdepence, security, geopolitical competition)

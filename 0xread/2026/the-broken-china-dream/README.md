@@ -1,0 +1,6 @@
+- after mao, deng xiaoping, chen yun, hu yaobang and zhao ziyang, undying totalitarianism, only economic reform, pushback against liberalism and tiananmen 
+- rural reform, foreign trade reform, seo reform failed, price reform
+- neo authoritarianism, post tiananmen stalemate, soviet fall and southern tour, zhiang zemin and hu jintao, rules and norms?, nationalism, carrot and stick
+- not so harmonious economy, health care crisis, mass incidents, rights defenders 
+- financial reform(merging foreign exchange), seo reform(backrupting), wto accession, demographic boost, savings boost, ending with credit bubble
+- returned stalinism, xi jinping, purge and concentration, attack on civil society, xinjiang and hong kong, economic challenges, undying seo and inefficiency, housing bubble, trade war, new cold war

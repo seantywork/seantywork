@@ -1,0 +1,6 @@
+- engineering state(china) vs lawyerly state(us)
+- guizhou example, bridges everywhere, chongqing, the downside, overcapacity and waste, european ski village
+- shenzhen and iphone manufacturing, tool, recipe, and the process knowledge
+- terror of one child policy, threatened to have abortions, fasticide, abduction and oversea adoptions
+- terror of zero covid, shanhai lockdown, black paper protests
+- control paranoia, no free speech, marwin disappeared, while enabling myriad of manufacturing marbles such as drone

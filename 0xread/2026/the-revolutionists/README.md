@@ -1,0 +1,11 @@
+- 1968 6 day war
+- leila khaled, popular front for liberation of palestine, plane abduction to jorda
+- foreign recruits( meinhoff, enslin, etc), shigenobu
+- munich olympic attack on istralies
+- 1973 war
+- israel mossad revenge, beirut assasination
+- divergence between plo, arafat, fatah, salemeh diplomatic, eventually ending with salemeh assasinated by mossad
+- while ramirez did opec abduction with little success, entebbe resucue successful by israel, mogadish rescue successful by german
+- khomeini in iran, sadam hussein in iraq invading iran, ussr invading afghan
+- utabyi, saudi wahabbism, azzam, osama bin laden, helping afghan mujahideen across border from pakistan
+- israel invation into lebanon, plo displaced, powe vaccum followed by shia extremists such as hezbollah and suni extremists in gaza such as hamas

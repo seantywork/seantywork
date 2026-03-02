@@ -1,0 +1,7 @@
+- agriculture and productivity, plato and atistotle, feudalism, thomas acquinas and money lending, italian cities, mercantillism
+- physiocrats, adman smith, industrial revolution, comparative advantage and ricardo, melthus, marx
+- marginal principle and marshall, tariff and list, imperialism and lenin
+- market failures and pigou, incomplete competition and robinson, communism vs mises, veblan
+- great depression and keynes, creative destruction and schumpeter, game theory and nash, hayek
+- everything's economics and becker, growth and solow, pareto efficiency and arrow, government intervention and keynesian, public choice and bucanon, monetarism and friedman
+- emh and fama, speculation, asymmetric information, time inconsistency, behavioral and thaler

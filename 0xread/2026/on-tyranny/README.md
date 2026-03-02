@@ -1,0 +1,4 @@
+- resist kristallnacht and terror, secure institutions, keep one-party system at bay
+- remember nazi and soviet propaganda, professional ethics count, beware of para militaries
+- remember english resistance, watch out languages, investigate facts
+- have private life, join organizations, 

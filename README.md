@@ -13,10 +13,13 @@ Here is the basic description of the stuff below.
     - 0x*: 
         directories beginning with `0x` are ones with special meaning,
         such as:
-            - 0xdocs:
-                documents that are not related to linux
+            - 0xread:
+                stuff that I read and are not related to linux
+            - 0xwrite:
+                stuff that I wrote and are not related to linux
             - 0xetc:
-                languages other than C, such as Go, C++, Rust...  
+                somethin else,
+                such as programming languages other than C, such as Go, C++, Rust...  
     - data-*:
         directories beginning with `data` are ones NOT PRIMARILY related to 
         io devices. such as:
@@ -42,7 +45,8 @@ Enjoy!
 ## stuff
 <details>
     <ul>
-        <li><a href="https://seanty.work/0xdocs/">0xdocs</a></li>
+        <li><a href="https://seanty.work/0xread/">0xread</a></li>
+        <li><a href="https://seanty.work/0xwrite/">0xwrite</a></li>
         <li><a href="https://seanty.work/0xetc/">0xetc</a></li>
         <li><a href="https://seanty.work/data-array/">data-array</a></li>
         <li><a href="https://seanty.work/data-byte-align/">data-byte-align</a></li>
