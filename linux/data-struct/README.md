@@ -1,6 +1,6 @@
 # struct
 
-- [code](https://github.com/seantywork/seantywork/tree/main/data-struct)
+- [code](https://github.com/seantywork/seantywork/tree/main/linux/data-struct)
 
 
 C struct is a data container that can hold different types of data within it.

@@ -1,6 +1,6 @@
 # byte-align
 
-- [code](https://github.com/seantywork/seantywork/tree/main/data-byte-align)
+- [code](https://github.com/seantywork/seantywork/tree/main/linux/data-byte-align)
 
 Byte-alignment means, in C program, that there could be \
 meaningful gains (both in terms of performance and memory) for the programmers \

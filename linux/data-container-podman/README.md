@@ -1,6 +1,6 @@
 # container-podman 
 
-- [code](https://github.com/seantywork/seantywork/tree/main/data-container-podman)
+- [code](https://github.com/seantywork/seantywork/tree/main/linux/data-container-podman)
 
 Here, I'm going to lay out how to use `podman` to create and mangage containers on Linux.
 

@@ -1,6 +1,6 @@
 # container-kube-net
 
-- [code](https://github.com/seantywork/seantywork/tree/main/data-container-kube-net)
+- [code](https://github.com/seantywork/seantywork/tree/main/linux/data-container-kube-net)
 
 In here, I outlined how to install Kubernetes with Cilium CNI on Google Cloud (though also workable on \
 local VMs) and explored how communication between pods on different nodes works.

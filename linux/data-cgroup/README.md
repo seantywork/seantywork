@@ -1,6 +1,6 @@
 # cgroup
 
-- [code](https://github.com/seantywork/seantywork/tree/main/data-cgroup)
+- [code](https://github.com/seantywork/seantywork/tree/main/linux/data-cgroup)
 
 On Linux host, we can utilize a thing called `cgroup` (to be specific `cgroup_v2`) to \
 manage how much resource a process is allowed to have while running. For example, we \
