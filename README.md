@@ -11,11 +11,11 @@ Here is the basic description of the stuff below.
 
 ```text
     - read:
-        stuff that I read and are not related to linux
+        stuff that I read and are not (primarily) related to linux
     - write:
-        stuff that I wrote and are not related to linux
+        stuff that I wrote and are not (primarily) related to linux
     - linux:
-        linux stuff obviously, which consists of...
+        linux stuff
     - .*:
         directories beginning with `.(dot)` are ones whose README.md is NOT FULLY READY.
 ```
