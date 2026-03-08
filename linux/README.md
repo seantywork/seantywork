@@ -45,7 +45,6 @@
         <li><a href="data-hex/">.data-hex</a></li>
         <li><a href="data-mem-shared-shm-mmap/">.data-mem-shared-shm-mmap</a></li>
         <li><a href="data-pipe-fifo/">.data-pipe-fifo</a></li>
-        <li><a href="data-queue-channel/">.data-queue-channel</a></li>
         <li><a href="data-queue-concurrent/">.data-queue-concurrent</a></li>
         <li><a href="data-random/">.data-random</a></li>
         <li><a href="data-signal/">.data-signal</a></li>
