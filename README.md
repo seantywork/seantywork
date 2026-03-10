@@ -24,6 +24,5 @@ Enjoy!
 
 
 ## stuff
-- [read](https://seanty.work/read/)
-- [write](https://seanty.work/write/)
+- [docs](https://seanty.work/docs/)
 - [linux](https://seanty.work/linux/)
