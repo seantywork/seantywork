@@ -36,10 +36,10 @@ sudo ip netns exec vnet1 ip link set lo up
 
 sudo sysctl -w net.ipv4.ip_forward=1
 
-sudo ethtool -L veth01 rx 4
+sudo ethtool -L veth01 rx 8
 
-sudo ethtool -L veth01 tx 4
+sudo ethtool -L veth01 tx 8
 
-sudo ethtool -L veth11 rx 4
+sudo ethtool -L veth11 rx 8
 
-sudo ethtool -L veth11 tx 4
+sudo ethtool -L veth11 tx 8

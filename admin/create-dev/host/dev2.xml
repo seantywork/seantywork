@@ -64,19 +64,22 @@
     <interface type='network'>
       <mac address='52:54:00:e2:07:21'/>
       <source network='net1'/>
-      <model type='e1000'/>
+      <model type='virtio'/>
+      <driver name="vhost" queues="4"/>
       <address type='pci' domain='0x0000' bus='0x01' slot='0x03' function='0x0'/>
     </interface>
     <interface type='network'>
       <mac address='52:54:00:e2:07:29'/>
       <source network='net2'/>
-      <model type='e1000'/>
+      <model type='virtio'/>
+      <driver name="vhost" queues="4"/>
       <address type='pci' domain='0x0000' bus='0x07' slot='0x03' function='0x0'/>
     </interface>
     <interface type='network'>
       <mac address='52:54:00:e2:07:92'/>
       <source network='netctl2'/>
-      <model type='e1000'/>
+      <model type='virtio'/>
+      <driver name="vhost" queues="4"/
       <address type='pci' domain='0x0000' bus='0x08' slot='0x03' function='0x0'/>
     </interface>
     <serial type='pty'>

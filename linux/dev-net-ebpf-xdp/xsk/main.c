@@ -3,7 +3,7 @@
 
 // number of left, right queue pair
 //const int g_threads = 32;
-const int g_threads = 4;
+const int g_threads = 8;
 int g_ports = g_threads * 2;
 int g_cpu_core_id_len = 0;
 int g_queue_id_len = 0;
