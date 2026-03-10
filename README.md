@@ -10,10 +10,8 @@ For publicly available source code, see [GitHub.com](https://github.com/seantywo
 Here is the basic description of the stuff below.
 
 ```text
-    - read:
-        stuff that I read and are not (primarily) related to linux
-    - write:
-        stuff that I wrote and are not (primarily) related to linux
+    - docs:
+        stuff that I read and wrote, and are not (primarily) related to linux
     - linux:
         linux stuff
     - .*:
