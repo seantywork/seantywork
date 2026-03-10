@@ -8,10 +8,31 @@ BIO *bp_private = NULL;
 
 
 
+static inline void print_help(){
+
+    printf("keygen           : \n");
+    printf("encrypt          : \n");
+    printf("decrypt          : \n");
+
+    printf("ec-keygen        : \n");
+    printf("ec-gen-shared    : \n");
+    printf("ec-check-shared  : \n");
+
+    printf("cert-gen         : \n");
+    printf("cert-verify      : \n");
+
+    printf("ec-signature     : \n");
+
+    printf("tls              : \n");
+
+}
+
+
 int main(int argc, char** argv){
 
     if(argc < 2){
         fprintf(stderr, "too few arguments\n");
+        print_help();
         return -1;
     }
 
@@ -25,24 +46,6 @@ int main(int argc, char** argv){
         int bits = 4096;
         
         int result = key_pair_generate(priv_key_path, pub_key_path, priv_key_path_s, pub_key_path_s, bits);   
-
-        if(result < 0){
-            fprintf(stderr,"%s failed: %d\n",argv[1], result);
-            return result;
-        } else {
-            fprintf(stdout, "%s success\n", argv[1]);
-        }
-
-    } else if(strcmp(argv[1], "keygen-ec") == 0){
-
-
-        char* priv_key_path = "./ca_priv.pem";
-        char* pub_key_path = "./ca_pub.pem";
-        char* priv_key_path_s = "./s_priv.pem";
-        char* pub_key_path_s = "./s_pub.pem";
-        
-        
-        int result = key_pair_generate_ec(priv_key_path, pub_key_path, priv_key_path_s, pub_key_path_s);   
 
         if(result < 0){
             fprintf(stderr,"%s failed: %d\n",argv[1], result);
@@ -76,7 +79,25 @@ int main(int argc, char** argv){
 
         printf("%s\n", plain_msg);
 
-    } else if (strcmp(argv[1], "gen-shared-ec") == 0) {
+    } else if(strcmp(argv[1], "ec-keygen") == 0){
+
+
+        char* priv_key_path = "./ca_priv.pem";
+        char* pub_key_path = "./ca_pub.pem";
+        char* priv_key_path_s = "./s_priv.pem";
+        char* pub_key_path_s = "./s_pub.pem";
+        
+        
+        int result = key_pair_generate_ec(priv_key_path, pub_key_path, priv_key_path_s, pub_key_path_s);   
+
+        if(result < 0){
+            fprintf(stderr,"%s failed: %d\n",argv[1], result);
+            return result;
+        } else {
+            fprintf(stdout, "%s success\n", argv[1]);
+        }
+
+    }  else if (strcmp(argv[1], "ec-gen-shared") == 0) {
 
         char* priv_key_path = "./s_priv.pem";
         char* pub_key_path = "./s_pub.pem";
@@ -88,7 +109,7 @@ int main(int argc, char** argv){
         int result = asym_shared_keygen_ec(priv_key_path, pub_key_path, peer_pub_key_path, shared_key_path);
 
 
-    } else if (strcmp(argv[1], "check-shared-ec") == 0) {
+    } else if (strcmp(argv[1], "ec-check-shared") == 0) {
 
         char* priv_key_path = "./ca_priv.pem";
         char* pub_key_path = "./ca_pub.pem";
@@ -98,18 +119,7 @@ int main(int argc, char** argv){
         int result = asym_shared_keycheck_ec(priv_key_path, pub_key_path, peer_pub_key_path, shared_key_path);
 
 
-    } else if (strcmp(argv[1], "pipe") == 0){
-
-        char* pub_key_path = "./ca_pub.pem";
-        char* priv_key_path = "./ca_priv.pem";
-        char* plain_msg = "cryptoinc";
-        int plain_msg_len = strlen(plain_msg);
-
-        int result = asym_pipe(pub_key_path, priv_key_path, plain_msg_len, plain_msg);
-
-        printf("result: %d\n", result);
-
-    } else if (strcmp(argv[1], "cert-gen") == 0){
+    }  else if (strcmp(argv[1], "cert-gen") == 0){
 
         cert_create();
 
@@ -117,7 +127,7 @@ int main(int argc, char** argv){
 
         cert_verify();
 
-    } else if (strcmp(argv[1], "signature") == 0){
+    } else if (strcmp(argv[1], "ec-signature") == 0){
 
         signature();   
     
@@ -128,6 +138,7 @@ int main(int argc, char** argv){
     }  else {
 
         fprintf(stderr, "invalid argument\n");
+        print_help();
         return -10;
     }
 

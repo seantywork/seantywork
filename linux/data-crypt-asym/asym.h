@@ -57,10 +57,6 @@ int asym_shared_keygen_ec(char* key_path, char* pub_key_path, char* peer_pub_key
 int asym_shared_keycheck_ec(char* key_path, char* pub_key_path, char* peer_pub_key_path, char* skey_path);
 
 
-int asym_pipe(char* pub_key_path, char* priv_key_path, int msg_len, char* msg);
-
-
-
 void cert_create();
 
 void cert_verify();
