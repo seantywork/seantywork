@@ -43,9 +43,9 @@ extern BIO *bp_private;
 extern EVP_PKEY *pkey;
 
 
-int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, int bits);
+int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c, int bits);
 
-int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s);
+int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c);
 
 
 int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg);
@@ -66,6 +66,8 @@ void cert_show();
 void signature();
 
 void tls();
+
+void ec_tls();
 
 
 

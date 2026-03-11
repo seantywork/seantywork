@@ -1,85 +1,88 @@
 #include "asym.h"
 
 
-
-int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, int bits){
-
-
+int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c, int bits){
 	int ret = 0;
-
 	unsigned long e = RSA_F4;
-
-
 	bne = BN_new();
 	ret = BN_set_word(bne,e);
 	if(ret != 1){
 		free_all();
         return -1;
 	}
-
 	r = RSA_new();
 	ret = RSA_generate_key_ex(r, bits, bne, NULL);
 	if(ret != 1){
 		free_all();
         return -2;
 	}
-
-
 	bp_private = BIO_new_file(priv_key_path, "w+");
 	ret = PEM_write_bio_RSAPrivateKey(bp_private, r, NULL, NULL, 0, NULL, NULL);
 	if(ret != 1){
 		free_all();
         return -3;
 	}
-
-
 	bp_public = BIO_new_file(pub_key_path, "w+");
 	ret = PEM_write_bio_RSAPublicKey(bp_public, r);
 	if(ret != 1){
 		free_all();
         return -4;
 	}
-
     free_all();
-
-
-
 	bne = BN_new();
 	ret = BN_set_word(bne,e);
 	if(ret != 1){
 		free_all();
         return -1;
 	}
-
 	r = RSA_new();
 	ret = RSA_generate_key_ex(r, bits, bne, NULL);
 	if(ret != 1){
 		free_all();
         return -2;
 	}
-
-
 	bp_private = BIO_new_file(priv_key_path_s, "w+");
 	ret = PEM_write_bio_RSAPrivateKey(bp_private, r, NULL, NULL, 0, NULL, NULL);
 	if(ret != 1){
 		free_all();
         return -3;
 	}
-
-
 	bp_public = BIO_new_file(pub_key_path_s, "w+");
 	ret = PEM_write_bio_RSAPublicKey(bp_public, r);
 	if(ret != 1){
 		free_all();
         return -4;
 	}
-
     free_all();
-
+	bne = BN_new();
+	ret = BN_set_word(bne,e);
+	if(ret != 1){
+		free_all();
+        return -1;
+	}
+	r = RSA_new();
+	ret = RSA_generate_key_ex(r, bits, bne, NULL);
+	if(ret != 1){
+		free_all();
+        return -2;
+	}
+	bp_private = BIO_new_file(priv_key_path_c, "w+");
+	ret = PEM_write_bio_RSAPrivateKey(bp_private, r, NULL, NULL, 0, NULL, NULL);
+	if(ret != 1){
+		free_all();
+        return -3;
+	}
+	bp_public = BIO_new_file(pub_key_path_c, "w+");
+	ret = PEM_write_bio_RSAPublicKey(bp_public, r);
+	if(ret != 1){
+		free_all();
+        return -4;
+	}
+    free_all();
     return 0;
 }
 
-int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s){
+int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c){
 
 
 	int ret = 0;
@@ -91,7 +94,7 @@ int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key
         return -10;
     }
 
-    EC_GROUP *ecgroup = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    EC_GROUP *ecgroup = EC_GROUP_new_by_curve_name(NID_secp384r1);
 
 
     if(ecgroup == NULL){
@@ -148,7 +151,7 @@ int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key
         return -10;
     }
 
-    ecgroup = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    ecgroup = EC_GROUP_new_by_curve_name(NID_secp384r1);
 
 
     if(ecgroup == NULL){
@@ -197,6 +200,61 @@ int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key
     free(ecgroup);
     free_all_ec();
 
+
+    eckey = EC_KEY_new();
+
+    if(eckey == NULL){
+
+        return -10;
+    }
+
+    ecgroup = EC_GROUP_new_by_curve_name(NID_secp384r1);
+
+
+    if(ecgroup == NULL){
+
+        return -11;
+    }
+
+
+    ret = EC_KEY_set_group(eckey, ecgroup);
+
+	if(ret != 1){
+
+        return -12;
+	}
+
+
+    EC_KEY_set_asn1_flag(eckey, OPENSSL_EC_NAMED_CURVE);
+
+
+    ret = EC_KEY_generate_key(eckey);
+
+	if(ret != 1){
+
+        return -14;
+	}
+
+
+	bp_private = BIO_new_file(priv_key_path_c, "w+");
+
+	ret = PEM_write_bio_ECPrivateKey(bp_private, eckey, NULL, NULL, 0, NULL, NULL);
+	if(ret != 1){
+    
+		free_all_ec();
+        return -3;
+	}
+
+	bp_public = BIO_new_file(pub_key_path_c, "w+");
+	ret = PEM_write_bio_EC_PUBKEY(bp_public, eckey);
+	if(ret != 1){
+		free_all_ec();
+        return -4;
+	}
+
+    free(eckey);
+    free(ecgroup);
+    free_all_ec();
 
     return 0;
 }
@@ -487,11 +545,14 @@ void cert_create(){
 
     char* serial_ca = "6d530ea7d4a0f7745fea74dc700a2c23d6aca20e";
     char* serial_s = "5f4e186311429e8e08f3d6ff656d7e7233860c67";
+    char* serial_c = "aea579f1326be4dbcd3738e99debfbace6311218";
     ASN1_INTEGER* serial_asn1 = ASN1_INTEGER_new();
     ASN1_INTEGER* serial_asn1_s = ASN1_INTEGER_new();
+    ASN1_INTEGER* serial_asn1_c = ASN1_INTEGER_new();
 
     X509* x509_ca = X509_new();
     X509* x509_s = X509_new();
+    X509* x509_c = X509_new();
 
     X509V3_CTX extctx;
     X509_EXTENSION *extension_usage = NULL;
@@ -514,6 +575,7 @@ void cert_create(){
     ASN1_OCTET_STRING *skid = NULL;
 
     char *subject_alt_name = "localhost";
+    char *subject_alt_name_c = "client";
 
 
     FILE* fp = fopen("./ca_priv.pem", "r");
@@ -537,6 +599,18 @@ void cert_create(){
     fp = fopen("./s_pub.pem", "r");
 
     EVP_PKEY* pub_key_s = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
+
+    fclose(fp);
+
+    fp = fopen("./c_priv.pem", "r");
+
+    EVP_PKEY* priv_key_c = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+
+    fclose(fp);
+
+    fp = fopen("./c_pub.pem", "r");
+
+    EVP_PKEY* pub_key_c = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
 
     fclose(fp);
 
@@ -674,6 +748,78 @@ void cert_create(){
     }
 
 
+    X509_set_version(x509_c, 2);
+
+    BIGNUM* q_c = BN_new();
+
+    BN_hex2bn(&q_c, serial_c);
+
+    serial_asn1_c = BN_to_ASN1_INTEGER(q_c, serial_asn1_c);
+
+    X509_set_serialNumber(x509_c, serial_asn1_c);
+
+    /*
+    if(ASN1_INTEGER_set(X509_get_serialNumber(x509_s), 234) == 0){
+        printf("asn1 set serial number fail\n");
+    }
+    */
+
+
+    if(X509_time_adj_ex(X509_getm_notBefore(x509_c), 0, 0, 0) == NULL){
+        printf("set time fail\n");
+    }
+
+    if(X509_time_adj_ex(X509_getm_notAfter(x509_c), 0, 0, &exp_s) == NULL){
+        printf("set end time fail\n");
+    }
+
+    X509_NAME* c_name = X509_get_subject_name(x509_c);
+    X509_NAME_add_entry_by_txt(c_name ,"CN" , MBSTRING_ASC, (unsigned char *)"client", -1, -1, 0);
+
+
+    if(X509_set_issuer_name(x509_c, ca_name) != 1){
+        printf("issuer name failed\n");
+    }
+
+
+    //set public key
+    if(X509_set_pubkey(x509_c, pub_key_c) == 0){
+        printf("set pubkey fail\n");
+    }
+
+    X509_pubkey_digest(x509_c, EVP_sha1(), md, &md_len);
+    skid = ASN1_OCTET_STRING_new();
+    ASN1_OCTET_STRING_set(skid, md, md_len);
+    extskid = X509V3_EXT_i2d(NID_subject_key_identifier, 0, skid);
+
+
+    X509_add_ext(x509_c, extskid, -1);
+
+    X509_add_ext(x509_c, extakid, -1);
+
+
+    gens = sk_GENERAL_NAME_new_null();
+    gen = GENERAL_NAME_new();
+    ia5 = ASN1_IA5STRING_new();
+    ASN1_STRING_set(ia5, subject_alt_name_c, strlen(subject_alt_name_c));
+    GENERAL_NAME_set0_value(gen, GEN_DNS, ia5);
+    sk_GENERAL_NAME_push(gens, gen);
+
+    X509_add1_ext_i2d(x509_c, NID_subject_alt_name, gens, 0, X509V3_ADD_DEFAULT);
+
+    //X509_add_ext(x509_s, extension_san, -1);
+
+
+/*
+    X509_add_ext(x509_s, extension_san, -1);
+*/
+
+    //sign certificate with private key
+    if(X509_sign(x509_c, priv_key_ca, EVP_sha256()) == 0){
+        printf("sign fail\n");
+        printf("Creating certificate failed...\n");
+    }
+
     fp = fopen("ca.crt.pem", "wb");
     PEM_write_X509(fp, x509_ca);
     fclose(fp);
@@ -682,13 +828,19 @@ void cert_create(){
     PEM_write_X509(fp, x509_s);
     fclose(fp);
 
+    fp = fopen("cli.crt.pem", "wb");
+    PEM_write_X509(fp, x509_c);
+    fclose(fp);
 
     X509_free(x509_ca);
     X509_free(x509_s);
+    X509_free(x509_c);
     EVP_PKEY_free(priv_key_ca);
     EVP_PKEY_free(priv_key_s);
+    EVP_PKEY_free(priv_key_c);
     EVP_PKEY_free(pub_key_ca);
     EVP_PKEY_free(pub_key_s);
+    EVP_PKEY_free(pub_key_c);
 
 }
 
@@ -1028,7 +1180,7 @@ static void* create_tls_server(void* varg){
     } else {
         printf("failed: server\n");
     }
-
+    pthread_exit(NULL);
 }
 
 static void print_cn_name(const char* label, X509_NAME* const name)
@@ -1115,6 +1267,135 @@ void tls(){
     char *certfile_ca = "ca.crt.pem";
     char *certfile = "srv.crt.pem";
     char *privkeyfile = "s_priv.pem";
+    char *c_certfile = "cli.crt.pem";
+    char *c_privkeyfile = "c_priv.pem";
+    SSL_library_init();
+    
+    SSL_load_error_strings();
+
+    CONF_modules_load(NULL, NULL, CONF_MFLAGS_IGNORE_MISSING_FILE);
+
+    libctx = OSSL_LIB_CTX_new();
+
+    if (libctx == NULL){
+        goto err;
+    }
+
+    if (dtls_flag) {
+        serverctx = SSL_CTX_new_ex(libctx, NULL, DTLS_server_method());
+        clientctx = SSL_CTX_new_ex(libctx, NULL, DTLS_client_method());
+    } else {
+
+        serverctx = SSL_CTX_new_ex(libctx, NULL, TLS_server_method());
+        clientctx = SSL_CTX_new_ex(libctx, NULL, TLS_client_method());
+    }
+
+    if (serverctx == NULL || clientctx == NULL)
+        goto err;
+
+    const long flags = SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION;
+    
+    SSL_CTX_set_options(clientctx, flags);
+
+    SSL_CTX_set_options(serverctx, SSL_OP_ALLOW_CLIENT_RENEGOTIATION);
+    if (dtls_flag) {
+#ifdef DTLS1_3_VERSION
+        if (!SSL_CTX_set_min_proto_version(serverctx, DTLS1_3_VERSION) ||
+            !SSL_CTX_set_max_proto_version(serverctx, DTLS1_3_VERSION) ||
+            !SSL_CTX_set_min_proto_version(clientctx, DTLS1_3_VERSION) ||
+            !SSL_CTX_set_max_proto_version(clientctx, DTLS1_3_VERSION))
+#endif
+            goto err;
+    } else {
+        if (!SSL_CTX_set_min_proto_version(serverctx, TLS1_3_VERSION) ||
+            !SSL_CTX_set_max_proto_version(serverctx, TLS1_3_VERSION) ||
+            !SSL_CTX_set_min_proto_version(clientctx, TLS1_3_VERSION) ||
+            !SSL_CTX_set_max_proto_version(clientctx, TLS1_3_VERSION))
+            goto err;
+    }
+
+
+    if (!SSL_CTX_load_verify_locations(clientctx, certfile_ca, NULL))
+        goto err;
+
+
+    SSL_CTX_set_verify(clientctx, SSL_VERIFY_PEER, verify_callback);
+
+    SSL_CTX_set_verify_depth(clientctx, 5);
+
+    printf("client load ca: %s\n", certfile_ca);
+
+
+    if (!SSL_CTX_use_certificate_file(clientctx, c_certfile, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_use_PrivateKey_file(clientctx, c_privkeyfile, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_check_private_key(clientctx))
+        goto err;
+
+    
+    printf("client file done: %s\n", c_certfile);
+
+    if (!SSL_CTX_load_verify_locations(serverctx, certfile_ca, NULL))
+        goto err;
+
+
+    SSL_CTX_set_verify(serverctx, SSL_VERIFY_PEER, verify_callback);
+
+    SSL_CTX_set_verify_depth(serverctx, 5);
+
+    printf("server load ca: %s\n", certfile_ca);
+
+
+
+    if (!SSL_CTX_use_certificate_file(serverctx, certfile, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_use_PrivateKey_file(serverctx, privkeyfile, SSL_FILETYPE_PEM))
+        goto err;
+
+    if (!SSL_CTX_check_private_key(serverctx))
+        goto err;
+
+    printf("server file done: %s\n", certfile);
+
+    serverssl = SSL_new(serverctx);
+    clientssl = SSL_new(clientctx);
+
+    pthread_t tid;
+
+    pthread_create(&tid, NULL, create_tls_server, (void*)serverssl);
+
+    printf("server thread created\n");
+
+    sleep(1);
+
+    create_tls_client(clientssl);
+
+
+err:
+
+    SSL_free(serverssl);
+    SSL_free(clientssl);
+    SSL_CTX_free(serverctx);
+    SSL_CTX_free(clientctx);
+    OSSL_LIB_CTX_free(libctx);
+}
+
+void ec_tls(){
+
+    int dtls_flag = 0;
+    OSSL_LIB_CTX *libctx = NULL;
+    SSL *clientssl = NULL, *serverssl = NULL;
+    SSL_CTX *serverctx = NULL, *clientctx = NULL;
+
+    char *certfile_ca = "ca.crt.pem";
+    char *certfile = "srv.crt.pem";
+    char *privkeyfile = "s_priv.pem";
+    char *c_certfile = "cli.crt.pem";
+    char *c_privkeyfile = "c_priv.pem";
 
     SSL_library_init();
     
@@ -1172,19 +1453,29 @@ void tls(){
 
     printf("client load ca: %s\n", certfile_ca);
 
-/*
-    if (!SSL_CTX_use_certificate_file(clientctx, certfile_c, SSL_FILETYPE_PEM))
+
+    if (!SSL_CTX_use_certificate_file(clientctx, c_certfile, SSL_FILETYPE_PEM))
         goto err;
 
-    if (!SSL_CTX_use_PrivateKey_file(clientctx, privkeyfile_c, SSL_FILETYPE_PEM))
+    if (!SSL_CTX_use_PrivateKey_file(clientctx, c_privkeyfile, SSL_FILETYPE_PEM))
         goto err;
 
     if (!SSL_CTX_check_private_key(clientctx))
         goto err;
 
-*/
     
-    printf("client file done: %s\n", certfile_ca);
+    printf("client file done: %s\n", c_certfile);
+
+    if (!SSL_CTX_load_verify_locations(serverctx, certfile_ca, NULL))
+        goto err;
+
+
+    SSL_CTX_set_verify(serverctx, SSL_VERIFY_PEER, verify_callback);
+
+    SSL_CTX_set_verify_depth(serverctx, 5);
+
+    printf("server load ca: %s\n", certfile_ca);
+
 
     if (!SSL_CTX_use_certificate_file(serverctx, certfile, SSL_FILETYPE_PEM))
         goto err;
@@ -1219,7 +1510,6 @@ err:
     SSL_CTX_free(clientctx);
     OSSL_LIB_CTX_free(libctx);
 }
-
 
 unsigned char* char2hex(int arrlen, unsigned char* bytearray){
 
