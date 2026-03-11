@@ -2,6 +2,69 @@
 
 
 int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c, int bits){
+    
+    OSSL_LIB_CTX* libctx = OSSL_LIB_CTX_new();
+    EVP_PKEY *pkey = NULL;
+    EVP_PKEY *pkey_s = NULL;
+    EVP_PKEY *pkey_c = NULL;
+    BIO *keybio = NULL;
+    BIO *keybio_s = NULL;
+    BIO *keybio_c = NULL;
+    BIO *pubkeybio = NULL;
+    BIO *pubkeybio_s = NULL;
+    BIO *pubkeybio_c = NULL;
+    EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, "RSA", NULL);
+    EVP_PKEY_CTX *evpctx_s = EVP_PKEY_CTX_new_from_name(libctx, "RSA", NULL);
+    EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, "RSA", NULL);
+    if(!EVP_PKEY_keygen_init(evpctx)){
+        printf("failed to init 0\n");
+        return -1;
+    }
+    if(!EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx, bits)){
+        printf("failed to set bits 0\n");
+        return -1;
+    }
+    if(!EVP_PKEY_generate(evpctx, &pkey)){
+        printf("failed to generate 0\n");
+        return -1;
+    }
+    if(!EVP_PKEY_keygen_init(evpctx_s)){
+        printf("failed to init 1\n");
+        return -1;
+    }
+    if(!EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx_s, bits)){
+        printf("failed to set bits 1\n");
+        return -1;
+    }
+    if(!EVP_PKEY_generate(evpctx_s, &pkey_s)){
+        printf("failed to generate 1\n");
+        return -1;
+    }
+    if(!EVP_PKEY_keygen_init(evpctx_c)){
+        printf("failed to init 2\n");
+        return -1;
+    }
+    if(!EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx_c, bits)){
+        printf("failed to set bits 2\n");
+        return -1;
+    }
+    if(!EVP_PKEY_generate(evpctx_c, &pkey_c)){
+        printf("failed to generate 2\n");
+        return -1;
+    }
+    keybio = BIO_new_file(priv_key_path, "wb");
+    pubkeybio = BIO_new_file(pub_key_path, "wb");
+    keybio_s = BIO_new_file(priv_key_path_s, "wb");
+    pubkeybio_s = BIO_new_file(pub_key_path_s, "wb");
+    keybio_c = BIO_new_file(priv_key_path_c, "wb");
+    pubkeybio_c = BIO_new_file(pub_key_path_c, "wb");
+    PEM_write_bio_PrivateKey(keybio, pkey,NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_PUBKEY(pubkeybio, pkey);
+    PEM_write_bio_PrivateKey(keybio_s, pkey_s,NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_PUBKEY(pubkeybio_s, pkey_s);
+    PEM_write_bio_PrivateKey(keybio_c, pkey_c,NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_PUBKEY(pubkeybio_c, pkey_c);
+    /*
 	int ret = 0;
 	unsigned long e = RSA_F4;
 	bne = BN_new();
@@ -80,11 +143,72 @@ int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_pa
 	}
     free_all();
     return 0;
+    */
 }
 
 int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c){
-
-
+    OSSL_LIB_CTX* libctx = OSSL_LIB_CTX_new();
+    EVP_PKEY *pkey = NULL;
+    EVP_PKEY *pkey_s = NULL;
+    EVP_PKEY *pkey_c = NULL;
+    BIO *keybio = NULL;
+    BIO *keybio_s = NULL;
+    BIO *keybio_c = NULL;
+    BIO *pubkeybio = NULL;
+    BIO *pubkeybio_s = NULL;
+    BIO *pubkeybio_c = NULL;
+    EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, "EC", NULL);
+    EVP_PKEY_CTX *evpctx_s = EVP_PKEY_CTX_new_from_name(libctx, "EC", NULL);
+    EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, "EC", NULL);
+    if(!EVP_PKEY_keygen_init(evpctx)){
+        printf("failed to init 0\n");
+        return -1;
+    }
+    if(!EVP_PKEY_CTX_set_group_name(evpctx, "prime256v1")){
+        printf("failed to set group 0\n");
+        return -1;
+    }
+    if(!EVP_PKEY_generate(evpctx, &pkey)){
+        printf("failed to generate 0\n");
+        return -1;
+    }
+    if(!EVP_PKEY_keygen_init(evpctx_s)){
+        printf("failed to init 1\n");
+        return -1;
+    }
+    if(!EVP_PKEY_CTX_set_group_name(evpctx_s, "prime256v1")){
+        printf("failed to set group 1\n");
+        return -1;
+    }
+    if(!EVP_PKEY_generate(evpctx_s, &pkey_s)){
+        printf("failed to generate 1\n");
+        return -1;
+    }
+    if(!EVP_PKEY_keygen_init(evpctx_c)){
+        printf("failed to init 2\n");
+        return -1;
+    }
+    if(!EVP_PKEY_CTX_set_group_name(evpctx_c, "prime256v1")){
+        printf("failed to set group 2\n");
+        return -1;
+    }
+    if(!EVP_PKEY_generate(evpctx_c, &pkey_c)){
+        printf("failed to generate 2\n");
+        return -1;
+    }
+    keybio = BIO_new_file(priv_key_path, "wb");
+    pubkeybio = BIO_new_file(pub_key_path, "wb");
+    keybio_s = BIO_new_file(priv_key_path_s, "wb");
+    pubkeybio_s = BIO_new_file(pub_key_path_s, "wb");
+    keybio_c = BIO_new_file(priv_key_path_c, "wb");
+    pubkeybio_c = BIO_new_file(pub_key_path_c, "wb");
+    PEM_write_bio_PrivateKey(keybio, pkey,NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_PUBKEY(pubkeybio, pkey);
+    PEM_write_bio_PrivateKey(keybio_s, pkey_s,NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_PUBKEY(pubkeybio_s, pkey_s);
+    PEM_write_bio_PrivateKey(keybio_c, pkey_c,NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_PUBKEY(pubkeybio_c, pkey_c);
+/*
 	int ret = 0;
 
     EC_KEY* eckey = EC_KEY_new();
@@ -257,6 +381,7 @@ int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key
     free_all_ec();
 
     return 0;
+*/
 }
 
 
@@ -291,7 +416,7 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
                     (unsigned char*)msg,
                     (unsigned char*)enc_msg,
                     rsa_pub_key,
-                    RSA_PKCS1_OAEP_PADDING);
+                    RSA_PKCS1_PADDING);
 
 
 
@@ -366,7 +491,7 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
                 dec_bin,
                 (unsigned char*)dec_msg,
                 rsa_priv_key,
-                RSA_PKCS1_OAEP_PADDING
+                RSA_PKCS1_PADDING
                 );
 
 
@@ -964,21 +1089,32 @@ void signature(){
     int result;
 
     FILE* fp;
-
-    EC_KEY* pkey = NULL;
-    EC_KEY* pub_key = NULL;
+    EVP_PKEY_CTX* ctx_sign = NULL;
+    EVP_PKEY_CTX* ctx_verify = NULL;
+    EVP_PKEY* pkey = NULL;
+    EVP_PKEY* pub_key = NULL;
+    unsigned char *sig;
+    size_t siglen;
 
     fp = fopen("./ca_priv.pem", "r");
 
-    pkey = PEM_read_ECPrivateKey(fp, NULL, NULL, NULL);
-
+    pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
     fclose(fp);
 
     fp = fopen("./ca_pub.pem", "r");
-
-    pub_key = PEM_read_EC_PUBKEY(fp, NULL, NULL, NULL);
-
+    pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
     fclose(fp);
+
+    ctx_sign = EVP_PKEY_CTX_new(pkey, NULL);
+    if(ctx_sign == NULL){
+		printf("ctx sign failed\n");
+        return;
+    }
+    ctx_verify = EVP_PKEY_CTX_new(pub_key, NULL);
+    if(ctx_verify == NULL){
+		printf("ctx verify failed\n");
+        return;
+    }
 
     // sha256 "hello"
     char* hashstr = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
@@ -987,15 +1123,57 @@ void signature(){
     hash_length = hash_length / 2;
 
     unsigned char* hash = hex2char(hashstr);
-
-	ECDSA_SIG* sig = ECDSA_do_sign(hash, hash_length, pkey);
-	if (sig == NULL) {
-		printf("signature failed\n");
+    if (EVP_PKEY_sign_init(ctx_sign) != 1){
+		printf("signature init failed\n");
         return;
-	}
-
-    int ret = ECDSA_do_verify(hash, hash_length, sig, pub_key);
+    }
+    /*
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx_sign, RSA_PKCS1_PADDING) != 1){
+		printf("signature rsa padding failed\n");
+        return;
+    }
+    */
     
+    
+    if (EVP_PKEY_CTX_set_signature_md(ctx_sign, EVP_sha256()) != 1){
+		printf("signature md failed\n");
+        return;
+    }
+    if (EVP_PKEY_sign(ctx_sign, NULL, &siglen, hash, hash_length) != 1){
+		printf("signature prepare failed\n");
+        return;
+    }
+
+    sig = malloc(siglen);
+    if (sig == NULL){
+		printf("signature malloc failed\n");
+        return;
+    }
+    memset(sig, 0, siglen);
+    if (EVP_PKEY_sign(ctx_sign, sig, &siglen, hash, hash_length) != 1){
+		printf("signature sign failed\n");
+        return;
+    }
+    printf("signed: siglen: %d, hashlen: %d\n", siglen, hash_length);
+    if (EVP_PKEY_verify_init(ctx_verify) <= 0){
+		printf("signature verify init failed\n");
+        return;
+    }
+    /*
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx_verify, RSA_PKCS1_PADDING) != 1){
+		printf("signature verify rsa padding failed\n");
+        return;
+    }
+    */
+    
+
+    if (EVP_PKEY_CTX_set_signature_md(ctx_verify, EVP_sha256()) != 1){
+		printf("signature verify md failed\n");
+        return;
+    }
+
+    int ret = EVP_PKEY_verify(ctx_verify, sig, siglen, hash, hash_length);
+
     printf("result: %d\n", ret);
 
 }
@@ -1348,133 +1526,6 @@ void tls(){
 
     printf("server load ca: %s\n", certfile_ca);
 
-
-
-    if (!SSL_CTX_use_certificate_file(serverctx, certfile, SSL_FILETYPE_PEM))
-        goto err;
-
-    if (!SSL_CTX_use_PrivateKey_file(serverctx, privkeyfile, SSL_FILETYPE_PEM))
-        goto err;
-
-    if (!SSL_CTX_check_private_key(serverctx))
-        goto err;
-
-    printf("server file done: %s\n", certfile);
-
-    serverssl = SSL_new(serverctx);
-    clientssl = SSL_new(clientctx);
-
-    pthread_t tid;
-
-    pthread_create(&tid, NULL, create_tls_server, (void*)serverssl);
-
-    printf("server thread created\n");
-
-    sleep(1);
-
-    create_tls_client(clientssl);
-
-
-err:
-
-    SSL_free(serverssl);
-    SSL_free(clientssl);
-    SSL_CTX_free(serverctx);
-    SSL_CTX_free(clientctx);
-    OSSL_LIB_CTX_free(libctx);
-}
-
-void ec_tls(){
-
-    int dtls_flag = 0;
-    OSSL_LIB_CTX *libctx = NULL;
-    SSL *clientssl = NULL, *serverssl = NULL;
-    SSL_CTX *serverctx = NULL, *clientctx = NULL;
-
-    char *certfile_ca = "ca.crt.pem";
-    char *certfile = "srv.crt.pem";
-    char *privkeyfile = "s_priv.pem";
-    char *c_certfile = "cli.crt.pem";
-    char *c_privkeyfile = "c_priv.pem";
-
-    SSL_library_init();
-    
-    SSL_load_error_strings();
-
-    CONF_modules_load(NULL, NULL, CONF_MFLAGS_IGNORE_MISSING_FILE);
-
-    libctx = OSSL_LIB_CTX_new();
-
-    if (libctx == NULL){
-        goto err;
-    }
-
-    if (dtls_flag) {
-        serverctx = SSL_CTX_new_ex(libctx, NULL, DTLS_server_method());
-        clientctx = SSL_CTX_new_ex(libctx, NULL, DTLS_client_method());
-    } else {
-
-        serverctx = SSL_CTX_new_ex(libctx, NULL, TLS_server_method());
-        clientctx = SSL_CTX_new_ex(libctx, NULL, TLS_client_method());
-    }
-
-    if (serverctx == NULL || clientctx == NULL)
-        goto err;
-
-    const long flags = SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION;
-    
-    SSL_CTX_set_options(clientctx, flags);
-
-    SSL_CTX_set_options(serverctx, SSL_OP_ALLOW_CLIENT_RENEGOTIATION);
-    if (dtls_flag) {
-#ifdef DTLS1_3_VERSION
-        if (!SSL_CTX_set_min_proto_version(serverctx, DTLS1_3_VERSION) ||
-            !SSL_CTX_set_max_proto_version(serverctx, DTLS1_3_VERSION) ||
-            !SSL_CTX_set_min_proto_version(clientctx, DTLS1_3_VERSION) ||
-            !SSL_CTX_set_max_proto_version(clientctx, DTLS1_3_VERSION))
-#endif
-            goto err;
-    } else {
-        if (!SSL_CTX_set_min_proto_version(serverctx, TLS1_3_VERSION) ||
-            !SSL_CTX_set_max_proto_version(serverctx, TLS1_3_VERSION) ||
-            !SSL_CTX_set_min_proto_version(clientctx, TLS1_3_VERSION) ||
-            !SSL_CTX_set_max_proto_version(clientctx, TLS1_3_VERSION))
-            goto err;
-    }
-
-
-    if (!SSL_CTX_load_verify_locations(clientctx, certfile_ca, NULL))
-        goto err;
-
-
-    SSL_CTX_set_verify(clientctx, SSL_VERIFY_PEER, verify_callback);
-
-    SSL_CTX_set_verify_depth(clientctx, 5);
-
-    printf("client load ca: %s\n", certfile_ca);
-
-
-    if (!SSL_CTX_use_certificate_file(clientctx, c_certfile, SSL_FILETYPE_PEM))
-        goto err;
-
-    if (!SSL_CTX_use_PrivateKey_file(clientctx, c_privkeyfile, SSL_FILETYPE_PEM))
-        goto err;
-
-    if (!SSL_CTX_check_private_key(clientctx))
-        goto err;
-
-    
-    printf("client file done: %s\n", c_certfile);
-
-    if (!SSL_CTX_load_verify_locations(serverctx, certfile_ca, NULL))
-        goto err;
-
-
-    SSL_CTX_set_verify(serverctx, SSL_VERIFY_PEER, verify_callback);
-
-    SSL_CTX_set_verify_depth(serverctx, 5);
-
-    printf("server load ca: %s\n", certfile_ca);
 
 
     if (!SSL_CTX_use_certificate_file(serverctx, certfile, SSL_FILETYPE_PEM))

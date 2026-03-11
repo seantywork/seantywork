@@ -25,6 +25,7 @@
 #include <openssl/core_names.h>
 #include <openssl/decoder.h>
 #include <openssl/encoder.h>
+#include <openssl/dsa.h>
 #include <errno.h>
 #include <openssl/ssl.h>
 #include <openssl/trace.h>

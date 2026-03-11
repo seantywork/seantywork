@@ -18,13 +18,11 @@ static inline void print_help(){
     printf("ec-gen-shared    : ec generate shared secret\n");
     printf("ec-check-shared  : ec check shared secret\n");
 
+    printf("sig              : signature sign and verification\n");
+
     printf("cert-gen         : rsa generate certificate\n");
     printf("cert-verify      : rsa verify vertificate\n");
-
-    printf("ec-signature     : ec signature sign and verification\n");
-
     printf("tls              : tls communication\n");
-    printf("ec-tls           : ec tls communication\n");
 
 }
 
@@ -91,17 +89,15 @@ int main(int argc, char** argv){
         char* peer_pub_key_path = "./s_pub.pem";
         char* shared_key_path = "./shared.bin";
         int result = asym_shared_keycheck_ec(priv_key_path, pub_key_path, peer_pub_key_path, shared_key_path);
-    }  else if (strcmp(argv[1], "cert-gen") == 0){
+    } else if (strcmp(argv[1], "sig") == 0){
+        signature();   
+    } else if (strcmp(argv[1], "cert-gen") == 0){
         cert_create();
     } else if (strcmp(argv[1], "cert-verify") == 0){
         cert_verify();
-    } else if (strcmp(argv[1], "ec-signature") == 0){
-        signature();   
-    }else if (strcmp(argv[1], "tls") == 0){
+    } else if (strcmp(argv[1], "tls") == 0){
         tls();   
-    }else if (strcmp(argv[1], "ec-tls") == 0){
-        ec_tls();   
-    }  else {
+    } else {
         fprintf(stderr, "invalid argument\n");
         print_help();
         return -10;
