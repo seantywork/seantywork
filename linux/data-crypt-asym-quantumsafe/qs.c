@@ -764,11 +764,82 @@ static int sig_verify(BIO* cert_pem, BIO* intermediate_pem)
     return result;
 }
 
+
+
+static int cert_create(){
+    char *sig_name = THIS_SIG_NAME;
+    char *kem_name = THIS_KEM_NAME;
+    SSL_CTX *cctx = NULL, *sctx = NULL;
+    int ret = 1, testresult = 0;
+    char group[1024] = {0};
+    char certpath_ca[300];
+    char certpath_c[300];
+    char privkeypath_c[300];
+    char certpath[300];
+    char privkeypath[300];
+    char *certsdir = "certs";
+#ifndef OPENSSL_SYS_VMS
+    const char *sep = "/";
+#else
+    const char *sep = "";
+#endif
+    sprintf(group, "sig: %s, kem: %s\n", sig_name, kem_name);
+    
+    fputs(group, stdout);
+
+    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt.pem");
+    sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt.pem");
+    sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
+    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt.pem");
+    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key.pem");
+    /* ensure certsdir exists */
+    if (mkdir(certsdir, 0700)) {
+        if (errno != EEXIST) {
+            fprintf(stderr, "Couldn't create certsdir %s: Err = %d\n", certsdir,
+                    errno);
+            ret = -1;
+            goto err;
+        }
+    }
+    if (!create_cert_key(libctx, (char *)sig_name, certpath_ca, certpath_c, privkeypath_c, certpath, privkeypath)) {
+        fprintf(stderr, "Cert/keygen failed for %s at %s/%s\n", sig_name,
+                certpath, privkeypath);
+        ret = -1;
+        goto err;
+    }
+err:
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+    return ret;
+}
+
+
 static int cert_verify(){
+    char *sig_name = THIS_SIG_NAME;
+    char *kem_name = THIS_KEM_NAME;
+    int ret = 1, testresult = 0;
+    char group[1024] = {0};
+    char certpath_ca[300];
+    char certpath_c[300];
+    char privkeypath_c[300];
+    char certpath[300];
+    char privkeypath[300];
+    char *certsdir = "certs";
+#ifndef OPENSSL_SYS_VMS
+    const char *sep = "/";
+#else
+    const char *sep = "";
+#endif
 
     OpenSSL_add_all_algorithms();
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests(); 
+
+    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt.pem");
+    sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt.pem");
+    sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
+    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt.pem");
+    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key.pem");
 
     BIO* cert = NULL;
     BIO* intermediate = NULL;
@@ -778,9 +849,9 @@ static int cert_verify(){
 
     intermediate = BIO_new(BIO_s_file());
 
-    int ret = BIO_read_filename(cert, "./srv.crt.pem");
+    ret = BIO_read_filename(cert, certpath);
 
-    ret = BIO_read_filename(intermediate, "./ca.crt.pem");
+    ret = BIO_read_filename(intermediate, certpath_ca);
 
     //cert_info(cert);
     //cert_info(intermediate);
@@ -820,26 +891,11 @@ static int qs_tlsnet(const char *sig_name, const char *kem_name, int dtls_flag) 
     
     fputs(group, logfile);
 
-    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt");
-    sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt");
-    sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key");
-    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt");
-    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key");
-    /* ensure certsdir exists */
-    if (mkdir(certsdir, 0700)) {
-        if (errno != EEXIST) {
-            fprintf(stderr, "Couldn't create certsdir %s: Err = %d\n", certsdir,
-                    errno);
-            ret = -1;
-            goto err;
-        }
-    }
-    if (!create_cert_key(libctx, (char *)sig_name, certpath_ca, certpath_c, privkeypath_c, certpath, privkeypath)) {
-        fprintf(stderr, "Cert/keygen failed for %s at %s/%s\n", sig_name,
-                certpath, privkeypath);
-        ret = -1;
-        goto err;
-    }
+    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt.pem");
+    sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt.pem");
+    sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
+    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt.pem");
+    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key.pem");
 
     testresult = create_tls1_3_ctx_pair(libctx, &sctx, &cctx, certpath_ca, certpath_c, privkeypath_c, 
                             certpath, privkeypath, dtls_flag);
@@ -883,21 +939,31 @@ err:
 
 
 
+void print_help(){
+
+    printf("kem           :\n");
+    printf("sig           :\n");
+    printf("cert-gen      :\n");
+    printf("cert-verify   :\n");
+    printf("tls           :\n");
+
+}
+
 
 #define nelem(a) (sizeof(a) / sizeof((a)[0]))
 
 int main(int argc, char *argv[]) {
     size_t i;
     int errcnt = 0, test = 0, query_nocache;
-
-
-    //T((encodingctx = OSSL_LIB_CTX_new()) != NULL);
+    
     T((libctx = OSSL_LIB_CTX_new()) != NULL);
-
     messagelen = strlen(message);
-
-     if(strcmp(argv[1], "kem") == 0){
-
+    if(argc != 2){
+        printf("invalid argument\n");
+        print_help();
+        return -1;
+    }
+    if(strcmp(argv[1], "kem") == 0){
         if (qs_kem() == OQS_SUCCESS) {
             fprintf(stderr, cGREEN "  KEM test succeeded" cNORM "\n");
         } else {
@@ -905,67 +971,49 @@ int main(int argc, char *argv[]) {
             ERR_print_errors_fp(stderr);
             errcnt++;
         }
-
-    } else if (strcmp(argv[1], "sig") == 0){
-
-            
+    } else if (strcmp(argv[1], "sig") == 0){        
         if ( qs_signatures() == OQS_SUCCESS) {
-
             fprintf(stderr, cGREEN "sig test succeeded" cNORM "\n");
-
         } else {
-
             errcnt += 1;
-
             fprintf(stderr, cRED "sig test failed" cNORM "\n");
-
         }
-
-    } else if (strcmp(argv[1], "cert") == 0){
-
-        if ( cert_verify() == 1) {
-
-            fprintf(stderr, cGREEN "cert test succeeded" cNORM "\n");
-
+    } else if (strcmp(argv[1], "cert-gen") == 0){
+        if(cert_create() == 1) {
+            fprintf(stderr, cGREEN "cert create test succeeded" cNORM "\n");
         } else {
-
             errcnt += 1;
-
-            fprintf(stderr, cRED "cert test failed" cNORM "\n");
-
+            fprintf(stderr, cRED "cert create test failed" cNORM "\n");
         }
-
+    }else if (strcmp(argv[1], "cert-verify") == 0){
+        if(cert_verify() == 1) {
+            fprintf(stderr, cGREEN "cert verify test succeeded" cNORM "\n");
+        } else {
+            errcnt += 1;
+            fprintf(stderr, cRED "cert verify test failed" cNORM "\n");
+        }
     } else if (strcmp(argv[1], "tls") == 0){
-
         logfile = fopen("log.txt", "w");
-
 #ifdef OSSL_CAPABILITY_TLS_SIGALG_NAME
-
         int res = qs_tlsnet(THIS_SIG_NAME, THIS_KEM_NAME, 0);
-            
         if (res == 1) {
-
             fprintf(stderr, cGREEN "tls net test succeeded" cNORM "\n");
-
         } else {
-
             errcnt += 1;
-
             fprintf(stderr, cRED "tls net test failed" cNORM "\n");
-
         }
 #else
         fprintf(stderr,
                 "TLS-SIG handshake test not enabled. Update OpenSSL to more "
                 "current version.\n");
 #endif
+    } else {
+        printf("invalid argument: %s\n", argv[1]);
+        print_help();
+        return -1;
     }
-
-
-
     //OSSL_LIB_CTX_free(encodingctx);
     OSSL_LIB_CTX_free(libctx);
-
     TEST_ASSERT(errcnt == 0);
     return !test;
 }
