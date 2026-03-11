@@ -2,7 +2,8 @@
 
 ```text
     - etc:
-        not the ones that I wrote, books, articles, etc...
+        about the ones that I'm not the author of.
+        books, movies, articles, etc... 
 
 ```
 
