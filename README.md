@@ -9,13 +9,17 @@ For publicly available source code, see [GitHub.com](https://github.com/seantywo
 [This](https://github.com/seantywork/seantywork) is the main repository of this site.\
 Here is the basic description of the stuff below.
 
-```text
-    - docs:
-        stuff that I read and wrote, and are not (primarily) related to linux
+```text 
+
     - linux:
         linux stuff
+    - etc:
+        about the ones that I'm not the author of.
+        books, movies, articles, etc... 
     - .*:
         directories beginning with `.(dot)` are ones whose README.md is NOT FULLY READY.
+        
+    other than those, rest of the entries are pretty self-explanatory.
 ```
 
 **BE AWARE**: I'm in the progress of organizing the stuff below. Some stuff might not be showing any meaningful contents.\
@@ -24,5 +28,5 @@ Enjoy!
 
 
 ## stuff
-- [docs](https://seanty.work/docs/)
 - [linux](https://seanty.work/linux/)
+- [docs](https://seanty.work/etc/)
