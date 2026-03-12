@@ -35,38 +35,21 @@
 #include <pthread.h>
 
 
+#define THIS_RSA_BITS 4096
+#define THIS_EC_GROUP "prime256v1"
 
-
-extern RSA *r;
-extern BIGNUM *bne;
-extern BIO *bp_public;
-extern BIO *bp_private;
-
-extern EVP_PKEY *pkey;
 
 
 int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c, int bits);
-
-int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c);
-
-
 int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg);
-
 int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, char* plain_msg);
-
+int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c);
 int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_path);
-
 int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_path);
-
-
-void cert_create();
-
-void cert_verify();
-
-void cert_show();
-
 void signature();
-
+void cert_create();
+void cert_verify();
+void cert_show();
 void tls();
 
 
@@ -80,8 +63,6 @@ unsigned char* char2hex(int arrlen, unsigned char* bytearray);
 
 unsigned char* hex2char(unsigned char* hexarray);
 
-
-void compare_two_arrays(int len, char* arr1, char* arr2);
 
 
 

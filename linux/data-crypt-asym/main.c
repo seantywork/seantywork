@@ -1,13 +1,6 @@
 #include "asym.h"
 
 
-RSA *r = NULL;
-BIGNUM *bne = NULL;
-BIO *bp_public = NULL; 
-BIO *bp_private = NULL;
-
-
-
 static inline void print_help(){
 
     printf("keygen           : rsa generate key pair\n");
@@ -41,7 +34,7 @@ int main(int argc, char** argv){
         char* pub_key_path_s = "./s_pub.pem";
         char* priv_key_path_c = "./c_priv.pem";
         char* pub_key_path_c = "./c_pub.pem"; 
-        int bits = 4096;
+        int bits = THIS_RSA_BITS;
         int result = key_pair_generate(priv_key_path, pub_key_path, priv_key_path_s, pub_key_path_s, priv_key_path_c, pub_key_path_c, bits);   
         if(result < 0){
             fprintf(stderr,"%s failed: %d\n",argv[1], result);
@@ -81,11 +74,23 @@ int main(int argc, char** argv){
         char* peer_pub_key_path = "./ca_pub.pem";
         char* shared_key_path = "./shared.bin";
         int result = asym_shared_keygen_ec(priv_key_path, peer_pub_key_path, shared_key_path);
+        if(result < 0){
+            fprintf(stderr,"%s failed: %d\n",argv[1], result);
+            return result;
+        } else {
+            fprintf(stdout, "%s success\n", argv[1]);
+        }
     } else if (strcmp(argv[1], "ec-verify") == 0) {
         char* priv_key_path = "./ca_priv.pem";
         char* peer_pub_key_path = "./s_pub.pem";
         char* shared_key_path = "./shared.bin";
         int result = asym_shared_keycheck_ec(priv_key_path, peer_pub_key_path, shared_key_path);
+        if(result < 0){
+            fprintf(stderr,"%s failed: %d\n",argv[1], result);
+            return result;
+        } else {
+            fprintf(stdout, "%s success\n", argv[1]);
+        }
     } else if (strcmp(argv[1], "sig") == 0){
         signature();   
     } else if (strcmp(argv[1], "cert-gen") == 0){

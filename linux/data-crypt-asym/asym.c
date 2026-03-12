@@ -3,6 +3,7 @@
 
 int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c, int bits){
     
+    int ret = -1;
     OSSL_LIB_CTX* libctx = OSSL_LIB_CTX_new();
     EVP_PKEY *pkey = NULL;
     EVP_PKEY *pkey_s = NULL;
@@ -18,39 +19,39 @@ int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_pa
     EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, "RSA", NULL);
     if(!EVP_PKEY_keygen_init(evpctx)){
         printf("failed to init 0\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx, bits)){
         printf("failed to set bits 0\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_generate(evpctx, &pkey)){
         printf("failed to generate 0\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_keygen_init(evpctx_s)){
         printf("failed to init 1\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx_s, bits)){
         printf("failed to set bits 1\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_generate(evpctx_s, &pkey_s)){
         printf("failed to generate 1\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_keygen_init(evpctx_c)){
         printf("failed to init 2\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx_c, bits)){
         printf("failed to set bits 2\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_generate(evpctx_c, &pkey_c)){
         printf("failed to generate 2\n");
-        return -1;
+        goto out;
     }
     keybio = BIO_new_file(priv_key_path, "wb");
     pubkeybio = BIO_new_file(pub_key_path, "wb");
@@ -64,90 +65,52 @@ int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_pa
     PEM_write_bio_PUBKEY(pubkeybio_s, pkey_s);
     PEM_write_bio_PrivateKey(keybio_c, pkey_c,NULL, NULL, 0, NULL, NULL);
     PEM_write_bio_PUBKEY(pubkeybio_c, pkey_c);
-    return 0;
-    /*
-	int ret = 0;
-	unsigned long e = RSA_F4;
-	bne = BN_new();
-	ret = BN_set_word(bne,e);
-	if(ret != 1){
-		free_all();
-        return -1;
-	}
-	r = RSA_new();
-	ret = RSA_generate_key_ex(r, bits, bne, NULL);
-	if(ret != 1){
-		free_all();
-        return -2;
-	}
-	bp_private = BIO_new_file(priv_key_path, "w+");
-	ret = PEM_write_bio_RSAPrivateKey(bp_private, r, NULL, NULL, 0, NULL, NULL);
-	if(ret != 1){
-		free_all();
-        return -3;
-	}
-	bp_public = BIO_new_file(pub_key_path, "w+");
-	ret = PEM_write_bio_RSAPublicKey(bp_public, r);
-	if(ret != 1){
-		free_all();
-        return -4;
-	}
-    free_all();
-	bne = BN_new();
-	ret = BN_set_word(bne,e);
-	if(ret != 1){
-		free_all();
-        return -1;
-	}
-	r = RSA_new();
-	ret = RSA_generate_key_ex(r, bits, bne, NULL);
-	if(ret != 1){
-		free_all();
-        return -2;
-	}
-	bp_private = BIO_new_file(priv_key_path_s, "w+");
-	ret = PEM_write_bio_RSAPrivateKey(bp_private, r, NULL, NULL, 0, NULL, NULL);
-	if(ret != 1){
-		free_all();
-        return -3;
-	}
-	bp_public = BIO_new_file(pub_key_path_s, "w+");
-	ret = PEM_write_bio_RSAPublicKey(bp_public, r);
-	if(ret != 1){
-		free_all();
-        return -4;
-	}
-    free_all();
-	bne = BN_new();
-	ret = BN_set_word(bne,e);
-	if(ret != 1){
-		free_all();
-        return -1;
-	}
-	r = RSA_new();
-	ret = RSA_generate_key_ex(r, bits, bne, NULL);
-	if(ret != 1){
-		free_all();
-        return -2;
-	}
-	bp_private = BIO_new_file(priv_key_path_c, "w+");
-	ret = PEM_write_bio_RSAPrivateKey(bp_private, r, NULL, NULL, 0, NULL, NULL);
-	if(ret != 1){
-		free_all();
-        return -3;
-	}
-	bp_public = BIO_new_file(pub_key_path_c, "w+");
-	ret = PEM_write_bio_RSAPublicKey(bp_public, r);
-	if(ret != 1){
-		free_all();
-        return -4;
-	}
-    free_all();
-    return 0;
-    */
+    ret = 1;
+out:
+    if(pkey != NULL){
+        EVP_PKEY_free(pkey);
+    }
+    if(pkey_s != NULL){
+        EVP_PKEY_free(pkey_s);
+    }
+    if(pkey_c != NULL){
+        EVP_PKEY_free(pkey_c);
+    }
+    if(evpctx != NULL){
+        EVP_PKEY_CTX_free(evpctx);
+    }
+    if(evpctx_s != NULL){
+        EVP_PKEY_CTX_free(evpctx_s);
+    }
+    if(evpctx_c != NULL){
+        EVP_PKEY_CTX_free(evpctx_c);
+    }
+    if(keybio != NULL){
+        BIO_free(keybio);
+    }
+    if(keybio_s != NULL){
+        BIO_free(keybio_s);
+    }   
+    if(keybio_c != NULL){
+        BIO_free(keybio_c);
+    }
+    if(pubkeybio != NULL){
+        BIO_free(pubkeybio);
+    }
+    if(pubkeybio_s != NULL){
+        BIO_free(pubkeybio_s);
+    }
+    if(pubkeybio_c != NULL){
+        BIO_free(pubkeybio_c);
+    }
+    if(libctx != NULL){
+        OSSL_LIB_CTX_free(libctx);
+    }
+    return ret;
 }
 
 int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c){
+    int ret = -1;
     OSSL_LIB_CTX* libctx = OSSL_LIB_CTX_new();
     EVP_PKEY *pkey = NULL;
     EVP_PKEY *pkey_s = NULL;
@@ -163,39 +126,39 @@ int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key
     EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, "EC", NULL);
     if(!EVP_PKEY_keygen_init(evpctx)){
         printf("failed to init 0\n");
-        return -1;
+        goto out;
     }
-    if(!EVP_PKEY_CTX_set_group_name(evpctx, "prime256v1")){
+    if(!EVP_PKEY_CTX_set_group_name(evpctx, THIS_EC_GROUP)){
         printf("failed to set group 0\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_generate(evpctx, &pkey)){
         printf("failed to generate 0\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_keygen_init(evpctx_s)){
         printf("failed to init 1\n");
-        return -1;
+        goto out;
     }
-    if(!EVP_PKEY_CTX_set_group_name(evpctx_s, "prime256v1")){
+    if(!EVP_PKEY_CTX_set_group_name(evpctx_s, THIS_EC_GROUP)){
         printf("failed to set group 1\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_generate(evpctx_s, &pkey_s)){
         printf("failed to generate 1\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_keygen_init(evpctx_c)){
         printf("failed to init 2\n");
-        return -1;
+        goto out;
     }
-    if(!EVP_PKEY_CTX_set_group_name(evpctx_c, "prime256v1")){
+    if(!EVP_PKEY_CTX_set_group_name(evpctx_c, THIS_EC_GROUP)){
         printf("failed to set group 2\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_generate(evpctx_c, &pkey_c)){
         printf("failed to generate 2\n");
-        return -1;
+        goto out;
     }
     keybio = BIO_new_file(priv_key_path, "wb");
     pubkeybio = BIO_new_file(pub_key_path, "wb");
@@ -209,181 +172,49 @@ int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key
     PEM_write_bio_PUBKEY(pubkeybio_s, pkey_s);
     PEM_write_bio_PrivateKey(keybio_c, pkey_c,NULL, NULL, 0, NULL, NULL);
     PEM_write_bio_PUBKEY(pubkeybio_c, pkey_c);
-    return 0;
-/*
-	int ret = 0;
-
-    EC_KEY* eckey = EC_KEY_new();
-
-    if(eckey == NULL){
-
-        return -10;
+    ret = 1;
+out:
+    if(pkey != NULL){
+        EVP_PKEY_free(pkey);
     }
-
-    EC_GROUP *ecgroup = EC_GROUP_new_by_curve_name(NID_secp384r1);
-
-
-    if(ecgroup == NULL){
-
-        return -11;
+    if(pkey_s != NULL){
+        EVP_PKEY_free(pkey_s);
     }
-
-
-    ret = EC_KEY_set_group(eckey, ecgroup);
-
-	if(ret != 1){
-
-        return -12;
-	}
-
-
-    EC_KEY_set_asn1_flag(eckey, OPENSSL_EC_NAMED_CURVE);
-
-
-
-    ret = EC_KEY_generate_key(eckey);
-
-	if(ret != 1){
-
-        return -14;
-	}
-
-
-	bp_private = BIO_new_file(priv_key_path, "w+");
-
-	ret = PEM_write_bio_ECPrivateKey(bp_private, eckey, NULL, NULL, 0, NULL, NULL);
-	if(ret != 1){
-    
-		free_all_ec();
-        return -3;
-	}
-
-	bp_public = BIO_new_file(pub_key_path, "w+");
-	ret = PEM_write_bio_EC_PUBKEY(bp_public, eckey);
-	if(ret != 1){
-		free_all_ec();
-        return -4;
-	}
-
-    free(eckey);
-    free(ecgroup);
-    free_all_ec();
-
-
-    eckey = EC_KEY_new();
-
-    if(eckey == NULL){
-
-        return -10;
+    if(pkey_c != NULL){
+        EVP_PKEY_free(pkey_c);
     }
-
-    ecgroup = EC_GROUP_new_by_curve_name(NID_secp384r1);
-
-
-    if(ecgroup == NULL){
-
-        return -11;
+    if(evpctx != NULL){
+        EVP_PKEY_CTX_free(evpctx);
     }
-
-
-    ret = EC_KEY_set_group(eckey, ecgroup);
-
-	if(ret != 1){
-
-        return -12;
-	}
-
-
-    EC_KEY_set_asn1_flag(eckey, OPENSSL_EC_NAMED_CURVE);
-
-
-
-    ret = EC_KEY_generate_key(eckey);
-
-	if(ret != 1){
-
-        return -14;
-	}
-
-
-	bp_private = BIO_new_file(priv_key_path_s, "w+");
-
-	ret = PEM_write_bio_ECPrivateKey(bp_private, eckey, NULL, NULL, 0, NULL, NULL);
-	if(ret != 1){
-    
-		free_all_ec();
-        return -3;
-	}
-
-	bp_public = BIO_new_file(pub_key_path_s, "w+");
-	ret = PEM_write_bio_EC_PUBKEY(bp_public, eckey);
-	if(ret != 1){
-		free_all_ec();
-        return -4;
-	}
-
-    free(eckey);
-    free(ecgroup);
-    free_all_ec();
-
-
-    eckey = EC_KEY_new();
-
-    if(eckey == NULL){
-
-        return -10;
+    if(evpctx_s != NULL){
+        EVP_PKEY_CTX_free(evpctx_s);
     }
-
-    ecgroup = EC_GROUP_new_by_curve_name(NID_secp384r1);
-
-
-    if(ecgroup == NULL){
-
-        return -11;
+    if(evpctx_c != NULL){
+        EVP_PKEY_CTX_free(evpctx_c);
     }
+    if(keybio != NULL){
+        BIO_free(keybio);
+    }
+    if(keybio_s != NULL){
+        BIO_free(keybio_s);
+    }   
+    if(keybio_c != NULL){
+        BIO_free(keybio_c);
+    }
+    if(pubkeybio != NULL){
+        BIO_free(pubkeybio);
+    }
+    if(pubkeybio_s != NULL){
+        BIO_free(pubkeybio_s);
+    }
+    if(pubkeybio_c != NULL){
+        BIO_free(pubkeybio_c);
+    }
+    if(libctx != NULL){
+        OSSL_LIB_CTX_free(libctx);
+    }
+    return ret;
 
-
-    ret = EC_KEY_set_group(eckey, ecgroup);
-
-	if(ret != 1){
-
-        return -12;
-	}
-
-
-    EC_KEY_set_asn1_flag(eckey, OPENSSL_EC_NAMED_CURVE);
-
-
-    ret = EC_KEY_generate_key(eckey);
-
-	if(ret != 1){
-
-        return -14;
-	}
-
-
-	bp_private = BIO_new_file(priv_key_path_c, "w+");
-
-	ret = PEM_write_bio_ECPrivateKey(bp_private, eckey, NULL, NULL, 0, NULL, NULL);
-	if(ret != 1){
-    
-		free_all_ec();
-        return -3;
-	}
-
-	bp_public = BIO_new_file(pub_key_path_c, "w+");
-	ret = PEM_write_bio_EC_PUBKEY(bp_public, eckey);
-	if(ret != 1){
-		free_all_ec();
-        return -4;
-	}
-
-    free(eckey);
-    free(ecgroup);
-    free_all_ec();
-
-    return 0;
-*/
 }
 
 
@@ -534,7 +365,7 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
 
 int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_path){
 
-    int result;
+    int result = -1;
 
     FILE* fp;
     EVP_PKEY* keypair = NULL;
@@ -583,6 +414,8 @@ int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_pa
 
     fclose(fp);
     printf("skey len: %d\n", skeylen);
+    result = 1;
+    return result;
 /*
     EC_POINT *peer_pub_point = NULL;
 
@@ -637,7 +470,6 @@ int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_pa
 
     free(enc_hex);
 */
-    return 0;
 }
 
 int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_path){
@@ -694,10 +526,12 @@ int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_
 
     unsigned char* peer_skey_bin = hex2char(peer_skey);
 
-    int cmpres = memcmp(skey, peer_skey_bin, skeylen);
-
-    printf("result: %d (should be zero)\n", cmpres);
-    return 0;
+    if(memcmp(skey, peer_skey_bin, skeylen) != 0){
+        printf("verify failed\n");
+        return -1;
+    }
+    result = 1;
+    return result;
 /*
 
     int result;
