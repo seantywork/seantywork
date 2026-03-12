@@ -102,16 +102,9 @@ func BytesToPrivateKey(priv []byte) (*rsa.PrivateKey, error) {
 	var privkey *rsa.PrivateKey
 
 	block, _ := pem.Decode(priv)
-	enc := x509.IsEncryptedPEMBlock(block)
 	b := block.Bytes
 	var err error
-	if enc {
-		fmt.Println("is encrypted pem block")
-		b, err = x509.DecryptPEMBlock(block, nil)
-		if err != nil {
-			return privkey, fmt.Errorf("failed to decode bytes to priv key: %s", err.Error())
-		}
-	}
+
 	key, err := x509.ParsePKCS1PrivateKey(b)
 	if err != nil {
 		return privkey, fmt.Errorf("failed to decode bytes to priv key: %s", err.Error())
@@ -124,16 +117,8 @@ func BytesToPublicKey(pub []byte) (*rsa.PublicKey, error) {
 	var pubkey *rsa.PublicKey
 
 	block, _ := pem.Decode(pub)
-	enc := x509.IsEncryptedPEMBlock(block)
 	b := block.Bytes
 	var err error
-	if enc {
-		fmt.Println("is encrypted pem block")
-		b, err = x509.DecryptPEMBlock(block, nil)
-		if err != nil {
-			return pubkey, fmt.Errorf("failed to decode bytes to pub key: %s", err.Error())
-		}
-	}
 	ifc, err := x509.ParsePKIXPublicKey(b)
 	if err != nil {
 		return pubkey, fmt.Errorf("failed to decode bytes to pub key: %s", err.Error())
@@ -182,8 +167,6 @@ func DecryptWithPrivateKey(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, err
 }
 
 func GetRandIntInRange(min int, max int) int {
-
-	mathrand.Seed(time.Now().UnixNano())
 
 	return mathrand.Intn(max-min+1) + min
 }
