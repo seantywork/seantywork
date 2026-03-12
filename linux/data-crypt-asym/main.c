@@ -16,7 +16,7 @@ static inline void print_help(){
 
     printf("ec-keygen        : ec generate key pair\n");
     printf("ec-derive        : ec generate shared secret\n");
-    printf("ec-derive-verify : ec check shared secret\n");
+    printf("ec-verify        : ec verify shared secret\n");
 
     printf("sig              : signature sign and verification\n");
     printf("cert-gen         : rsa generate certificate\n");
@@ -81,7 +81,7 @@ int main(int argc, char** argv){
         char* peer_pub_key_path = "./ca_pub.pem";
         char* shared_key_path = "./shared.bin";
         int result = asym_shared_keygen_ec(priv_key_path, peer_pub_key_path, shared_key_path);
-    } else if (strcmp(argv[1], "ec-derive-verify") == 0) {
+    } else if (strcmp(argv[1], "ec-verify") == 0) {
         char* priv_key_path = "./ca_priv.pem";
         char* peer_pub_key_path = "./s_pub.pem";
         char* shared_key_path = "./shared.bin";

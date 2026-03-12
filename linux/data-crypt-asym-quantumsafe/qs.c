@@ -549,8 +549,8 @@ err:
 void print_help(){
 
     printf("keygen        : pq key generation \n");
-    printf("oqs-kem       : pq key encap/decap using liboqs \n");
-    printf("oqs-sig       : pq signature using liboqs \n");
+    printf("qs-kem        : pq key encap/decap using liboqs \n");
+    printf("qs-sig        : pq signature using liboqs \n");
     printf("cert-gen      : pq certificate generation \n");
     printf("cert-verify   : pq certificate verification \n");
     printf("tls           : pq tls \n");
@@ -579,7 +579,7 @@ int main(int argc, char *argv[]) {
             ERR_print_errors_fp(stderr);
             errcnt++;
         }
-    } else if(strcmp(argv[1], "oqs-kem") == 0){
+    } else if(strcmp(argv[1], "qs-kem") == 0){
         if (qs_kem() == OQS_SUCCESS) {
             fprintf(stderr, cGREEN "  KEM test succeeded" cNORM "\n");
         } else {
@@ -587,7 +587,7 @@ int main(int argc, char *argv[]) {
             ERR_print_errors_fp(stderr);
             errcnt++;
         }
-    } else if (strcmp(argv[1], "oqs-sig") == 0){        
+    } else if (strcmp(argv[1], "qs-sig") == 0){        
         if ( qs_signatures() == OQS_SUCCESS) {
             fprintf(stderr, cGREEN "sig test succeeded" cNORM "\n");
         } else {
