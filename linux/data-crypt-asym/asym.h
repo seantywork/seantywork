@@ -26,6 +26,7 @@
 #include <openssl/decoder.h>
 #include <openssl/encoder.h>
 #include <openssl/dsa.h>
+#include <openssl/param_build.h>
 #include <errno.h>
 #include <openssl/ssl.h>
 #include <openssl/trace.h>
@@ -53,9 +54,9 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
 
 int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, char* plain_msg);
 
-int asym_shared_keygen_ec(char* key_path, char* pub_key_path, char* peer_pub_key_path, char* skey_path);
+int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_path);
 
-int asym_shared_keycheck_ec(char* key_path, char* pub_key_path, char* peer_pub_key_path, char* skey_path);
+int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_path);
 
 
 void cert_create();
@@ -68,7 +69,6 @@ void signature();
 
 void tls();
 
-void ec_tls();
 
 
 
@@ -83,9 +83,7 @@ unsigned char* hex2char(unsigned char* hexarray);
 
 void compare_two_arrays(int len, char* arr1, char* arr2);
 
-void free_all();
 
-void free_all_ec();
 
 
 #endif

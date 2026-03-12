@@ -15,11 +15,10 @@ static inline void print_help(){
     printf("decrypt          : rsa decrypt using private key\n");
 
     printf("ec-keygen        : ec generate key pair\n");
-    printf("ec-gen-shared    : ec generate shared secret\n");
-    printf("ec-check-shared  : ec check shared secret\n");
+    printf("ec-derive        : ec generate shared secret\n");
+    printf("ec-derive-verify : ec check shared secret\n");
 
     printf("sig              : signature sign and verification\n");
-
     printf("cert-gen         : rsa generate certificate\n");
     printf("cert-verify      : rsa verify vertificate\n");
     printf("tls              : tls communication\n");
@@ -77,18 +76,16 @@ int main(int argc, char** argv){
         } else {
             fprintf(stdout, "%s success\n", argv[1]);
         }
-    }  else if (strcmp(argv[1], "ec-gen-shared") == 0) {
+    }  else if (strcmp(argv[1], "ec-derive") == 0) {
         char* priv_key_path = "./s_priv.pem";
-        char* pub_key_path = "./s_pub.pem";
         char* peer_pub_key_path = "./ca_pub.pem";
         char* shared_key_path = "./shared.bin";
-        int result = asym_shared_keygen_ec(priv_key_path, pub_key_path, peer_pub_key_path, shared_key_path);
-    } else if (strcmp(argv[1], "ec-check-shared") == 0) {
+        int result = asym_shared_keygen_ec(priv_key_path, peer_pub_key_path, shared_key_path);
+    } else if (strcmp(argv[1], "ec-derive-verify") == 0) {
         char* priv_key_path = "./ca_priv.pem";
-        char* pub_key_path = "./ca_pub.pem";
         char* peer_pub_key_path = "./s_pub.pem";
         char* shared_key_path = "./shared.bin";
-        int result = asym_shared_keycheck_ec(priv_key_path, pub_key_path, peer_pub_key_path, shared_key_path);
+        int result = asym_shared_keycheck_ec(priv_key_path, peer_pub_key_path, shared_key_path);
     } else if (strcmp(argv[1], "sig") == 0){
         signature();   
     } else if (strcmp(argv[1], "cert-gen") == 0){

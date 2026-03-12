@@ -34,7 +34,9 @@
 
 #define DIGESTNAME NULL
 
-int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *certfile_c, char *privkeyfile_c, char *certfilename, char *privkeyfilename);
+int create_key(OSSL_LIB_CTX *libctx, char *algname, char *privkeyfile_ca, char *pubkeyfile_ca, char *privkeyfile_c, char *pubkeyfile_c, char *privkeyfile, char *pubkeyfile);
+
+int create_cert(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *key_ca, char *pub_ca, char *certfilename_c, char* pub_c, char *certfilename, char *pub);
 
 
 

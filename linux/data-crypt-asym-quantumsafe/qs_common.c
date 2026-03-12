@@ -280,13 +280,97 @@ static int set_ext_ctx(X509V3_CTX* extctx, X509* cert){
 
 
 
-int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *certfilename_c, char *privkeyfilename_c, char *certfilename, char *privkeyfilename) {
+int create_key(OSSL_LIB_CTX *libctx, char *algname, char *privkeyfile_ca, char *pubkeyfile_ca, char *privkeyfile_c, char *pubkeyfile_c, char *privkeyfile, char *pubkeyfile) {
 
     EVP_PKEY_CTX *evpctx_ca = EVP_PKEY_CTX_new_from_name(libctx, algname, NULL);  
     EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, algname, NULL);  
     EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, algname, NULL);
 
     EVP_PKEY *pkey_ca = NULL;
+    EVP_PKEY *pkey_c = NULL;
+    EVP_PKEY *pkey = NULL;
+
+
+    char* message_ca = NULL;
+    unsigned char *sig_ca;
+    size_t siglen_ca = 0;
+
+    char* message_c = NULL;
+    unsigned char *sig_c;
+    size_t siglen_c = 0;
+
+    char* message = NULL;
+    unsigned char *sig;
+    size_t siglen = 0;
+
+    BIO *keybio_ca = NULL, *pubbio_ca = NULL;
+    BIO *keybio_c = NULL, *pubbio_c = NULL;
+    BIO *keybio = NULL, *pubbio = NULL;
+
+
+
+    int ret = 1;
+
+    if (!evpctx_ca || !EVP_PKEY_keygen_init(evpctx_ca) ||
+        !EVP_PKEY_generate(evpctx_ca, &pkey_ca) || !pkey_ca ||
+        !(keybio_ca = BIO_new_file(privkeyfile_ca, "wb")) ||
+        !PEM_write_bio_PrivateKey(keybio_ca, pkey_ca, NULL, NULL, 0, NULL, NULL) ||
+        !(pubbio_ca = BIO_new_file(pubkeyfile_ca, "wb")) ||
+        !PEM_write_bio_PUBKEY(pubbio_ca, pkey_ca))
+        {
+            return 0;
+        }
+
+
+    if (!evpctx_c || !EVP_PKEY_keygen_init(evpctx_c) ||
+        !EVP_PKEY_generate(evpctx_c, &pkey_c) || !pkey_c ||
+        !(keybio_c = BIO_new_file(privkeyfile_c, "wb")) ||
+        !PEM_write_bio_PrivateKey(keybio_c, pkey_c, NULL, NULL, 0, NULL, NULL) ||
+        !(pubbio_c = BIO_new_file(pubkeyfile_c, "wb")) ||
+        !PEM_write_bio_PUBKEY(pubbio_c, pkey_c))
+        {
+            return 0;
+        }
+
+
+    if (!evpctx || !EVP_PKEY_keygen_init(evpctx) ||
+        !EVP_PKEY_generate(evpctx, &pkey) || !pkey ||
+        !(keybio = BIO_new_file(privkeyfile, "wb")) ||
+        !PEM_write_bio_PrivateKey(keybio, pkey, NULL, NULL, 0, NULL, NULL) ||
+        !(pubbio = BIO_new_file(pubkeyfile, "wb")) ||
+        !PEM_write_bio_PUBKEY(pubbio, pkey))
+        {
+            return 0;
+        }
+
+    EVP_PKEY_free(pkey_ca);
+    EVP_PKEY_CTX_free(evpctx_ca);
+    BIO_free(keybio_ca);
+    BIO_free(pubbio_ca);
+    EVP_PKEY_free(pkey_c);
+    EVP_PKEY_CTX_free(evpctx_c);
+    BIO_free(keybio_c);
+    BIO_free(pubbio_c);
+    EVP_PKEY_free(pkey);
+    EVP_PKEY_CTX_free(evpctx);
+    BIO_free(keybio);
+    BIO_free(pubbio);
+    return ret;
+}
+
+
+
+int create_cert(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, char *key_ca, char *pub_ca, char *certfilename_c, char* pub_c, char *certfilename, char *pub) {
+
+    FILE* fp = NULL;
+    
+
+    EVP_PKEY_CTX *evpctx_ca = NULL;  
+    EVP_PKEY_CTX *evpctx_c = NULL;
+    EVP_PKEY_CTX *evpctx = NULL;
+
+    EVP_PKEY *pkey_ca = NULL;
+    EVP_PKEY *pubkey_ca = NULL;
     EVP_PKEY *pkey_c = NULL;
     EVP_PKEY *pkey = NULL;
 
@@ -318,9 +402,35 @@ int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, 
     X509_NAME *name_ca = NULL;
     X509_NAME *name_c = NULL;
     X509_NAME *name = NULL;
-    BIO *keybio_ca = NULL, *certbio_ca = NULL;
-    BIO *keybio_c = NULL, *certbio_c = NULL;
-    BIO *keybio = NULL, *certbio = NULL;
+    BIO *certbio_ca = NULL;
+    BIO *certbio_c = NULL;
+    BIO *certbio = NULL;
+
+    fp = fopen(key_ca, "r");
+    pkey_ca = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+    fclose(fp);
+    fp = fopen(pub_ca, "r");
+    /*
+    if(!PEM_read_PUBKEY(fp, &pkey_ca, NULL, NULL)){
+        printf("failed to read ca pub key\n");
+        return 0;
+    }
+    */
+    pubkey_ca = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
+    fclose(fp);
+
+    fp = fopen(pub_c, "r");
+    pkey_c = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
+    fclose(fp);
+
+    fp = fopen(pub, "r");
+    pkey = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
+    fclose(fp);
+
+    evpctx_ca = EVP_PKEY_CTX_new(pkey_ca, NULL);
+    evpctx_c = EVP_PKEY_CTX_new(pkey_c, NULL);
+    evpctx = EVP_PKEY_CTX_new(pkey, NULL);
+
 
     /*
     X509_EXTENSION *ext_c = NULL;
@@ -337,13 +447,12 @@ int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, 
     */
     int ret = 1;
 
-    if (!evpctx_ca || !EVP_PKEY_keygen_init(evpctx_ca) ||
-        !EVP_PKEY_generate(evpctx_ca, &pkey_ca) || !pkey_ca || !x509_ca ||
+    if (!evpctx_ca || !pkey_ca || !x509_ca ||
         !X509_set_version(x509_ca, 2) ||
         !ASN1_INTEGER_set(X509_get_serialNumber(x509_ca), 1) ||
         !X509_gmtime_adj(X509_getm_notBefore(x509_ca), 0) ||
         !X509_gmtime_adj(X509_getm_notAfter(x509_ca), 31536000L) ||
-        !X509_set_pubkey(x509_ca, pkey_ca) || !(name_ca = X509_get_subject_name(x509_ca)) ||
+        !X509_set_pubkey(x509_ca, pubkey_ca) || !(name_ca = X509_get_subject_name(x509_ca)) ||
         !X509_NAME_add_entry_by_txt(name_ca, "C", MBSTRING_ASC,
                                     (unsigned char *)"CH", -1, -1, 0) ||
         !X509_NAME_add_entry_by_txt(name_ca, "O", MBSTRING_ASC,
@@ -360,10 +469,12 @@ int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, 
         !X509_sign(x509_ca, pkey_ca, NULL) ||
         !(certbio_ca = BIO_new_file(certfilename_ca, "wb")) ||
         !PEM_write_bio_X509(certbio_ca, x509_ca))
-        ret = 0;
+        {
+            printf("!ca\n");
+            return 0;
+        }
 
-    if (!evpctx_c || !EVP_PKEY_keygen_init(evpctx_c) ||
-        !EVP_PKEY_generate(evpctx_c, &pkey_c) || !pkey_c || !x509_c ||
+    if (!evpctx_c || !pkey_c || !x509_c ||
         !X509_set_version(x509_c, 2) ||
         !ASN1_INTEGER_set(X509_get_serialNumber(x509_c), 1) ||
         !X509_gmtime_adj(X509_getm_notBefore(x509_c), 0) ||
@@ -380,14 +491,14 @@ int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, 
  //       !EVP_DigestSignInit_ex(mdctx_c, NULL, "SHAKE128", libctx, NULL, pkey_ca, NULL) ||
  //       !X509_sign_ctx(x509_c, mdctx_c) ||
         !X509_sign(x509_c, pkey_ca, NULL) ||
-        !(keybio_c = BIO_new_file(privkeyfilename_c, "wb")) ||
-        !PEM_write_bio_PrivateKey(keybio_c, pkey_c, NULL, NULL, 0, NULL, NULL) ||
         !(certbio_c = BIO_new_file(certfilename_c, "wb")) ||
         !PEM_write_bio_X509(certbio_c, x509_c))
-        ret = 0;
+        {
+            printf("!c\n");
+            return 0;
+        }
 
-    if (!evpctx || !EVP_PKEY_keygen_init(evpctx) ||
-        !EVP_PKEY_generate(evpctx, &pkey) || !pkey || !x509 ||
+    if (!evpctx || !pkey || !x509 ||
         !X509_set_version(x509, 2) ||
         !ASN1_INTEGER_set(X509_get_serialNumber(x509), 1) ||
         !X509_gmtime_adj(X509_getm_notBefore(x509), 0) ||
@@ -404,27 +515,25 @@ int create_cert_key(OSSL_LIB_CTX *libctx, char *algname, char *certfilename_ca, 
 //        !EVP_DigestSignInit_ex(mdctx, NULL, "SHAKE128", libctx, NULL, pkey_ca, NULL) ||
 //        !X509_sign_ctx(x509, mdctx) ||
         !X509_sign(x509, pkey_ca, NULL) ||
-        !(keybio = BIO_new_file(privkeyfilename, "wb")) ||
-        !PEM_write_bio_PrivateKey(keybio, pkey, NULL, NULL, 0, NULL, NULL) ||
         !(certbio = BIO_new_file(certfilename, "wb")) ||
         !PEM_write_bio_X509(certbio, x509))
-        ret = 0;
+        {
+            printf("!\n");
+            return 0;
+        }
 
 
     EVP_PKEY_free(pkey_ca);
     X509_free(x509_ca);
     EVP_PKEY_CTX_free(evpctx_ca);
-    BIO_free(keybio_ca);
     BIO_free(certbio_ca);
     EVP_PKEY_free(pkey_c);
     X509_free(x509_c);
     EVP_PKEY_CTX_free(evpctx_c);
-    BIO_free(keybio_c);
     BIO_free(certbio_c);
     EVP_PKEY_free(pkey);
     X509_free(x509);
     EVP_PKEY_CTX_free(evpctx);
-    BIO_free(keybio);
     BIO_free(certbio);
     return ret;
 }

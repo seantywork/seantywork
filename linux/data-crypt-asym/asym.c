@@ -64,6 +64,7 @@ int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_pa
     PEM_write_bio_PUBKEY(pubkeybio_s, pkey_s);
     PEM_write_bio_PrivateKey(keybio_c, pkey_c,NULL, NULL, 0, NULL, NULL);
     PEM_write_bio_PUBKEY(pubkeybio_c, pkey_c);
+    return 0;
     /*
 	int ret = 0;
 	unsigned long e = RSA_F4;
@@ -208,6 +209,7 @@ int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key
     PEM_write_bio_PUBKEY(pubkeybio_s, pkey_s);
     PEM_write_bio_PrivateKey(keybio_c, pkey_c,NULL, NULL, 0, NULL, NULL);
     PEM_write_bio_PUBKEY(pubkeybio_c, pkey_c);
+    return 0;
 /*
 	int ret = 0;
 
@@ -391,20 +393,30 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
 
     FILE* fp;
     EVP_PKEY* pub_key = NULL;
-
-    char* enc_msg = NULL;
-
+    EVP_PKEY_CTX* ctx = NULL;
+    char enc_msg[1024] = {0};
     int enc_len = 0;
-
     char* err;
 
     fp = fopen(pub_key_path, "r");
-
     pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
-
     fclose(fp);
-
-
+    ctx = EVP_PKEY_CTX_new(pub_key, NULL);
+    
+    if(!EVP_PKEY_encrypt_init(ctx)){
+        printf("encrypt init failed\n");
+        return -1;
+    }
+    if(!EVP_PKEY_encrypt(ctx, enc_msg, &enc_len, msg, msg_len)){
+        printf("encrypt failed\n");
+        return -1;
+    }
+    unsigned char* enc_hex = char2hex(enc_len, (unsigned char*)enc_msg);
+    printf("enclen: %d\n", enc_len);
+    fp = fopen(enc_msg_path, "w");
+    fputs((char*)enc_hex, fp);
+    fclose(fp);
+    /*
     RSA* rsa_pub_key = EVP_PKEY_get1_RSA(pub_key);
 
     enc_msg = (char*)malloc(RSA_size(rsa_pub_key));
@@ -436,7 +448,7 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
     free(err);
 
     free(enc_hex);
-
+    */
     
 
     return 0;
@@ -446,25 +458,33 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
 
     FILE* fp;
     EVP_PKEY* priv_key = NULL;
-
-
-    char* enc_msg = NULL;
-
-    int enc_len = 0;
-
-    char* dec_msg = NULL;
-
+    EVP_PKEY_CTX* ctx = NULL;
+    char enc_msg[2048] = {0};
+    int enc_len = 2048;
+    char dec_msg[2048] = {0};
     int dec_len = 0;
-
     char* err;
 
     fp = fopen(priv_key_path, "r");
-
     priv_key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
-
     fclose(fp);
-
-
+    fp = fopen(enc_msg_path, "r");
+    fgets(enc_msg, enc_len, fp);
+    fclose(fp);
+    unsigned char* enc_bin = hex2char((unsigned char*)enc_msg);
+    enc_len = strlen(enc_msg) / 2;
+    ctx = EVP_PKEY_CTX_new(priv_key, NULL);
+    if(!EVP_PKEY_decrypt_init(ctx)){
+        printf("decrypt init failed\n");
+        return -1;
+    }
+    if(!EVP_PKEY_decrypt(ctx, dec_msg, &dec_len, enc_bin, enc_len)){
+        printf("decrypt failed\n");
+        return -1;
+    }
+    memcpy(plain_msg, dec_msg, dec_len);
+    printf("declen: %d\n", dec_len);
+/*
     RSA* rsa_priv_key = EVP_PKEY_get1_RSA(priv_key);
 
 
@@ -507,20 +527,63 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
     free(err);
 
     free(dec_bin);
-
+*/
     return 0;
 }
 
 
-int asym_shared_keygen_ec(char* key_path, char* pub_key_path, char* peer_pub_key_path, char* skey_path){
+int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_path){
 
     int result;
 
     FILE* fp;
-    EC_KEY* pkey = NULL;
-    EC_KEY* pub_key = NULL;
+    EVP_PKEY* keypair = NULL;
+    EVP_PKEY* pkey = NULL;
+    EVP_PKEY* peer_pub_key = NULL;
+    EVP_PKEY_CTX *ctx = NULL;
+    uint8_t skey[1024] = {0};
+    int skeylen = 0;
 
-    EC_KEY* peer_pub_key = NULL;
+    fp = fopen(key_path, "r");
+    pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+    fclose(fp);
+    /*
+    fp = fopen(pub_key_path, "r");
+    if(!PEM_read_PUBKEY(fp, &pkey, NULL, NULL)){
+        printf("failed to get public key\n");
+        return -1;
+    }
+    fclose(fp);
+    */
+    fp = fopen(peer_pub_key_path, "r");
+    peer_pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
+    fclose(fp);
+    ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if(!EVP_PKEY_derive_init(ctx)){
+        printf("failed to derive init\n");
+        return -1;
+    }
+    if(!EVP_PKEY_derive_set_peer(ctx, peer_pub_key)){
+        printf("failed to set peer\n");
+        return -1;
+    }
+    if(!EVP_PKEY_derive(ctx, NULL, &skeylen)){
+        printf("failed to get skeylen\n");
+        return -1;
+    }
+    if(!EVP_PKEY_derive(ctx, skey, &skeylen)){
+        printf("failed to derive\n");
+        return -1;
+    }
+
+    unsigned char* enc_hex = char2hex(skeylen, skey);
+    fp = fopen(skey_path, "w");
+    fputs((char*)enc_hex, fp);
+
+    fclose(fp);
+    printf("skey len: %d\n", skeylen);
+/*
     EC_POINT *peer_pub_point = NULL;
 
     char* enc_msg = NULL;
@@ -573,16 +636,69 @@ int asym_shared_keygen_ec(char* key_path, char* pub_key_path, char* peer_pub_key
 
 
     free(enc_hex);
-
-
-
-    
-
+*/
     return 0;
 }
 
-int asym_shared_keycheck_ec(char* key_path, char* pub_key_path, char* peer_pub_key_path, char* skey_path){
+int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_path){
 
+
+    int result = -1;
+    FILE* fp = NULL;
+    EVP_PKEY* keypair = NULL;
+    EVP_PKEY* pkey = NULL;
+    EVP_PKEY* peer_pub_key = NULL;
+    EVP_PKEY_CTX *ctx = NULL;
+    uint8_t skey[1024] = {0};
+    int skeylen = 0;
+    int peer_skeylen = 1024;
+
+    uint8_t peer_skey[1024] = {0};
+
+    fp = fopen(key_path, "r");
+    pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+    fclose(fp);
+    /*
+    fp = fopen(pub_key_path, "r");
+    if(!PEM_read_PUBKEY(fp, &pkey, NULL, NULL)){
+        printf("failed to get public key\n");
+        return -1;
+    }
+    fclose(fp);
+    */
+    fp = fopen(peer_pub_key_path, "r");
+    peer_pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
+    fclose(fp);
+    ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if(!EVP_PKEY_derive_init(ctx)){
+        printf("failed to derive init\n");
+        return -1;
+    }
+    if(!EVP_PKEY_derive_set_peer(ctx, peer_pub_key)){
+        printf("failed to set peer\n");
+        return -1;
+    }
+    if(!EVP_PKEY_derive(ctx, NULL, &skeylen)){
+        printf("failed to get skeylen\n");
+        return -1;
+    }
+    if(!EVP_PKEY_derive(ctx, skey, &skeylen)){
+        printf("failed to derive\n");
+        return -1;
+    }
+    printf("skeylen: %d\n", skeylen);
+    fp = fopen(skey_path, "r");
+    fgets(peer_skey, peer_skeylen, fp);
+    fclose(fp);
+
+    unsigned char* peer_skey_bin = hex2char(peer_skey);
+
+    int cmpres = memcmp(skey, peer_skey_bin, skeylen);
+
+    printf("result: %d (should be zero)\n", cmpres);
+    return 0;
+/*
 
     int result;
 
@@ -653,6 +769,8 @@ int asym_shared_keycheck_ec(char* key_path, char* pub_key_path, char* peer_pub_k
 
 
     return 0;
+*/
+
 }
 
 
@@ -1621,45 +1739,5 @@ unsigned char* hex2char(unsigned char* hexarray){
 }
 
 
-void compare_two_arrays(int len, char* arr1, char* arr2){
 
 
-    for(int i = 0 ; i < len; i++){
-
-
-        if(arr1[i] != arr2[i]){
-            
-            printf("not equal at: %d, %x %x\n", i, arr1[i], arr2[i]);
-
-        }
-
-
-    }
-
-
-
-}
-
-
-
-void free_all(){
-
-
-	BIO_free_all(bp_public);
-	BIO_free_all(bp_private);
-	RSA_free(r);
-	BN_free(bne);
-
-
-}
-
-void free_all_ec(){
-
-
-	BIO_free_all(bp_public);
-	BIO_free_all(bp_private);
-	
-	
-
-
-}

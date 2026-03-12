@@ -44,481 +44,6 @@ static ENDECODE_PARAMS plist[] = {
      OSSL_KEYMGMT_SELECT_PUBLIC_KEY | OSSL_KEYMGMT_SELECT_ALL_PARAMETERS},
 };
 
-static EVP_PKEY * encodedecode(const EVP_PKEY *pkey){
-
-    OSSL_ENCODER_CTX *ectx_priv = NULL;
-    OSSL_ENCODER_CTX *ectx_pub = NULL;
-    BIO *mem_ser_priv = NULL;
-    BIO *mem_ser_pub = NULL;
-    BUF_MEM *mem_buf_priv = NULL;
-    BUF_MEM *mem_buf_pub = NULL;
-    const char *cipher = "AES-256-CBC";
-    int ok = 0;
-
-    OSSL_DECODER_CTX *dctx_priv = NULL;
-    OSSL_DECODER_CTX *dctx_pub = NULL;
-    BIO *priv_bio = NULL;
-    BIO *pub_bio = NULL;
-
-    EVP_PKEY *newpkey = EVP_PKEY_new();
-
-    ectx_priv = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[0].selection, plist[0].format, plist[0].structure, NULL);
-
-    if (ectx_priv == NULL) {
-        printf("No suitable priv encoder found\n");
-        goto edend;
-    }
-
-    ectx_pub = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[2].selection, plist[2].format, plist[2].structure, NULL);
-
-    if (ectx_pub == NULL) {
-        printf("No suitable pub encoder found\n");
-        goto edend;
-    }
-
-
-    /*
-    if (pass != NULL) {
-        OSSL_ENCODER_CTX_set_passphrase(ectx, (const unsigned char *)pass, strlen(pass));
-        OSSL_ENCODER_CTX_set_cipher(ectx, cipher, NULL);
-    }
-    */
-
-    mem_ser_priv = BIO_new(BIO_s_mem());
-    //mem_ser = BIO_new_file("priv.pem", "w");
-    if (!OSSL_ENCODER_to_bio(ectx_priv, mem_ser_priv)) {
-        printf("encoding priv failed\n");
-        goto edend;
-    }
-
-    
-    BIO_get_mem_ptr(mem_ser_priv, &mem_buf_priv);
-    if (mem_buf_priv == NULL){
-        printf("get priv membuf failed\n");
-        goto edend;
-    }
-
-    mem_ser_pub = BIO_new(BIO_s_mem());
-    //mem_ser = BIO_new_file("pub.pem", "w");
-    if (!OSSL_ENCODER_to_bio(ectx_pub, mem_ser_pub)) {
-        printf("encoding pub failed\n");
-        goto edend;
-    }
-
-    
-    BIO_get_mem_ptr(mem_ser_pub, &mem_buf_pub);
-    if (mem_buf_pub == NULL){
-        printf("get pub membuf failed\n");
-        goto edend;
-    }
-    
-    priv_bio = BIO_new_mem_buf(mem_buf_priv->data, mem_buf_priv->length);
-
-    if (priv_bio == NULL){
-
-        printf("get encoded priv bio\n");
-
-        goto edend;
-    }
-
-    pub_bio = BIO_new_mem_buf(mem_buf_pub->data, mem_buf_pub->length);
-
-    if (pub_bio == NULL){
-
-        printf("get encoded pub bio\n");
-
-        goto edend;
-    }
-
-    dctx_priv = OSSL_DECODER_CTX_new_for_pkey(&newpkey, plist[0].format, plist[0].structure, plist[0].keytype, plist[0].selection, libctx, NULL);
-    if (dctx_priv == NULL){
-        printf("failed to get decode priv ctx\n");
-        goto edend;
-    }
-
-    
-    dctx_pub = OSSL_DECODER_CTX_new_for_pkey(&newpkey, plist[2].format, plist[2].structure, plist[2].keytype, plist[2].selection, libctx, NULL);
-    if (dctx_pub == NULL){
-        printf("failed to get decode priv ctx\n");
-        goto edend;
-    }
-
-    
-
-    if (!OSSL_DECODER_from_bio(dctx_priv, priv_bio)){
-        printf("failed to decode priv\n");
-        goto edend;
-    }
-
-    
-    if (!OSSL_DECODER_from_bio(dctx_pub, pub_bio)){
-        printf("failed to decode pub\n");
-        goto edend;
-    }
-    
-
-    //*object = newpkey;
-    //newpkey = NULL;
-    ok = 1;
-
-edend:
-    if(mem_ser_priv != NULL){
-        BIO_free_all(mem_ser_priv);
-    }
-    if(mem_ser_pub != NULL){
-        BIO_free_all(mem_ser_pub);
-    }
-    if(ectx_priv != NULL){
-        OSSL_ENCODER_CTX_free(ectx_priv);
-    }
-    if(ectx_pub != NULL){
-        OSSL_ENCODER_CTX_free(ectx_pub);
-    }
-    if(priv_bio != NULL){
-        BIO_free(priv_bio);
-    }
-    if(pub_bio != NULL){
-        BIO_free(pub_bio);
-    }
-    if(dctx_priv != NULL){
-        OSSL_DECODER_CTX_free(dctx_priv);
-    }
-    if(dctx_pub != NULL){
-        OSSL_DECODER_CTX_free(dctx_pub);
-    }
-    //if(newpkey != NULL){
-    //    EVP_PKEY_free(newpkey);
-    //}
-
-    if(ok != 1){
-
-        return NULL;
-    }
-
-    return newpkey;
-
-}
-
-
-
-static EVP_PKEY * encodedecodepub(const EVP_PKEY *pkey){
-
-    OSSL_ENCODER_CTX *ectx_priv = NULL;
-    OSSL_ENCODER_CTX *ectx_pub = NULL;
-    BIO *mem_ser_priv = NULL;
-    BIO *mem_ser_pub = NULL;
-    BUF_MEM *mem_buf_priv = NULL;
-    BUF_MEM *mem_buf_pub = NULL;
-    const char *cipher = "AES-256-CBC";
-    int ok = 0;
-
-    OSSL_DECODER_CTX *dctx_priv = NULL;
-    OSSL_DECODER_CTX *dctx_pub = NULL;
-    BIO *priv_bio = NULL;
-    BIO *pub_bio = NULL;
-
-    EVP_PKEY *newpkey = EVP_PKEY_new();
-
-    ectx_priv = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[0].selection, plist[0].format, plist[0].structure, NULL);
-
-    if (ectx_priv == NULL) {
-        printf("No suitable priv encoder found\n");
-        goto edend;
-    }
-
-    ectx_pub = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[2].selection, plist[2].format, plist[2].structure, NULL);
-
-    if (ectx_pub == NULL) {
-        printf("No suitable pub encoder found\n");
-        goto edend;
-    }
-
-
-    /*
-    if (pass != NULL) {
-        OSSL_ENCODER_CTX_set_passphrase(ectx, (const unsigned char *)pass, strlen(pass));
-        OSSL_ENCODER_CTX_set_cipher(ectx, cipher, NULL);
-    }
-    */
-
-    mem_ser_priv = BIO_new(BIO_s_mem());
-    //mem_ser = BIO_new_file("priv.pem", "w");
-    if (!OSSL_ENCODER_to_bio(ectx_priv, mem_ser_priv)) {
-        printf("encoding priv failed\n");
-        goto edend;
-    }
-
-    
-    BIO_get_mem_ptr(mem_ser_priv, &mem_buf_priv);
-    if (mem_buf_priv == NULL){
-        printf("get priv membuf failed\n");
-        goto edend;
-    }
-
-    mem_ser_pub = BIO_new(BIO_s_mem());
-    //mem_ser = BIO_new_file("pub.pem", "w");
-    if (!OSSL_ENCODER_to_bio(ectx_pub, mem_ser_pub)) {
-        printf("encoding pub failed\n");
-        goto edend;
-    }
-
-    
-    BIO_get_mem_ptr(mem_ser_pub, &mem_buf_pub);
-    if (mem_buf_pub == NULL){
-        printf("get pub membuf failed\n");
-        goto edend;
-    }
-    /*
-    priv_bio = BIO_new_mem_buf(mem_buf_priv->data, mem_buf_priv->length);
-
-    if (priv_bio == NULL){
-
-        printf("get encoded priv bio\n");
-
-        goto edend;
-    }
-
-    */
-    pub_bio = BIO_new_mem_buf(mem_buf_pub->data, mem_buf_pub->length);
-
-    if (pub_bio == NULL){
-
-        printf("get encoded pub bio\n");
-
-        goto edend;
-    }
-
-    /*
-    dctx_priv = OSSL_DECODER_CTX_new_for_pkey(&newpkey, plist[0].format, plist[0].structure, plist[0].keytype, plist[0].selection, libctx, NULL);
-    if (dctx_priv == NULL){
-        printf("failed to get decode priv ctx\n");
-        goto edend;
-    }
-
-    */
-    
-    dctx_pub = OSSL_DECODER_CTX_new_for_pkey(&newpkey, plist[2].format, plist[2].structure, plist[2].keytype, plist[2].selection, libctx, NULL);
-    if (dctx_pub == NULL){
-        printf("failed to get decode priv ctx\n");
-        goto edend;
-    }
-
-    /*
-
-    if (!OSSL_DECODER_from_bio(dctx_priv, priv_bio)){
-        printf("failed to decode priv\n");
-        goto edend;
-    }
-
-    */
-    
-    if (!OSSL_DECODER_from_bio(dctx_pub, pub_bio)){
-        printf("failed to decode pub\n");
-        goto edend;
-    }
-    
-
-    //*object = newpkey;
-    //newpkey = NULL;
-    ok = 1;
-
-edend:
-    if(mem_ser_priv != NULL){
-        BIO_free_all(mem_ser_priv);
-    }
-    if(mem_ser_pub != NULL){
-        BIO_free_all(mem_ser_pub);
-    }
-    if(ectx_priv != NULL){
-        OSSL_ENCODER_CTX_free(ectx_priv);
-    }
-    if(ectx_pub != NULL){
-        OSSL_ENCODER_CTX_free(ectx_pub);
-    }
-    if(priv_bio != NULL){
-        BIO_free(priv_bio);
-    }
-    if(pub_bio != NULL){
-        BIO_free(pub_bio);
-    }
-    if(dctx_priv != NULL){
-        OSSL_DECODER_CTX_free(dctx_priv);
-    }
-    if(dctx_pub != NULL){
-        OSSL_DECODER_CTX_free(dctx_pub);
-    }
-    //if(newpkey != NULL){
-    //    EVP_PKEY_free(newpkey);
-    //}
-
-    if(ok != 1){
-
-        return NULL;
-    }
-
-    return newpkey;
-
-}
-
-static int encode(const EVP_PKEY *pkey) {
-
-    OSSL_ENCODER_CTX *ectx_priv = NULL;
-    OSSL_ENCODER_CTX *ectx_pub = NULL;
-    BIO *mem_ser = NULL;
-    unsigned char *mem_buf = NULL;
-    const char *cipher = "AES-256-CBC";
-    int ok = -1;
-
-    ectx_priv = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[0].selection, plist[0].format, plist[0].structure, NULL);
-
-    if (ectx_priv == NULL) {
-        printf("No suitable priv encoder found\n");
-        goto eend;
-    }
-
-    ectx_pub = OSSL_ENCODER_CTX_new_for_pkey(pkey, plist[2].selection, plist[2].format, plist[2].structure, NULL);
-
-    if (ectx_priv == NULL) {
-        printf("No suitable pub encoder found\n");
-        goto eend;
-    }
-
-
-    /*
-    if (pass != NULL) {
-        OSSL_ENCODER_CTX_set_passphrase(ectx, (const unsigned char *)pass, strlen(pass));
-        OSSL_ENCODER_CTX_set_cipher(ectx, cipher, NULL);
-    }
-    */
-
-    //mem_ser = BIO_new(BIO_s_mem());
-    mem_ser = BIO_new_file("priv.pem", "w");
-    if (!OSSL_ENCODER_to_bio(ectx_priv, mem_ser)) {
-        printf("encoding priv failed\n");
-        goto eend;
-    }
-
-    BIO_free_all(mem_ser);
-
-    /*
-    BIO_get_mem_data(mem_ser, &mem_buf);
-    if (mem_buf == NULL){
-        printf("get priv membuf failed\n");
-        goto eend;
-    }
-    */
-
-    //mem_ser = BIO_new(BIO_s_mem());
-    mem_ser = BIO_new_file("pub.pem", "w");
-    if (!OSSL_ENCODER_to_bio(ectx_pub, mem_ser)) {
-        printf("encoding pub failed\n");
-        goto eend;
-    }
-
-    /*
-    BIO_get_mem_data(mem_ser, &mem_buf);
-    if (mem_buf == NULL){
-        printf("get pub membuf failed\n");
-        goto eend;
-    }
-    */
-
-    ok = 1;
-
-eend:
-    BIO_free_all(mem_ser);
-    OSSL_ENCODER_CTX_free(ectx_priv);
-    OSSL_ENCODER_CTX_free(ectx_pub);
-    return ok;
-}
-
-static int decode(EVP_PKEY **object) {
-
-    EVP_PKEY *pkey = NULL;
-    OSSL_DECODER_CTX *dctx_priv = NULL;
-    OSSL_DECODER_CTX *dctx_pub = NULL;
-    BIO *priv_bio = NULL;
-    BIO *pub_bio = NULL;
-    char* encoded[PEM_BUFF_LEN] = {0};
-    int encoded_len = 0;
-
-    int ok = 0;
-
-    int rval = read_file_to_buffer((uint8_t*)encoded, PEM_BUFF_LEN, "priv.pem");
-
-    if(rval < 1){
-        printf("failed to read\n");
-        goto dend;
-    }
-
-    encoded_len = rval;
-
-    priv_bio = BIO_new_mem_buf(encoded, encoded_len);
-
-    if (priv_bio == NULL){
-
-        printf("get encoded priv bio\n");
-
-        goto dend;
-    }
-
-    memset(encoded, 0, PEM_BUFF_LEN);
-    
-    rval = read_file_to_buffer((uint8_t*)encoded, PEM_BUFF_LEN, "pub.pem");
-
-    if(rval < 1){
-        printf("failed to read\n");
-        goto dend;
-    }
-
-    encoded_len = rval;
-
-    pub_bio = BIO_new_mem_buf(encoded, encoded_len);
-
-    if (pub_bio == NULL){
-
-        printf("get encoded pub bio\n");
-
-        goto dend;
-    }
-    
-
-    dctx_priv = OSSL_DECODER_CTX_new_for_pkey(&pkey, plist[0].format, plist[0].structure, plist[0].keytype, plist[0].selection, libctx, NULL);
-    if (dctx_priv == NULL){
-        printf("failed to get decode priv ctx\n");
-        goto dend;
-    }
-
-    dctx_pub = OSSL_DECODER_CTX_new_for_pkey(&pkey, plist[2].format, plist[2].structure, plist[2].keytype, plist[2].selection, libctx, NULL);
-    if (dctx_priv == NULL){
-        printf("failed to get decode priv ctx\n");
-        goto dend;
-    }
-
-
-    if (!OSSL_DECODER_from_bio(dctx_priv, priv_bio)){
-        printf("failed to decode priv\n");
-        goto dend;
-    }
-
-    if (!OSSL_DECODER_from_bio(dctx_pub, pub_bio)){
-        printf("failed to decode pub\n");
-        goto dend;
-    }
-
-    ok = 1;
-    *object = pkey;
-    pkey = NULL;
-
-dend:
-    BIO_free(priv_bio);
-    BIO_free(pub_bio);
-    OSSL_DECODER_CTX_free(dctx_priv);
-    OSSL_DECODER_CTX_free(dctx_pub);
-    EVP_PKEY_free(pkey);
-    return ok;
-}
-
 
 static void cleanup_heap(uint8_t *secret_key, uint8_t *shared_secret_e,
     uint8_t *shared_secret_d, uint8_t *public_key,
@@ -545,6 +70,53 @@ static void cleanup_heap_sig(uint8_t *public_key, uint8_t *secret_key, uint8_t *
 }
 
 
+static int key_create(){
+    char *sig_name = THIS_SIG_NAME;
+    char *kem_name = THIS_KEM_NAME;
+    SSL_CTX *cctx = NULL, *sctx = NULL;
+    int ret = 1, testresult = 0;
+    char group[1024] = {0};
+    char keypath_ca[300];
+    char pubpath_ca[300];
+    char keypath_c[300];
+    char pubpath_c[300];
+    char keypath[300];
+    char pubpath[300];
+    char *certsdir = "certs";
+#ifndef OPENSSL_SYS_VMS
+    const char *sep = "/";
+#else
+    const char *sep = "";
+#endif
+    sprintf(group, "sig: %s, kem: %s\n", sig_name, kem_name);
+    
+    fputs(group, stdout);
+
+    sprintf(keypath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.key.pem");
+    sprintf(pubpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.pub.pem");
+    sprintf(keypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
+    sprintf(pubpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.pub.pem");
+    sprintf(keypath, "%s%s%s%s", certsdir, sep, sig_name, ".key.pem");
+    sprintf(pubpath, "%s%s%s%s", certsdir, sep, sig_name, ".pub.pem");
+    /* ensure certsdir exists */
+    if (mkdir(certsdir, 0700)) {
+        if (errno != EEXIST) {
+            fprintf(stderr, "Couldn't create certsdir %s: Err = %d\n", certsdir,
+                    errno);
+            ret = -1;
+            goto err;
+        }
+    }
+    if (!create_key(libctx, (char *)sig_name, keypath_ca, pubpath_ca, keypath_c, pubpath_c, keypath, pubpath)) {
+        fprintf(stderr, "Cert/keygen failed for %s\n", sig_name);
+        ret = -1;
+        goto err;
+    }
+err:
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+    return ret;
+}
 
 static int qs_kem(){
 
@@ -581,7 +153,10 @@ static int qs_kem(){
 
     printf("messagelen: %d, ciphertext len: %d\n", messagelen, kem->length_ciphertext);
 
-    memcpy(ciphertext, message,kem->length_ciphertext);
+    for(int i = 0; i < kem->length_ciphertext; i++){
+        int idx = i % messagelen;
+        ciphertext[i] = message[idx];
+    }
 
     memset(shared_secret_e, 0, kem->length_shared_secret);
 
@@ -618,6 +193,15 @@ static int qs_kem(){
 		return OQS_ERROR;
 	}
 
+    printf("ciphertext before encap: ");
+
+    for (int i = 0 ; i < kem->length_ciphertext; i++){
+
+        printf("%02X", ciphertext[i]);
+
+    }
+
+    printf("\n");
 
 	rc = OQS_KEM_encaps(kem, ciphertext, shared_secret_e, public_key);
 	if (rc != OQS_SUCCESS) {
@@ -628,6 +212,16 @@ static int qs_kem(){
 		return OQS_ERROR;
 	}
 
+    printf("ciphertext after encap: ");
+
+    for (int i = 0 ; i < kem->length_ciphertext; i++){
+
+        printf("%02X", ciphertext[i]);
+
+    }
+
+    printf("\n");
+
 	rc = OQS_KEM_decaps(kem, shared_secret_d, ciphertext, secret_key);
 	if (rc != OQS_SUCCESS) {
 		fprintf(stderr, "ERROR: OQS_KEM_decaps failed!\n");
@@ -636,6 +230,16 @@ static int qs_kem(){
 
 		return OQS_ERROR;
 	}
+
+    printf("ciphertext after decap: ");
+
+    for (int i = 0 ; i < kem->length_ciphertext; i++){
+
+        printf("%02X", ciphertext[i]);
+
+    }
+
+    printf("\n");
 
     rc = memcmp(shared_secret_d, shared_secret_e, kem->length_shared_secret);
 
@@ -773,10 +377,12 @@ static int cert_create(){
     int ret = 1, testresult = 0;
     char group[1024] = {0};
     char certpath_ca[300];
+    char key_ca[300];
+    char pub_ca[300];
     char certpath_c[300];
-    char privkeypath_c[300];
+    char pub_c[300];
     char certpath[300];
-    char privkeypath[300];
+    char pub[300];
     char *certsdir = "certs";
 #ifndef OPENSSL_SYS_VMS
     const char *sep = "/";
@@ -788,10 +394,12 @@ static int cert_create(){
     fputs(group, stdout);
 
     sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt.pem");
+    sprintf(key_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.key.pem");
+    sprintf(pub_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.pub.pem");
     sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt.pem");
-    sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
-    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt.pem");
-    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key.pem");
+    sprintf(pub_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.pub.pem");
+    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, ".crt.pem");
+    sprintf(pub, "%s%s%s%s", certsdir, sep, sig_name, ".pub.pem");
     /* ensure certsdir exists */
     if (mkdir(certsdir, 0700)) {
         if (errno != EEXIST) {
@@ -801,9 +409,8 @@ static int cert_create(){
             goto err;
         }
     }
-    if (!create_cert_key(libctx, (char *)sig_name, certpath_ca, certpath_c, privkeypath_c, certpath, privkeypath)) {
-        fprintf(stderr, "Cert/keygen failed for %s at %s/%s\n", sig_name,
-                certpath, privkeypath);
+    if (!create_cert(libctx, (char *)sig_name, certpath_ca, key_ca, pub_ca, certpath_c, pub_c, certpath, pub)) {
+        fprintf(stderr, "cert failed for %s\n", sig_name);
         ret = -1;
         goto err;
     }
@@ -838,8 +445,8 @@ static int cert_verify(){
     sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt.pem");
     sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt.pem");
     sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
-    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt.pem");
-    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key.pem");
+    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, ".crt.pem");
+    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, ".key.pem");
 
     BIO* cert = NULL;
     BIO* intermediate = NULL;
@@ -894,8 +501,8 @@ static int qs_tlsnet(const char *sig_name, const char *kem_name, int dtls_flag) 
     sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt.pem");
     sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt.pem");
     sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
-    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.crt.pem");
-    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, "_srv.key.pem");
+    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, ".crt.pem");
+    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, ".key.pem");
 
     testresult = create_tls1_3_ctx_pair(libctx, &sctx, &cctx, certpath_ca, certpath_c, privkeypath_c, 
                             certpath, privkeypath, dtls_flag);
@@ -941,11 +548,12 @@ err:
 
 void print_help(){
 
-    printf("kem           :\n");
-    printf("sig           :\n");
-    printf("cert-gen      :\n");
-    printf("cert-verify   :\n");
-    printf("tls           :\n");
+    printf("keygen        : pq key generation \n");
+    printf("oqs-kem       : pq key encap/decap using liboqs \n");
+    printf("oqs-sig       : pq signature using liboqs \n");
+    printf("cert-gen      : pq certificate generation \n");
+    printf("cert-verify   : pq certificate verification \n");
+    printf("tls           : pq tls \n");
 
 }
 
@@ -963,7 +571,15 @@ int main(int argc, char *argv[]) {
         print_help();
         return -1;
     }
-    if(strcmp(argv[1], "kem") == 0){
+    if(strcmp(argv[1], "keygen") == 0){
+        if (key_create() == 1) {
+            fprintf(stderr, cGREEN "  keygen test succeeded" cNORM "\n");
+        } else {
+            fprintf(stderr, cRED "  keygen test failed" cNORM "\n");
+            ERR_print_errors_fp(stderr);
+            errcnt++;
+        }
+    } else if(strcmp(argv[1], "oqs-kem") == 0){
         if (qs_kem() == OQS_SUCCESS) {
             fprintf(stderr, cGREEN "  KEM test succeeded" cNORM "\n");
         } else {
@@ -971,7 +587,7 @@ int main(int argc, char *argv[]) {
             ERR_print_errors_fp(stderr);
             errcnt++;
         }
-    } else if (strcmp(argv[1], "sig") == 0){        
+    } else if (strcmp(argv[1], "oqs-sig") == 0){        
         if ( qs_signatures() == OQS_SUCCESS) {
             fprintf(stderr, cGREEN "sig test succeeded" cNORM "\n");
         } else {
