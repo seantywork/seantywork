@@ -29,3 +29,8 @@ Enjoy!
 ## stuff
 - [linux](https://seanty.work/linux/)
 - [etc](https://seanty.work/etc/)
+<details>
+    <ul>
+        <li><a href="https://seanty.work/2026-0313-good-luck/">good luck</a></li>
+    </ul>
+</details>
