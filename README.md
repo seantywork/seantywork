@@ -10,7 +10,6 @@ For publicly available source code, see [GitHub.com](https://github.com/seantywo
 Here is the basic description of the stuff below.
 
 ```text 
-
     - linux:
         linux stuff
     - etc:
@@ -29,4 +28,4 @@ Enjoy!
 
 ## stuff
 - [linux](https://seanty.work/linux/)
-- [docs](https://seanty.work/etc/)
+- [etc](https://seanty.work/etc/)
