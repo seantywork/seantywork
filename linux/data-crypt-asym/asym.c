@@ -220,7 +220,7 @@ out:
 
 int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg){
 
-    int result;
+    int result = -1;
 
     FILE* fp;
     EVP_PKEY* pub_key = NULL;
@@ -228,6 +228,7 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
     char enc_msg[1024] = {0};
     int enc_len = 0;
     char* err;
+    unsigned char* enc_hex = NULL;
 
     fp = fopen(pub_key_path, "r");
     pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
@@ -236,57 +237,34 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
     
     if(!EVP_PKEY_encrypt_init(ctx)){
         printf("encrypt init failed\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_encrypt(ctx, enc_msg, &enc_len, msg, msg_len)){
         printf("encrypt failed\n");
-        return -1;
+        goto out;
     }
-    unsigned char* enc_hex = char2hex(enc_len, (unsigned char*)enc_msg);
+    enc_hex = char2hex(enc_len, (unsigned char*)enc_msg);
     printf("enclen: %d\n", enc_len);
     fp = fopen(enc_msg_path, "w");
     fputs((char*)enc_hex, fp);
     fclose(fp);
-    /*
-    RSA* rsa_pub_key = EVP_PKEY_get1_RSA(pub_key);
-
-    enc_msg = (char*)malloc(RSA_size(rsa_pub_key));
-
-    err = (char*)malloc(130 * sizeof(char));
-
-    enc_len = RSA_public_encrypt(
-                    msg_len + 1, 
-                    (unsigned char*)msg,
-                    (unsigned char*)enc_msg,
-                    rsa_pub_key,
-                    RSA_PKCS1_PADDING);
-
-
-
-    unsigned char* enc_hex = char2hex(enc_len, (unsigned char*)enc_msg);
-
-    printf("enclen: %d\n", enc_len);
-
-    fp = fopen(enc_msg_path, "w");
-
-    fputs((char*)enc_hex, fp);
-
-    fclose(fp);
-
-    RSA_free(rsa_pub_key);
-    EVP_PKEY_free(pub_key);
-    free(enc_msg);
-    free(err);
-
-    free(enc_hex);
-    */
-    
-
-    return 0;
+    result = 1;
+out:
+    if(pub_key != NULL){
+        EVP_PKEY_free(pub_key);
+    }
+    if(ctx != NULL){
+        EVP_PKEY_CTX_free(ctx);
+    }
+    if(enc_hex != NULL){
+        free(enc_hex);
+    }
+    return result;
 }
 
 int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, char* plain_msg){
 
+    int result = -1;
     FILE* fp;
     EVP_PKEY* priv_key = NULL;
     EVP_PKEY_CTX* ctx = NULL;
@@ -295,6 +273,7 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
     char dec_msg[2048] = {0};
     int dec_len = 0;
     char* err;
+    unsigned char* enc_bin = NULL;
 
     fp = fopen(priv_key_path, "r");
     priv_key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
@@ -302,64 +281,31 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
     fp = fopen(enc_msg_path, "r");
     fgets(enc_msg, enc_len, fp);
     fclose(fp);
-    unsigned char* enc_bin = hex2char((unsigned char*)enc_msg);
+    enc_bin = hex2char((unsigned char*)enc_msg);
     enc_len = strlen(enc_msg) / 2;
     ctx = EVP_PKEY_CTX_new(priv_key, NULL);
     if(!EVP_PKEY_decrypt_init(ctx)){
         printf("decrypt init failed\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_decrypt(ctx, dec_msg, &dec_len, enc_bin, enc_len)){
         printf("decrypt failed\n");
-        return -1;
+        goto out;
     }
     memcpy(plain_msg, dec_msg, dec_len);
     printf("declen: %d\n", dec_len);
-/*
-    RSA* rsa_priv_key = EVP_PKEY_get1_RSA(priv_key);
-
-
-    int _max_key_len = RSA_size(rsa_priv_key);
-
-    enc_len = _max_key_len * 2 + 1;
-
-    enc_msg = (char*)malloc(enc_len * sizeof(char));
-
-    fp = fopen(enc_msg_path, "r");
-
-    fgets(enc_msg, enc_len, fp);
-
-    fclose(fp);
-
-    unsigned char* dec_bin = hex2char((unsigned char*)enc_msg);
-
-    dec_msg = (char*)malloc(RSA_size(rsa_priv_key));
-
-    err = (char*)malloc(130 * sizeof(char));
-
-    dec_len = RSA_private_decrypt(
-                _max_key_len,
-                dec_bin,
-                (unsigned char*)dec_msg,
-                rsa_priv_key,
-                RSA_PKCS1_PADDING
-                );
-
-
-
-    strcpy(plain_msg, dec_msg);
-
-    printf("declen: %d\n", dec_len);
-
-    RSA_free(rsa_priv_key);
-    EVP_PKEY_free(priv_key);
-    free(enc_msg);
-    free(dec_msg);
-    free(err);
-
-    free(dec_bin);
-*/
-    return 0;
+    result = 1;
+out:
+    if(priv_key != NULL){
+        EVP_PKEY_free(priv_key);
+    }
+    if(ctx != NULL){
+        EVP_PKEY_CTX_free(ctx);
+    }
+    if(enc_bin != NULL){
+        free(enc_bin);
+    }
+    return result;
 }
 
 
@@ -368,12 +314,12 @@ int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_pa
     int result = -1;
 
     FILE* fp;
-    EVP_PKEY* keypair = NULL;
     EVP_PKEY* pkey = NULL;
     EVP_PKEY* peer_pub_key = NULL;
     EVP_PKEY_CTX *ctx = NULL;
     uint8_t skey[1024] = {0};
     int skeylen = 0;
+    unsigned char* enc_hex = NULL;
 
     fp = fopen(key_path, "r");
     pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
@@ -408,68 +354,27 @@ int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_pa
         return -1;
     }
 
-    unsigned char* enc_hex = char2hex(skeylen, skey);
+    enc_hex = char2hex(skeylen, skey);
     fp = fopen(skey_path, "w");
     fputs((char*)enc_hex, fp);
 
     fclose(fp);
     printf("skey len: %d\n", skeylen);
     result = 1;
+out:
+    if(pkey != NULL){
+        EVP_PKEY_free(pkey);
+    }
+    if(peer_pub_key != NULL){
+        EVP_PKEY_free(peer_pub_key);
+    }
+    if(ctx != NULL){
+        EVP_PKEY_CTX_free(ctx);
+    }
+    if(enc_hex != NULL){
+        free(enc_hex);
+    }
     return result;
-/*
-    EC_POINT *peer_pub_point = NULL;
-
-    char* enc_msg = NULL;
-
-    int enc_len = 0;
-
-    char* err;
-
-    fp = fopen(key_path, "r");
-
-    pkey = PEM_read_ECPrivateKey(fp, NULL, NULL, NULL);
-
-    fclose(fp);
-
-    fp = fopen(pub_key_path, "r");
-
-    pub_key = PEM_read_EC_PUBKEY(fp, NULL, NULL, NULL);
-
-    fclose(fp);
-
-    fp = fopen(peer_pub_key_path, "r");
-
-    peer_pub_key = PEM_read_EC_PUBKEY(fp, NULL, NULL, NULL);
-
-    fclose(fp);
-
-    printf("loaded\n");
-
-    peer_pub_point = EC_KEY_get0_public_key(peer_pub_key);
-
-    unsigned char* secret;
-    int field_size;
-    size_t secret_len = 0;
-
-    field_size = EC_GROUP_get_degree(EC_KEY_get0_group(pkey));
-	secret_len = (field_size + 7) / 8;
-	secret = OPENSSL_malloc(secret_len);
-
-    secret_len = ECDH_compute_key(secret, secret_len, peer_pub_point, pkey, NULL);
-
-    unsigned char* enc_hex = char2hex(secret_len, secret);
-
-    fp = fopen(skey_path, "w");
-
-    fputs((char*)enc_hex, fp);
-
-    fclose(fp);
-
-    printf("%d\n", secret_len);
-
-
-    free(enc_hex);
-*/
 }
 
 int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_path){
@@ -486,6 +391,7 @@ int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_
     int peer_skeylen = 1024;
 
     uint8_t peer_skey[1024] = {0};
+    unsigned char* peer_skey_bin = NULL;
 
     fp = fopen(key_path, "r");
     pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
@@ -505,109 +411,143 @@ int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_
 
     if(!EVP_PKEY_derive_init(ctx)){
         printf("failed to derive init\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_derive_set_peer(ctx, peer_pub_key)){
         printf("failed to set peer\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_derive(ctx, NULL, &skeylen)){
         printf("failed to get skeylen\n");
-        return -1;
+        goto out;
     }
     if(!EVP_PKEY_derive(ctx, skey, &skeylen)){
         printf("failed to derive\n");
-        return -1;
+        goto out;
     }
     printf("skeylen: %d\n", skeylen);
     fp = fopen(skey_path, "r");
     fgets(peer_skey, peer_skeylen, fp);
     fclose(fp);
 
-    unsigned char* peer_skey_bin = hex2char(peer_skey);
+    peer_skey_bin = hex2char(peer_skey);
 
     if(memcmp(skey, peer_skey_bin, skeylen) != 0){
         printf("verify failed\n");
-        return -1;
+        goto out;
     }
     result = 1;
+out:
+    if(pkey != NULL){
+        EVP_PKEY_free(pkey);
+    }
+    if(peer_pub_key != NULL){
+        EVP_PKEY_free(peer_pub_key);
+    }
+    if(ctx != NULL){
+        EVP_PKEY_CTX_free(ctx);
+    }
+    if(peer_skey_bin != NULL){
+        free(peer_skey_bin);
+    }
     return result;
-/*
+}
+
+
+
+void signature(){
 
     int result;
 
     FILE* fp;
-    EC_KEY* pkey = NULL;
-    EC_KEY* pub_key = NULL;
+    EVP_PKEY_CTX* ctx_sign = NULL;
+    EVP_PKEY_CTX* ctx_verify = NULL;
+    EVP_PKEY* pkey = NULL;
+    EVP_PKEY* pub_key = NULL;
+    unsigned char *sig;
+    size_t siglen;
 
-    EC_KEY* peer_pub_key = NULL;
-    EC_POINT *peer_pub_point = NULL;
+    fp = fopen("./ca_priv.pem", "r");
 
-    char* enc_msg = NULL;
-
-    int enc_len = 0;
-
-    char* err;
-
-    fp = fopen(key_path, "r");
-
-    pkey = PEM_read_ECPrivateKey(fp, NULL, NULL, NULL);
-
+    pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
     fclose(fp);
 
-    fp = fopen(pub_key_path, "r");
-
-    pub_key = PEM_read_EC_PUBKEY(fp, NULL, NULL, NULL);
-
+    fp = fopen("./ca_pub.pem", "r");
+    pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
     fclose(fp);
 
-    fp = fopen(peer_pub_key_path, "r");
+    ctx_sign = EVP_PKEY_CTX_new(pkey, NULL);
+    if(ctx_sign == NULL){
+		printf("ctx sign failed\n");
+        return;
+    }
+    ctx_verify = EVP_PKEY_CTX_new(pub_key, NULL);
+    if(ctx_verify == NULL){
+		printf("ctx verify failed\n");
+        return;
+    }
 
-    peer_pub_key = PEM_read_EC_PUBKEY(fp, NULL, NULL, NULL);
+    // sha256 "hello"
+    char* hashstr = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
 
-    fclose(fp);
+    int hash_length = strlen(hashstr);
+    hash_length = hash_length / 2;
 
-    printf("loaded\n");
+    unsigned char* hash = hex2char(hashstr);
+    if (EVP_PKEY_sign_init(ctx_sign) != 1){
+		printf("signature init failed\n");
+        return;
+    }
+    /*
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx_sign, RSA_PKCS1_PADDING) != 1){
+		printf("signature rsa padding failed\n");
+        return;
+    }
+    */
+    
+    
+    if (EVP_PKEY_CTX_set_signature_md(ctx_sign, EVP_sha256()) != 1){
+		printf("signature md failed\n");
+        return;
+    }
+    if (EVP_PKEY_sign(ctx_sign, NULL, &siglen, hash, hash_length) != 1){
+		printf("signature prepare failed\n");
+        return;
+    }
 
-    peer_pub_point = EC_KEY_get0_public_key(peer_pub_key);
+    sig = malloc(siglen);
+    if (sig == NULL){
+		printf("signature malloc failed\n");
+        return;
+    }
+    memset(sig, 0, siglen);
+    if (EVP_PKEY_sign(ctx_sign, sig, &siglen, hash, hash_length) != 1){
+		printf("signature sign failed\n");
+        return;
+    }
+    printf("signed: siglen: %d, hashlen: %d\n", siglen, hash_length);
+    if (EVP_PKEY_verify_init(ctx_verify) <= 0){
+		printf("signature verify init failed\n");
+        return;
+    }
+    /*
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx_verify, RSA_PKCS1_PADDING) != 1){
+		printf("signature verify rsa padding failed\n");
+        return;
+    }
+    */
+    
 
-    unsigned char* secret;
-    int field_size;
-    size_t secret_len = 0;
+    if (EVP_PKEY_CTX_set_signature_md(ctx_verify, EVP_sha256()) != 1){
+		printf("signature verify md failed\n");
+        return;
+    }
 
-    field_size = EC_GROUP_get_degree(EC_KEY_get0_group(pkey));
-	secret_len = (field_size + 7) / 8;
-	secret = OPENSSL_malloc(secret_len);
+    int ret = EVP_PKEY_verify(ctx_verify, sig, siglen, hash, hash_length);
 
-    secret_len = ECDH_compute_key(secret, secret_len, peer_pub_point, pkey, NULL);
-
-    printf("secret len: %d\n", secret_len);
-
-    enc_len = secret_len * 2 + 1;
-
-    enc_msg = (char*)malloc(enc_len * sizeof(char));
-
-    fp = fopen(skey_path, "r");
-
-    fgets(enc_msg, enc_len, fp);
-
-    fclose(fp);
-
-    unsigned char* enc = hex2char(enc_msg);
-
-    int cmpres = memcmp(secret, enc, secret_len);
-
-    printf("result: %d (should be zero)\n", cmpres);
-
-    free(enc);
-
-
-    return 0;
-*/
+    printf("result: %d\n", ret);
 
 }
-
-
 
 
 void cert_create(){
@@ -1036,99 +976,6 @@ void cert_info(BIO* cert_pem)
 }
 
 
-void signature(){
-
-    int result;
-
-    FILE* fp;
-    EVP_PKEY_CTX* ctx_sign = NULL;
-    EVP_PKEY_CTX* ctx_verify = NULL;
-    EVP_PKEY* pkey = NULL;
-    EVP_PKEY* pub_key = NULL;
-    unsigned char *sig;
-    size_t siglen;
-
-    fp = fopen("./ca_priv.pem", "r");
-
-    pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
-    fclose(fp);
-
-    fp = fopen("./ca_pub.pem", "r");
-    pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
-    fclose(fp);
-
-    ctx_sign = EVP_PKEY_CTX_new(pkey, NULL);
-    if(ctx_sign == NULL){
-		printf("ctx sign failed\n");
-        return;
-    }
-    ctx_verify = EVP_PKEY_CTX_new(pub_key, NULL);
-    if(ctx_verify == NULL){
-		printf("ctx verify failed\n");
-        return;
-    }
-
-    // sha256 "hello"
-    char* hashstr = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
-
-    int hash_length = strlen(hashstr);
-    hash_length = hash_length / 2;
-
-    unsigned char* hash = hex2char(hashstr);
-    if (EVP_PKEY_sign_init(ctx_sign) != 1){
-		printf("signature init failed\n");
-        return;
-    }
-    /*
-    if (EVP_PKEY_CTX_set_rsa_padding(ctx_sign, RSA_PKCS1_PADDING) != 1){
-		printf("signature rsa padding failed\n");
-        return;
-    }
-    */
-    
-    
-    if (EVP_PKEY_CTX_set_signature_md(ctx_sign, EVP_sha256()) != 1){
-		printf("signature md failed\n");
-        return;
-    }
-    if (EVP_PKEY_sign(ctx_sign, NULL, &siglen, hash, hash_length) != 1){
-		printf("signature prepare failed\n");
-        return;
-    }
-
-    sig = malloc(siglen);
-    if (sig == NULL){
-		printf("signature malloc failed\n");
-        return;
-    }
-    memset(sig, 0, siglen);
-    if (EVP_PKEY_sign(ctx_sign, sig, &siglen, hash, hash_length) != 1){
-		printf("signature sign failed\n");
-        return;
-    }
-    printf("signed: siglen: %d, hashlen: %d\n", siglen, hash_length);
-    if (EVP_PKEY_verify_init(ctx_verify) <= 0){
-		printf("signature verify init failed\n");
-        return;
-    }
-    /*
-    if (EVP_PKEY_CTX_set_rsa_padding(ctx_verify, RSA_PKCS1_PADDING) != 1){
-		printf("signature verify rsa padding failed\n");
-        return;
-    }
-    */
-    
-
-    if (EVP_PKEY_CTX_set_signature_md(ctx_verify, EVP_sha256()) != 1){
-		printf("signature verify md failed\n");
-        return;
-    }
-
-    int ret = EVP_PKEY_verify(ctx_verify, sig, siglen, hash, hash_length);
-
-    printf("result: %d\n", ret);
-
-}
 
 static int create_tls_client(SSL *clientssl) {
 
