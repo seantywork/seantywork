@@ -46,8 +46,8 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
 int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key_path_s, char* pub_key_path_s, char* priv_key_path_c, char* pub_key_path_c);
 int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_path);
 int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_path);
-void signature();
-void cert_create();
+int signature(char* key_path, char* pub_key_path);
+int cert_create(char* cert_file, char* priv_path, char* pub_path, char* cert_file_s, char* pub_path_s, char* cert_file_c, char* pub_path_c);
 void cert_verify();
 void cert_show();
 void tls();
