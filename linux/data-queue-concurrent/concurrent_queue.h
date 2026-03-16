@@ -12,6 +12,7 @@
 #include <stdatomic.h>
 #include <pthread.h>
 #include <time.h>
+#include <sys/queue.h>
 
 #define TESTCASE 10000000
 #define BUFFSIZE 2048
@@ -123,6 +124,36 @@ typedef struct list_bucket {
 	list_node* qhead;
 	list_node* qtail;
 } list_bucket;
+
+
+
+typedef struct sys_node sys_node;
+
+struct sys_node {
+    uint32_t datalen;
+    uint8_t in_use;
+    uint8_t rsvd[3];
+    void* data;
+    TAILQ_ENTRY(sys_node) entries;
+};
+
+typedef TAILQ_HEAD(sys_head, sys_node) sys_node_t;
+
+typedef struct sys_bucket {
+	uint32_t limit;
+#if LOCK_SPIN
+    struct spinlock lock;
+    struct spinlock sig;
+#else
+	pthread_mutex_t lock;
+	pthread_cond_t sig;
+#endif
+    uint32_t head; 
+	uint32_t tail;
+    sys_node* pool;
+	sys_node_t* q;
+
+} sys_bucket;
 
 
 typedef struct testdata {
