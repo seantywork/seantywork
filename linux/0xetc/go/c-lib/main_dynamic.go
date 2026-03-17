@@ -1,8 +1,10 @@
+//go:build dynamic
+
 package main
 
 /*
 #cgo CFLAGS: -g -Wall -I./c2go
-#cgo LDFLAGS: -L./c2go -Wl,-rpath=./c2go -lc2go
+#cgo LDFLAGS: -L./c2go/dynamic -Wl,-rpath=./c2go/dynamic -lc2go
 #include "c2go.h"
 */
 import "C"
