@@ -19,7 +19,7 @@
 #define USE_DEF_MAP 1
 
 #define _BOGUS_VAL struct { \
-    uint64_t key; \
+    uint64_t index; \
     uint64_t value; \
 }
 

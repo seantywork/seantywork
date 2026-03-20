@@ -65,7 +65,7 @@ uint8_t _set_ok(void* data, void* val){
 uint8_t _get_ok(void* data, void* key){
     bogus_data* d = (bogus_data*)data;
     bogus_data* s = (bogus_data*)key;
-    if(d->key == s->key){
+    if(d->index == s->index){
         return 1;
     }
     return 0;
@@ -87,12 +87,12 @@ void _inc_func(void* ret, void* data){
 
     bogus_data* retdata = (bogus_data*)ret;
     bogus_data* result = (bogus_data*)data;
-    result->value += result->key;
+    result->value += result->index;
 }
 void _dec_func(void* ret, void* data){
     bogus_data* retdata = (bogus_data*)ret;
     bogus_data* result = (bogus_data*)data;
-    result->value -= result->key;
+    result->value -= result->index;
 }
 
 
@@ -101,7 +101,7 @@ void* increase_thread(void* varg){
     BOGUS_CMAP* cm = (BOGUS_CMAP*)varg;
     bogus_data key;
     for(int i = 0; i < TOTAL_VAL_COUNT; i++){
-        key.key = i;
+        key.index = i;
         if(BOGUS_CMAP_get(cm, &key, &key, _inc_func) < 0){
             printf("error getting at inc thread\n");
             goto done;
@@ -120,7 +120,7 @@ void* decrease_thread(void* varg){
     BOGUS_CMAP* cm = (BOGUS_CMAP*)varg;
     bogus_data key;
     for(int i = 0; i < TOTAL_VAL_COUNT; i++){
-        key.key = i;
+        key.index = i;
         if(BOGUS_CMAP_get(cm, &key, &key, _dec_func) < 0){
             printf("error getting at dec thread\n");
             goto done;
@@ -153,7 +153,7 @@ int main(int argc, char** argv){
     printf("inserting data...\n");
     for(int i = 0 ; i < TOTAL_VAL_COUNT; i++){
         bogus_data data;
-        data.key = i;
+        data.index = i;
         data.value = 0;
         if(BOGUS_CMAP_set(cm, &data) < 0){
             printf("failed to set value: %d\n", i);
@@ -187,7 +187,7 @@ int main(int argc, char** argv){
                 break;
             }
             if(data->data.value){
-                printf("data invalid at: buck: %d - index: %lu - value: %lu\n", i, data->data.key, data->data.value);
+                printf("data invalid at: buck: %d - index: %lu - value: %lu\n", i, data->data.index, data->data.value);
                 goto done;
             }
             data = data->next;

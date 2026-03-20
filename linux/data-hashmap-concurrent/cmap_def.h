@@ -36,7 +36,7 @@ int __map_t##_get(__map_t* wmap, __data_t* key, void* ret, void (*cb)(void* ret,
 int __map_t##_del(__map_t* wmap, __data_t* key); \
 void __map_t##_clear(__map_t* wmap); \
 
-#define DEF_MAP(__map_t, __data_t, __key_t) \
+#define DEF_MAP(__map_t, __data_t, __key_t, __key_name) \
 __map_t* __map_t##_create(int count, int depth, \
     uint64_t (*hashfunc)(uint8_t* data, size_t size, uint64_t div), \
     uint8_t (*getok)(void* data, void* key),\
@@ -66,7 +66,7 @@ __map_t* __map_t##_create(int count, int depth, \
 int __map_t##_set(__map_t* wmap, __data_t* val){ \
     int idx = -1; \
     __map_t##_node* data = NULL; \
-    uint64_t hashkey = wmap->hashfunc((uint8_t*)&val->key, wmap->hashsize, wmap->count); \
+    uint64_t hashkey = wmap->hashfunc((uint8_t*)&val->__key_name, wmap->hashsize, wmap->count); \
     pthread_mutex_lock(&wmap->buckets[hashkey].lock); \
     data = wmap->buckets[hashkey].bucket; \
     for(;;){ \
@@ -101,7 +101,7 @@ out: \
 int __map_t##_get(__map_t* wmap, __data_t* key, void* ret, void (*cb)(void* ret, void* data)){ \
     int idx = -1; \
     __map_t##_node* data = NULL; \
-    uint64_t hashkey = wmap->hashfunc((uint8_t*)&key->key, wmap->hashsize, wmap->count); \
+    uint64_t hashkey = wmap->hashfunc((uint8_t*)&key->__key_name, wmap->hashsize, wmap->count); \
     pthread_mutex_lock(&wmap->buckets[hashkey].lock); \
     data = wmap->buckets[hashkey].bucket; \
     for(;;){ \
@@ -127,7 +127,7 @@ out: \
 int __map_t##_del(__map_t* wmap, __data_t* key){ \
     int idx = -1; \
     __map_t##_node* data = NULL; \
-    uint64_t hashkey = wmap->hashfunc((uint8_t*)&key->key, wmap->hashsize, wmap->count); \
+    uint64_t hashkey = wmap->hashfunc((uint8_t*)&key->__key_name, wmap->hashsize, wmap->count); \
     pthread_mutex_lock(&wmap->buckets[hashkey].lock); \
     data = wmap->buckets[hashkey].bucket; \
     for(;;){ \

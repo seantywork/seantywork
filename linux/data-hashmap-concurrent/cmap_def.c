@@ -1,7 +1,7 @@
 #include "cmap_def.h"
 
 #if USE_DEF_MAP
-DEF_MAP(BOGUS_CMAP, bogus_data, uint64_t)
+DEF_MAP(BOGUS_CMAP, bogus_data, uint64_t, index)
 #else 
 
 BOGUS_CMAP* BOGUS_CMAP_create(int count, int depth, 
