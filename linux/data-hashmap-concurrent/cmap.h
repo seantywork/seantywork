@@ -16,39 +16,16 @@
 
 #define HASHSHA 0
 #define HASHFNV 1
+#define USE_DEF_MAP 1
 
-#define _BOGUS_KEY struct { \
-    uint64_t index; \
+#define _BOGUS_VAL struct { \
+    uint64_t key; \
+    uint64_t value; \
 }
 
-#define BOGUS_KEY _BOGUS_KEY
-
-typedef struct BOGUS_DATA BOGUS_DATA;
-
-struct BOGUS_DATA {
-    BOGUS_KEY;
-    uint64_t value;
-    uint64_t in_use;
-    BOGUS_DATA* next;
-};
-
-typedef struct BOGUS_BUCKET{
-    BOGUS_DATA* data;
-    pthread_mutex_t lock;
-} BOGUS_BUCKET;
-
-typedef struct BOGUS_CMAP{
-    BOGUS_BUCKET* buck;
-    int buck_size;
-} BOGUS_CMAP;
-
-
-
-BOGUS_CMAP* cmap_alloc(int buck_size, int data_size);
-int cmap_set(BOGUS_CMAP* cm, BOGUS_DATA* val);
-int cmap_get(BOGUS_CMAP* cm, BOGUS_DATA* key, void* ret, void (*cb)(void* ret, void* data));
-int cmap_del(BOGUS_CMAP* cm, BOGUS_DATA* key);
-void cmap_free(BOGUS_CMAP* cm);
+typedef struct bogus_data {
+    _BOGUS_VAL;
+} bogus_data;
 
 
 
