@@ -1,5 +1,4 @@
-\- jennifer dodna
-
-\- mrna
-
-\- crispr
+- walter isaacson
+- jennifer dodna
+- mrna
+- crispr

@@ -1,3 +1,4 @@
+- by dan wang
 - engineering state(china) vs lawyerly state(us)
 - guizhou example, bridges everywhere, chongqing, the downside, overcapacity and waste, european ski village
 - shenzhen and iphone manufacturing, tool, recipe, and the process knowledge

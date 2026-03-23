@@ -1,3 +1,4 @@
-\- russia, open border to the west
-
-\- china, practically landlocked
+- by tim marshall
+- russia, open border to the west
+- china, practically landlocked
+- arctic competition

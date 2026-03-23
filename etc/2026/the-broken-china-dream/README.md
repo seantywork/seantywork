@@ -1,3 +1,4 @@
+- by minxin pei
 - after mao, deng xiaoping, chen yun, hu yaobang and zhao ziyang, undying totalitarianism, only economic reform, pushback against liberalism and tiananmen 
 - rural reform, foreign trade reform, seo reform failed, price reform
 - neo authoritarianism, post tiananmen stalemate, soviet fall and southern tour, zhiang zemin and hu jintao, rules and norms?, nationalism, carrot and stick

@@ -1,3 +1,4 @@
+- by andrew ross sorkin
 - charles mitchell, citi national back, speculator hero, indicted after crash, found not guilty
 - tom lamont, enabler of charles mitchell, morgan house
 - durant, once ceo who lost it all crash

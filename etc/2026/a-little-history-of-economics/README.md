@@ -1,3 +1,4 @@
+- by niall kishtainy
 - agriculture and productivity, plato and atistotle, feudalism, thomas acquinas and money lending, italian cities, mercantillism
 - physiocrats, adman smith, industrial revolution, comparative advantage and ricardo, melthus, marx
 - marginal principle and marshall, tariff and list, imperialism and lenin

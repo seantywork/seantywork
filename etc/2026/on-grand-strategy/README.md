@@ -1,3 +1,4 @@
+- by john lewis gaddis
 - fox and hedgehog, xerxes's failure in greece
 - pericles's failure in peloponnesian war, octivan success, augustine, machiavelli, phillipii's spain, elizabethi's england
 - theory and pratice, american federalist, napolen in russia

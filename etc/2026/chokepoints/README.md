@@ -1,3 +1,4 @@
+- by edward fishman
 - dollar
 - iran nuclear and access denial to dollar, escrow
 - russian crimea invasion, denial of access to dollar financial market by oil corporations

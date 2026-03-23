@@ -1,3 +1,4 @@
+- by jonathan haidt
 - playing and physical interaction for children and teen are important
 - yet engaging in social media destroyes those in a vicious cycle of addiction, involving dopampine hook
 - also, general loss of social trust and bonding prevented parents from letting their kids have unsupervised play time, leaving them in defence mode rather than discovery mode

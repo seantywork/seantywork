@@ -1,1 +1,2 @@
-\- ben bernanke memoir plus history of fed monetary policies
+- by ben bernanke
+- ben bernanke memoir plus history of fed monetary policies

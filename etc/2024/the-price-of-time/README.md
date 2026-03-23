@@ -1,9 +1,6 @@
-\- easy money begets problems
-
-\- unproductive zombies
-
-\- asset bubble
-
-\- moral hazard
-
-\- inequality
+- by edward chancellor
+- easy money begets problems
+- unproductive zombies
+- asset bubble
+- moral hazard
+- inequality

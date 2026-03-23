@@ -1,1 +1,2 @@
-\- sand, salt, steel, copper, oil, lithium
+- by ed conway
+- sand, salt, steel, copper, oil, lithium
