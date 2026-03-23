@@ -106,9 +106,21 @@ int main(int argc, char** argv){
             fprintf(stdout, "%s success\n", argv[1]);
         }  
     } else if (strcmp(argv[1], "cert-verify") == 0){
-        cert_verify();
+        result = cert_verify(cert_path_s, cert_path);
+        if(result < 0){
+            fprintf(stderr,"%s failed: %d\n",argv[1], result);
+            return result;
+        } else {
+            fprintf(stdout, "%s success\n", argv[1]);
+        }  
     } else if (strcmp(argv[1], "tls") == 0){
-        tls();   
+        result = tls(cert_path, cert_path_s, priv_key_path_s, cert_path_c, priv_key_path_c);   
+        if(result < 0){
+            fprintf(stderr,"%s failed: %d\n",argv[1], result);
+            return result;
+        } else {
+            fprintf(stdout, "%s success\n", argv[1]);
+        }  
     } else {
         fprintf(stderr, "invalid argument\n");
         print_help();

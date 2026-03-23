@@ -48,22 +48,15 @@ int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_pa
 int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_path);
 int signature(char* key_path, char* pub_key_path);
 int cert_create(char* cert_file, char* priv_path, char* pub_path, char* cert_file_s, char* pub_path_s, char* cert_file_c, char* pub_path_c);
-void cert_verify();
-void cert_show();
-void tls();
+int cert_verify(char* cert_path_s, char* cert_path);
+int tls(char *certfile_ca, char *certfile, char *privkeyfile, char *c_certfile, char *c_privkeyfile);
 
 
-
-
+void cert_show(char* cert_path);
 int sig_verify(BIO* cert_pem, BIO* intermediate_pem);
-
 void cert_info(BIO* cert_pem);
-
 unsigned char* char2hex(int arrlen, unsigned char* bytearray);
-
 unsigned char* hex2char(unsigned char* hexarray);
-
-
 
 
 
