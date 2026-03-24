@@ -1,0 +1,16 @@
+- by robert sapolsky
+- what influences our best and worst behavior?
+- brain(amygdala, frontal cortex, mesolimbic dopamine pathway)
+- external stimuli(including subliminal ones, such as mentioning about race)
+- hormone, testosterone(strengthening existing tendency, maintaing social status), auxitocin(us/them differently), glococorticoids(damaging if prolonged)
+- synapse, enhanced, rewire, and newly-forming, though not much
+- adolescents(more amygdala activation) and childhood, 
+- parenthood, peers(play), 
+- culture, indiviualistic & collevtivist, culture of honor, more hierarchial or not, city dwellers & hunter gatherer(not inherently violent)
+- heritability(fingers and earing), gene environment interaction
+- evolution, individual selection(infanticide), kin selection, reciprocal altruism(game theory, why cooperation) 
+- us/them, hard to eliminate, but individuating helps
+- hierarchy, being lower is stressful for baboon too, conformity(milgram game, and prisoner game)
+- morality, is it reasoning or from heart? it's both, but from heart is more automatic
+- empathy, starting from heart, but needs reasoning to act out
+- free will, no such thing as long as we could figure every mechanism and variables that influence specific actions (bit weird to hear)
