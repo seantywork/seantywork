@@ -53,6 +53,22 @@ You can compile the code with the command below.
 $ make
 ```
 
+If you run the binary, you will see the available commands.
+
+```shell
+$ ./asym.out 
+too few arguments
+keygen           : rsa generate key pair
+encrypt          : rsa encrypt using public key
+decrypt          : rsa decrypt using private key
+ec-keygen        : ec generate key pair
+ec-derive        : ec generate shared secret
+ec-verify        : ec verify shared secret
+sig              : signature sign and verification
+cert-gen         : rsa generate certificate
+cert-verify      : rsa verify certificate
+tls              : tls communication
+```
 
 
 
