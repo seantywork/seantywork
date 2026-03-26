@@ -1,4 +1,5 @@
 #include "qs.h"
+#include "qs_tls.h"
 
 static void cleanup_heap(uint8_t *secret_key, uint8_t *shared_secret_e,
     uint8_t *shared_secret_d, uint8_t *public_key,

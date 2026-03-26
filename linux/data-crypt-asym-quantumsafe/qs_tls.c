@@ -358,6 +358,7 @@ void* create_tls_server(void* varg){
         printf("failed: server\n");
     }
 
+    pthread_exit(NULL);
 }
 
 /*

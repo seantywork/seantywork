@@ -1,5 +1,5 @@
 
-GCC_FLAGS := -g -Wall
+GCC_FLAGS := -g -Wall -O2
 
 OBJS := sym.o
 

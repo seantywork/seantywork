@@ -1,5 +1,5 @@
 
-GCC_FLAGS := -g -Wall
+GCC_FLAGS := -g -O2 -Wall
 
 OBJS := asym.o
 

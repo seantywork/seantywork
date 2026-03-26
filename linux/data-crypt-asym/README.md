@@ -281,6 +281,8 @@ verify the signature with:
 For this one and the rest, it doesn't matter which kind of key to use. I'm \
 going to go with EC.
 
+Let's check this function out.
+
 
 
 

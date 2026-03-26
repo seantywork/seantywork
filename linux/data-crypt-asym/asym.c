@@ -226,7 +226,7 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
     EVP_PKEY* pub_key = NULL;
     EVP_PKEY_CTX* ctx = NULL;
     char enc_msg[1024] = {0};
-    int enc_len = 0;
+    size_t enc_len = 0;
     char* err;
     unsigned char* enc_hex = NULL;
 
@@ -237,6 +237,10 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
     printf("original message: %s\n", msg);    
     if(EVP_PKEY_encrypt_init(ctx) != 1){
         printf("encrypt init failed\n");
+        goto out;
+    }
+    if(EVP_PKEY_encrypt(ctx, NULL, &enc_len, msg, msg_len) != 1){
+        printf("encrypt getlen failed\n");
         goto out;
     }
     if(EVP_PKEY_encrypt(ctx, enc_msg, &enc_len, msg, msg_len) != 1){
@@ -271,7 +275,7 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
     char enc_msg[2048] = {0};
     int enc_len = 2048;
     char dec_msg[2048] = {0};
-    int dec_len = 0;
+    size_t dec_len = 0;
     char* err;
     unsigned char* enc_bin = NULL;
 
@@ -288,13 +292,17 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
         printf("decrypt init failed\n");
         goto out;
     }
+    if(EVP_PKEY_decrypt(ctx, NULL, &dec_len, enc_bin, enc_len) != 1){
+        printf("decrypt getlen failed\n");
+        goto out;
+    }
     if(EVP_PKEY_decrypt(ctx, dec_msg, &dec_len, enc_bin, enc_len) != 1){
         printf("decrypt failed\n");
         goto out;
     }
-    memcpy(plain_msg, dec_msg, dec_len);
     printf("declen: %d\n", dec_len);
-    printf("original message: %s\n", plain_msg);
+    memcpy(plain_msg, dec_msg, dec_len);
+    printf("original message: %s\n", dec_msg);
     result = 1;
 out:
     if(priv_key != NULL){
@@ -319,7 +327,7 @@ int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_pa
     EVP_PKEY* peer_pub_key = NULL;
     EVP_PKEY_CTX *ctx = NULL;
     uint8_t skey[1024] = {0};
-    int skeylen = 0;
+    size_t skeylen = 0;
     unsigned char* enc_hex = NULL;
 
     fp = fopen(key_path, "r");
@@ -388,7 +396,7 @@ int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_
     EVP_PKEY* peer_pub_key = NULL;
     EVP_PKEY_CTX *ctx = NULL;
     uint8_t skey[1024] = {0};
-    int skeylen = 0;
+    size_t skeylen = 0;
     int peer_skeylen = 1024;
 
     uint8_t peer_skey[1024] = {0};
