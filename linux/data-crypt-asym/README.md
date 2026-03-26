@@ -102,6 +102,25 @@ MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA3Z1LiQRAmljd3rJbyOqi
 
 ```
 
+RSA-based key sharing is described in the diagram below.
+
+```shell
+generate                                    decrypt
+shared key                                  shared key
+      |                                           ^
+      |                                           |
+      V                                           |
++---------------+                         +----------------+
+|   A's         |                         |  A's           |
+|   public      |                         |  private       |
+|   key         |                         |  key           |
++---------------+                         +----------------+
+      |                                           |
+      |                                           |
+      |                                           |
+      +------   encrypt shared key -------->  ----+
+```
+
 
 Now, let's encrypt a message `cryptoinc` using the public key named \
 `ca_pub.pem`
@@ -223,6 +242,48 @@ ec-verify success
 
 ```
 They're the same, as you can see from the hex display of both results.
+
+
+Now, I'm going to test out the process of generating digital signature and \
+verifying it. Generating a digital signature involves digesting the target \
+content, then signing it with the private key. \
+Verifying the digital signature involves digesting the target content(independently) \
+then verifying the digital signature against the digest using the public key.
+
+Below is the diagram describing the process.
+
+```shell
+message: hello
+      |
+      |
+      V
+SHA256 digest of it:
+2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+      |
+      |
+      V
+sign the digest with:
++---------------+
+|   A's         |
+|   private key |
++---------------+
+      |
+      |
+      V
+verify the signature with:
++---------------+
+|   A's         |    &  independently calculated
+|   public key  |       SHA256 digest
++---------------+       on the same message
+```
+
+
+For this one and the rest, it doesn't matter which kind of key to use. I'm \
+going to go with EC.
+
+
+
+
 
 
 
