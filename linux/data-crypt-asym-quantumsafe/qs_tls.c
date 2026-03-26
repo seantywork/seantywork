@@ -82,7 +82,6 @@ int create_tls1_3_ctx_pair(OSSL_LIB_CTX *libctx, SSL_CTX **sctx, SSL_CTX **cctx,
                                 char *certfile_ca, char *certfile_c, char *privkeyfile_c, char *certfile, char *privkeyfile, int dtls_flag) {
 
 
-    printf("pair\n");
 
     SSL_CTX *serverctx = NULL, *clientctx = NULL;
 

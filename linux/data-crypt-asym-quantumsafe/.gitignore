@@ -7,3 +7,4 @@ certs
 *.txt
 *.srl
 *.csr
+*.bin

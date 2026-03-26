@@ -1,49 +1,4 @@
-
-
-#include "qs_common.h"
-#include "qs_tls.h"
-
-FILE* logfile = NULL;
-static OSSL_LIB_CTX *libctx = NULL;
-static OSSL_PROVIDER *defaultprov = NULL;
-static OSSL_PROVIDER *oqsprov = NULL;
-static OSSL_PROVIDER *fibsprov = NULL;
-//static OSSL_LIB_CTX *encodingctx = NULL;
-//static OSSL_PROVIDER *encodingprov = NULL;
-static char *modulename = NULL;
-static char *configfile = NULL;
-const OSSL_ALGORITHM *kemalgs;
-const OSSL_ALGORITHM *sigalgs;
-
-static char *message = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf";
-static int messagelen = 0;
-
-typedef struct endecode_params_st {
-    char *format;
-    char *structure;
-    char *keytype;
-    char *pass;
-    int selection;
-
-} ENDECODE_PARAMS;
-
-static ENDECODE_PARAMS plist[] = {
-    {"PEM", "PrivateKeyInfo", NULL, NULL,
-     OSSL_KEYMGMT_SELECT_KEYPAIR | OSSL_KEYMGMT_SELECT_ALL_PARAMETERS},
-    {"PEM", "EncryptedPrivateKeyInfo", NULL,
-     "Pass the holy handgrenade of antioch",
-     OSSL_KEYMGMT_SELECT_KEYPAIR | OSSL_KEYMGMT_SELECT_DOMAIN_PARAMETERS},
-    {"PEM", "SubjectPublicKeyInfo", NULL, NULL,
-     OSSL_KEYMGMT_SELECT_PUBLIC_KEY | OSSL_KEYMGMT_SELECT_ALL_PARAMETERS},
-    {"DER", "PrivateKeyInfo", NULL, NULL,
-     OSSL_KEYMGMT_SELECT_KEYPAIR | OSSL_KEYMGMT_SELECT_ALL_PARAMETERS},
-    {"DER", "EncryptedPrivateKeyInfo", NULL,
-     "Pass the holy handgrenade of antioch",
-     OSSL_KEYMGMT_SELECT_KEYPAIR | OSSL_KEYMGMT_SELECT_DOMAIN_PARAMETERS},
-    {"DER", "SubjectPublicKeyInfo", NULL, NULL,
-     OSSL_KEYMGMT_SELECT_PUBLIC_KEY | OSSL_KEYMGMT_SELECT_ALL_PARAMETERS},
-};
-
+#include "qs.h"
 
 static void cleanup_heap(uint8_t *secret_key, uint8_t *shared_secret_e,
     uint8_t *shared_secret_d, uint8_t *public_key,
@@ -69,46 +24,17 @@ static void cleanup_heap_sig(uint8_t *public_key, uint8_t *secret_key, uint8_t *
     OQS_SIG_free(sig);
 }
 
-
-static int key_create(){
-    char *sig_name = THIS_SIG_NAME;
-    char *kem_name = THIS_KEM_NAME;
+int qs_key_create(){
     SSL_CTX *cctx = NULL, *sctx = NULL;
     int ret = 1, testresult = 0;
-    char group[1024] = {0};
-    char keypath_ca[300];
-    char pubpath_ca[300];
-    char keypath_c[300];
-    char pubpath_c[300];
-    char keypath[300];
-    char pubpath[300];
-    char *certsdir = "certs";
-#ifndef OPENSSL_SYS_VMS
-    const char *sep = "/";
-#else
-    const char *sep = "";
-#endif
-    sprintf(group, "sig: %s, kem: %s\n", sig_name, kem_name);
-    
-    fputs(group, stdout);
 
-    sprintf(keypath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.key.pem");
-    sprintf(pubpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.pub.pem");
-    sprintf(keypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
-    sprintf(pubpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.pub.pem");
-    sprintf(keypath, "%s%s%s%s", certsdir, sep, sig_name, ".key.pem");
-    sprintf(pubpath, "%s%s%s%s", certsdir, sep, sig_name, ".pub.pem");
-    /* ensure certsdir exists */
-    if (mkdir(certsdir, 0700)) {
-        if (errno != EEXIST) {
-            fprintf(stderr, "Couldn't create certsdir %s: Err = %d\n", certsdir,
-                    errno);
-            ret = -1;
-            goto err;
-        }
-    }
     if (!create_key(libctx, (char *)sig_name, keypath_ca, pubpath_ca, keypath_c, pubpath_c, keypath, pubpath)) {
         fprintf(stderr, "Cert/keygen failed for %s\n", sig_name);
+        ret = -1;
+        goto err;
+    }
+    if (!create_key(libctx, (char *)kem_name, kem_keypath_ca, kem_pubpath_ca, kem_keypath_c, kem_pubpath_c, kem_keypath, kem_pubpath)) {
+        fprintf(stderr, "Cert/keygen failed for %s\n", kem_name);
         ret = -1;
         goto err;
     }
@@ -118,7 +44,238 @@ err:
     return ret;
 }
 
-static int qs_kem(){
+
+int qs_encap(char* enc_msg_path, char* sec_path){
+
+    int result = -1;
+
+    FILE* fp;
+    EVP_PKEY* pub_key = NULL;
+    EVP_PKEY_CTX* ctx = NULL;
+    char enc_msg[8192] = {0};
+    char sec_msg[8192] = {0};
+    size_t enc_len = 0;
+    size_t sec_len = 0;
+    char* err;
+    unsigned char* enc_hex = NULL;
+    unsigned char* sec_hex = NULL;
+
+    fp = fopen(kem_pubpath, "r");
+    pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
+    fclose(fp);
+    ctx = EVP_PKEY_CTX_new(pub_key, NULL);  
+    if(EVP_PKEY_encapsulate_init(ctx, NULL) != 1){
+        printf("encap init failed\n");
+        goto out;
+    }
+    if(EVP_PKEY_CTX_set_kem_op(ctx, kem_name) != 1){
+        printf("encap set op failed\n");
+        goto out;
+    }
+    if(EVP_PKEY_encapsulate(ctx, NULL, &enc_len, NULL, &sec_len) != 1){
+        printf("encap get len failed\n");
+        goto out; 
+    }
+    printf("enclen: %d, seclen: %d\n", enc_len, sec_len);
+    if(EVP_PKEY_encapsulate(ctx, enc_msg, &enc_len, sec_msg, &sec_len) != 1){
+        printf("encap failed\n");
+        goto out;
+    }
+    enc_hex = char2hex(enc_len, (unsigned char*)enc_msg);
+    printf("enclen: %d\n", enc_len);
+    fp = fopen(enc_msg_path, "w");
+    fputs((char*)enc_hex, fp);
+    fclose(fp);
+    sec_hex = char2hex(sec_len, (unsigned char*)sec_msg);
+    printf("seclen: %d\n", sec_len);
+    fp = fopen(sec_path, "w");
+    fputs((char*)sec_hex, fp);
+    fclose(fp);
+    result = 1;
+out:
+    if(pub_key != NULL){
+        EVP_PKEY_free(pub_key);
+    }
+    if(ctx != NULL){
+        EVP_PKEY_CTX_free(ctx);
+    }
+    if(enc_hex != NULL){
+        free(enc_hex);
+    }
+    if(sec_hex != NULL){
+        free(sec_hex);
+    }
+    return result;
+}
+
+int qs_decap(char* enc_msg_path, char* sec_path){
+
+    int result = -1;
+    FILE* fp;
+    EVP_PKEY* priv_key = NULL;
+    EVP_PKEY_CTX* ctx = NULL;
+    char sec_msg[8192] = {0};
+    size_t sec_len = 8192;
+    char peer_sec_msg[8192] = {0};
+    size_t peer_sec_len = 8192;
+    char peer_enc_msg[8192] = {0};
+    int peer_enc_len = 8192;
+    char* err;
+    unsigned char* peer_sec_bin = NULL;
+    unsigned char* peer_enc_bin = NULL;
+
+    fp = fopen(kem_keypath, "r");
+    priv_key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+    fclose(fp);
+    fp = fopen(sec_path, "r");
+    fgets(peer_sec_msg, peer_sec_len, fp);
+    fclose(fp);
+    peer_sec_bin = hex2char((unsigned char*)peer_sec_msg);
+    peer_sec_len = strlen(peer_sec_msg) / 2;
+    fp = fopen(enc_msg_path, "r");
+    fgets(peer_enc_msg, peer_enc_len, fp);
+    fclose(fp);
+    peer_enc_bin = hex2char((unsigned char*)peer_enc_msg);
+    peer_enc_len = strlen(peer_enc_msg) / 2;
+    ctx = EVP_PKEY_CTX_new(priv_key, NULL);
+    if(!EVP_PKEY_decapsulate_init(ctx, NULL)){
+        printf("decap init failed\n");
+        goto out;
+    }
+    if(EVP_PKEY_CTX_set_kem_op(ctx, kem_name) != 1){
+        printf("decap set op failed\n");
+        goto out;
+    }
+    if(EVP_PKEY_decapsulate(ctx, NULL, &sec_len, peer_enc_bin, peer_enc_len) != 1){
+        printf("decap getlen failed\n");
+        goto out;
+    }
+    printf("seclen: %d\n", sec_len);
+    if(EVP_PKEY_decapsulate(ctx, sec_msg, &sec_len, peer_enc_bin, peer_enc_len) != 1){
+        printf("decap failed\n");
+        goto out;
+    }
+    if(memcmp(sec_msg, peer_sec_bin, sec_len) != 0){
+        printf("memcmp failed\n");
+        goto out;
+    }
+    result = 1;
+out:
+    if(priv_key != NULL){
+        EVP_PKEY_free(priv_key);
+    }
+    if(ctx != NULL){
+        EVP_PKEY_CTX_free(ctx);
+    }
+    if(peer_sec_bin != NULL){
+        free(peer_sec_bin);
+    }
+    if(peer_enc_bin != NULL){
+        free(peer_enc_bin);
+    }
+    return result;
+}
+
+
+int qs_signature(){
+
+    int result = -1;
+    FILE* fp;
+    EVP_SIGNATURE *sig_alg = NULL;
+    EVP_PKEY_CTX* ctx_sign = NULL;
+    EVP_PKEY_CTX* ctx_verify = NULL;
+    EVP_PKEY* pkey = NULL;
+    EVP_PKEY* pub_key = NULL;
+    unsigned char *sig = NULL;
+    unsigned char* hash = NULL;
+    size_t siglen;
+    // sha256 "hello"
+    char* hashstr = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
+
+
+    fp = fopen(keypath, "r");
+
+    pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+    fclose(fp);
+
+    fp = fopen(pubpath, "r");
+    pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
+    fclose(fp);
+
+    ctx_sign = EVP_PKEY_CTX_new(pkey, NULL);
+    if(ctx_sign == NULL){
+		printf("ctx sign failed\n");
+        goto out;
+    }
+    ctx_verify = EVP_PKEY_CTX_new(pub_key, NULL);
+    if(ctx_verify == NULL){
+		printf("ctx verify failed\n");
+        goto out;
+    }
+
+    int hash_length = strlen(hashstr);
+    hash_length = hash_length / 2;
+
+    hash = hex2char(hashstr);
+    sig_alg = EVP_SIGNATURE_fetch(NULL, sig_name, NULL);
+
+    if (EVP_PKEY_sign_message_init(ctx_sign, sig_alg, NULL) != 1){
+		printf("signature init failed\n");
+        goto out;
+    }
+
+    if (EVP_PKEY_sign(ctx_sign, NULL, &siglen, hash, hash_length) != 1){
+		printf("signature prepare failed\n");
+        goto out;
+    }
+
+    sig = malloc(siglen);
+    if (sig == NULL){
+		printf("signature malloc failed\n");
+        goto out;
+    }
+    memset(sig, 0, siglen);
+    if (EVP_PKEY_sign(ctx_sign, sig, &siglen, hash, hash_length) != 1){
+		printf("signature sign failed\n");
+        goto out;
+    }
+    printf("signed: siglen: %d, hashlen: %d\n", siglen, hash_length);
+    if (EVP_PKEY_verify_message_init(ctx_verify, sig_alg, NULL) <= 0){
+		printf("signature verify init failed\n");
+        goto out;
+    }
+
+    int ret = EVP_PKEY_verify(ctx_verify, sig, siglen, hash, hash_length);
+
+    printf("result: %d\n", ret);
+    result = ret;
+out:
+    if(pkey != NULL){
+        EVP_PKEY_free(pkey);
+    }
+    if(pub_key != NULL){
+        EVP_PKEY_free(pub_key);
+    }
+    if(sig_alg != NULL){
+        EVP_SIGNATURE_free(sig_alg);
+    }
+    if(ctx_sign != NULL){
+        EVP_PKEY_CTX_free(ctx_sign);
+    }
+    if(ctx_verify != NULL){
+        EVP_PKEY_CTX_free(ctx_verify);
+    }
+    if(sig != NULL){
+        free(sig);
+    }
+    if(hash != NULL){
+        free(hash);
+    }
+    return result;
+}
+
+
+int oqs_kem(){
 
 	OQS_KEM *kem = NULL;
 	uint8_t *public_key = NULL;
@@ -284,7 +441,7 @@ static int qs_kem(){
 }
 
 
-static int qs_signatures() {
+int oqs_signature() {
 
 	OQS_SIG *sig = NULL;
 	uint8_t *public_key = NULL;
@@ -344,8 +501,24 @@ static int qs_signatures() {
 }
 
 
-static int sig_verify(BIO* cert_pem, BIO* intermediate_pem)
-{
+
+
+
+int qs_cert_create(){
+    SSL_CTX *cctx = NULL, *sctx = NULL;
+    int ret = 1, testresult = 0;
+    if (!create_cert(libctx, (char *)sig_name, certpath_ca, keypath_ca, pubpath_ca, certpath_c, pubpath_c, certpath, pubpath)) {
+        fprintf(stderr, "cert failed for %s\n", sig_name);
+        ret = -1;
+        goto err;
+    }
+err:
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+    return ret;
+}
+
+static int sig_verify(BIO* cert_pem, BIO* intermediate_pem){
     //BIO *b = BIO_new(BIO_s_mem());
     //BIO_puts(b, intermediate_pem);
 
@@ -368,85 +541,13 @@ static int sig_verify(BIO* cert_pem, BIO* intermediate_pem)
     return result;
 }
 
+int qs_cert_verify(){
 
-
-static int cert_create(){
-    char *sig_name = THIS_SIG_NAME;
-    char *kem_name = THIS_KEM_NAME;
-    SSL_CTX *cctx = NULL, *sctx = NULL;
     int ret = 1, testresult = 0;
-    char group[1024] = {0};
-    char certpath_ca[300];
-    char key_ca[300];
-    char pub_ca[300];
-    char certpath_c[300];
-    char pub_c[300];
-    char certpath[300];
-    char pub[300];
-    char *certsdir = "certs";
-#ifndef OPENSSL_SYS_VMS
-    const char *sep = "/";
-#else
-    const char *sep = "";
-#endif
-    sprintf(group, "sig: %s, kem: %s\n", sig_name, kem_name);
-    
-    fputs(group, stdout);
-
-    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt.pem");
-    sprintf(key_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.key.pem");
-    sprintf(pub_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.pub.pem");
-    sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt.pem");
-    sprintf(pub_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.pub.pem");
-    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, ".crt.pem");
-    sprintf(pub, "%s%s%s%s", certsdir, sep, sig_name, ".pub.pem");
-    /* ensure certsdir exists */
-    if (mkdir(certsdir, 0700)) {
-        if (errno != EEXIST) {
-            fprintf(stderr, "Couldn't create certsdir %s: Err = %d\n", certsdir,
-                    errno);
-            ret = -1;
-            goto err;
-        }
-    }
-    if (!create_cert(libctx, (char *)sig_name, certpath_ca, key_ca, pub_ca, certpath_c, pub_c, certpath, pub)) {
-        fprintf(stderr, "cert failed for %s\n", sig_name);
-        ret = -1;
-        goto err;
-    }
-err:
-    SSL_CTX_free(sctx);
-    SSL_CTX_free(cctx);
-    return ret;
-}
-
-
-static int cert_verify(){
-    char *sig_name = THIS_SIG_NAME;
-    char *kem_name = THIS_KEM_NAME;
-    int ret = 1, testresult = 0;
-    char group[1024] = {0};
-    char certpath_ca[300];
-    char certpath_c[300];
-    char privkeypath_c[300];
-    char certpath[300];
-    char privkeypath[300];
-    char *certsdir = "certs";
-#ifndef OPENSSL_SYS_VMS
-    const char *sep = "/";
-#else
-    const char *sep = "";
-#endif
 
     OpenSSL_add_all_algorithms();
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests(); 
-
-    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt.pem");
-    sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt.pem");
-    sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
-    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, ".crt.pem");
-    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, ".key.pem");
 
     BIO* cert = NULL;
     BIO* intermediate = NULL;
@@ -464,8 +565,6 @@ static int cert_verify(){
     //cert_info(intermediate);
     int res = sig_verify(cert,intermediate);
     printf("result: %d\n",res);
-
-
     BIO_free_all(cert);
     BIO_free_all(intermediate);
 
@@ -475,43 +574,18 @@ static int cert_verify(){
 
 
 
-
-static int qs_tlsnet(const char *sig_name, const char *kem_name, int dtls_flag) {
+int qs_tlsnet(const char *sig_name, const char *kem_name, int dtls_flag) {
     SSL_CTX *cctx = NULL, *sctx = NULL;
     SSL *clientssl = NULL, *serverssl = NULL;
     int ret = 1, testresult = 0;
-    char group[1024] = {0};
-    char certpath_ca[300];
-    char certpath_c[300];
-    char privkeypath_c[300];
-    char certpath[300];
-    char privkeypath[300];
-    char *certsdir = "certs";
-#ifndef OPENSSL_SYS_VMS
-    const char *sep = "/";
-#else
-    const char *sep = "";
-#endif
 
-
-    sprintf(group, "sig: %s, kem: %s\n", sig_name, kem_name);
-    
-    fputs(group, logfile);
-
-    sprintf(certpath_ca, "%s%s%s%s", certsdir, sep, sig_name, "_ca.crt.pem");
-    sprintf(certpath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.crt.pem");
-    sprintf(privkeypath_c, "%s%s%s%s", certsdir, sep, sig_name, "_cli.key.pem");
-    sprintf(certpath, "%s%s%s%s", certsdir, sep, sig_name, ".crt.pem");
-    sprintf(privkeypath, "%s%s%s%s", certsdir, sep, sig_name, ".key.pem");
-
-    testresult = create_tls1_3_ctx_pair(libctx, &sctx, &cctx, certpath_ca, certpath_c, privkeypath_c, 
-                            certpath, privkeypath, dtls_flag);
+    testresult = create_tls1_3_ctx_pair(libctx, &sctx, &cctx, certpath_ca, certpath_c, keypath_c, 
+                            certpath, keypath, dtls_flag);
 
     if (!testresult) {
         ret = -1;
         goto err;
     }
-
 
     serverssl = SSL_new(sctx);
     clientssl = SSL_new(cctx);
@@ -544,92 +618,3 @@ err:
     return ret;
 }
 
-
-
-void print_help(){
-
-    printf("keygen        : pq key generation \n");
-    printf("qs-kem        : pq key encap/decap using liboqs \n");
-    printf("qs-sig        : pq signature using liboqs \n");
-    printf("cert-gen      : pq certificate generation \n");
-    printf("cert-verify   : pq certificate verification \n");
-    printf("tls           : pq tls \n");
-
-}
-
-
-#define nelem(a) (sizeof(a) / sizeof((a)[0]))
-
-int main(int argc, char *argv[]) {
-    size_t i;
-    int errcnt = 0, test = 0, query_nocache;
-    
-    T((libctx = OSSL_LIB_CTX_new()) != NULL);
-    messagelen = strlen(message);
-    if(argc != 2){
-        printf("invalid argument\n");
-        print_help();
-        return -1;
-    }
-    if(strcmp(argv[1], "keygen") == 0){
-        if (key_create() == 1) {
-            fprintf(stderr, cGREEN "  keygen test succeeded" cNORM "\n");
-        } else {
-            fprintf(stderr, cRED "  keygen test failed" cNORM "\n");
-            ERR_print_errors_fp(stderr);
-            errcnt++;
-        }
-    } else if(strcmp(argv[1], "qs-kem") == 0){
-        if (qs_kem() == OQS_SUCCESS) {
-            fprintf(stderr, cGREEN "  KEM test succeeded" cNORM "\n");
-        } else {
-            fprintf(stderr, cRED "  KEM test failed" cNORM "\n");
-            ERR_print_errors_fp(stderr);
-            errcnt++;
-        }
-    } else if (strcmp(argv[1], "qs-sig") == 0){        
-        if ( qs_signatures() == OQS_SUCCESS) {
-            fprintf(stderr, cGREEN "sig test succeeded" cNORM "\n");
-        } else {
-            errcnt += 1;
-            fprintf(stderr, cRED "sig test failed" cNORM "\n");
-        }
-    } else if (strcmp(argv[1], "cert-gen") == 0){
-        if(cert_create() == 1) {
-            fprintf(stderr, cGREEN "cert create test succeeded" cNORM "\n");
-        } else {
-            errcnt += 1;
-            fprintf(stderr, cRED "cert create test failed" cNORM "\n");
-        }
-    }else if (strcmp(argv[1], "cert-verify") == 0){
-        if(cert_verify() == 1) {
-            fprintf(stderr, cGREEN "cert verify test succeeded" cNORM "\n");
-        } else {
-            errcnt += 1;
-            fprintf(stderr, cRED "cert verify test failed" cNORM "\n");
-        }
-    } else if (strcmp(argv[1], "tls") == 0){
-        logfile = fopen("log.txt", "w");
-#ifdef OSSL_CAPABILITY_TLS_SIGALG_NAME
-        int res = qs_tlsnet(THIS_SIG_NAME, THIS_KEM_NAME, 0);
-        if (res == 1) {
-            fprintf(stderr, cGREEN "tls net test succeeded" cNORM "\n");
-        } else {
-            errcnt += 1;
-            fprintf(stderr, cRED "tls net test failed" cNORM "\n");
-        }
-#else
-        fprintf(stderr,
-                "TLS-SIG handshake test not enabled. Update OpenSSL to more "
-                "current version.\n");
-#endif
-    } else {
-        printf("invalid argument: %s\n", argv[1]);
-        print_help();
-        return -1;
-    }
-    //OSSL_LIB_CTX_free(encodingctx);
-    OSSL_LIB_CTX_free(libctx);
-    TEST_ASSERT(errcnt == 0);
-    return !test;
-}

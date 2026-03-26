@@ -17,39 +17,39 @@ int key_pair_generate(char* priv_key_path, char* pub_key_path, char* priv_key_pa
     EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, "RSA", NULL);
     EVP_PKEY_CTX *evpctx_s = EVP_PKEY_CTX_new_from_name(libctx, "RSA", NULL);
     EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, "RSA", NULL);
-    if(!EVP_PKEY_keygen_init(evpctx)){
+    if(EVP_PKEY_keygen_init(evpctx) != 1){
         printf("failed to init 0\n");
         goto out;
     }
-    if(!EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx, bits)){
+    if(EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx, bits) != 1){
         printf("failed to set bits 0\n");
         goto out;
     }
-    if(!EVP_PKEY_generate(evpctx, &pkey)){
+    if(EVP_PKEY_generate(evpctx, &pkey) != 1){
         printf("failed to generate 0\n");
         goto out;
     }
-    if(!EVP_PKEY_keygen_init(evpctx_s)){
+    if(EVP_PKEY_keygen_init(evpctx_s) != 1){
         printf("failed to init 1\n");
         goto out;
     }
-    if(!EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx_s, bits)){
+    if(EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx_s, bits) != 1){
         printf("failed to set bits 1\n");
         goto out;
     }
-    if(!EVP_PKEY_generate(evpctx_s, &pkey_s)){
+    if(EVP_PKEY_generate(evpctx_s, &pkey_s) != 1){
         printf("failed to generate 1\n");
         goto out;
     }
-    if(!EVP_PKEY_keygen_init(evpctx_c)){
+    if(EVP_PKEY_keygen_init(evpctx_c) != 1){
         printf("failed to init 2\n");
         goto out;
     }
-    if(!EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx_c, bits)){
+    if(EVP_PKEY_CTX_set_rsa_keygen_bits(evpctx_c, bits) != 1){
         printf("failed to set bits 2\n");
         goto out;
     }
-    if(!EVP_PKEY_generate(evpctx_c, &pkey_c)){
+    if(EVP_PKEY_generate(evpctx_c, &pkey_c) != 1){
         printf("failed to generate 2\n");
         goto out;
     }
@@ -124,39 +124,39 @@ int key_pair_generate_ec(char* priv_key_path, char* pub_key_path, char* priv_key
     EVP_PKEY_CTX *evpctx = EVP_PKEY_CTX_new_from_name(libctx, "EC", NULL);
     EVP_PKEY_CTX *evpctx_s = EVP_PKEY_CTX_new_from_name(libctx, "EC", NULL);
     EVP_PKEY_CTX *evpctx_c = EVP_PKEY_CTX_new_from_name(libctx, "EC", NULL);
-    if(!EVP_PKEY_keygen_init(evpctx)){
+    if(EVP_PKEY_keygen_init(evpctx) != 1){
         printf("failed to init 0\n");
         goto out;
     }
-    if(!EVP_PKEY_CTX_set_group_name(evpctx, THIS_EC_GROUP)){
+    if(EVP_PKEY_CTX_set_group_name(evpctx, THIS_EC_GROUP) != 1){
         printf("failed to set group 0\n");
         goto out;
     }
-    if(!EVP_PKEY_generate(evpctx, &pkey)){
+    if(EVP_PKEY_generate(evpctx, &pkey) != 1){
         printf("failed to generate 0\n");
         goto out;
     }
-    if(!EVP_PKEY_keygen_init(evpctx_s)){
+    if(EVP_PKEY_keygen_init(evpctx_s) != 1){
         printf("failed to init 1\n");
         goto out;
     }
-    if(!EVP_PKEY_CTX_set_group_name(evpctx_s, THIS_EC_GROUP)){
+    if(EVP_PKEY_CTX_set_group_name(evpctx_s, THIS_EC_GROUP) != 1){
         printf("failed to set group 1\n");
         goto out;
     }
-    if(!EVP_PKEY_generate(evpctx_s, &pkey_s)){
+    if(EVP_PKEY_generate(evpctx_s, &pkey_s) != 1){
         printf("failed to generate 1\n");
         goto out;
     }
-    if(!EVP_PKEY_keygen_init(evpctx_c)){
+    if(EVP_PKEY_keygen_init(evpctx_c) != 1){
         printf("failed to init 2\n");
         goto out;
     }
-    if(!EVP_PKEY_CTX_set_group_name(evpctx_c, THIS_EC_GROUP)){
+    if(EVP_PKEY_CTX_set_group_name(evpctx_c, THIS_EC_GROUP) != 1){
         printf("failed to set group 2\n");
         goto out;
     }
-    if(!EVP_PKEY_generate(evpctx_c, &pkey_c)){
+    if(EVP_PKEY_generate(evpctx_c, &pkey_c) != 1){
         printf("failed to generate 2\n");
         goto out;
     }
@@ -235,11 +235,11 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
     fclose(fp);
     ctx = EVP_PKEY_CTX_new(pub_key, NULL);
     printf("original message: %s\n", msg);    
-    if(!EVP_PKEY_encrypt_init(ctx)){
+    if(EVP_PKEY_encrypt_init(ctx) != 1){
         printf("encrypt init failed\n");
         goto out;
     }
-    if(!EVP_PKEY_encrypt(ctx, enc_msg, &enc_len, msg, msg_len)){
+    if(EVP_PKEY_encrypt(ctx, enc_msg, &enc_len, msg, msg_len) != 1){
         printf("encrypt failed\n");
         goto out;
     }
@@ -284,11 +284,11 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
     enc_bin = hex2char((unsigned char*)enc_msg);
     enc_len = strlen(enc_msg) / 2;
     ctx = EVP_PKEY_CTX_new(priv_key, NULL);
-    if(!EVP_PKEY_decrypt_init(ctx)){
+    if(EVP_PKEY_decrypt_init(ctx) != 1){
         printf("decrypt init failed\n");
         goto out;
     }
-    if(!EVP_PKEY_decrypt(ctx, dec_msg, &dec_len, enc_bin, enc_len)){
+    if(EVP_PKEY_decrypt(ctx, dec_msg, &dec_len, enc_bin, enc_len) != 1){
         printf("decrypt failed\n");
         goto out;
     }
@@ -338,19 +338,19 @@ int asym_shared_keygen_ec(char* key_path, char* peer_pub_key_path, char* skey_pa
     fclose(fp);
     ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
-    if(!EVP_PKEY_derive_init(ctx)){
+    if(EVP_PKEY_derive_init(ctx) != 1){
         printf("failed to derive init\n");
         return -1;
     }
-    if(!EVP_PKEY_derive_set_peer(ctx, peer_pub_key)){
+    if(EVP_PKEY_derive_set_peer(ctx, peer_pub_key) != 1){
         printf("failed to set peer\n");
         return -1;
     }
-    if(!EVP_PKEY_derive(ctx, NULL, &skeylen)){
+    if(EVP_PKEY_derive(ctx, NULL, &skeylen) != 1){
         printf("failed to get skeylen\n");
         return -1;
     }
-    if(!EVP_PKEY_derive(ctx, skey, &skeylen)){
+    if(EVP_PKEY_derive(ctx, skey, &skeylen) != 1){
         printf("failed to derive\n");
         return -1;
     }
@@ -410,19 +410,19 @@ int asym_shared_keycheck_ec(char* key_path, char* peer_pub_key_path, char* skey_
     fclose(fp);
     ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
-    if(!EVP_PKEY_derive_init(ctx)){
+    if(EVP_PKEY_derive_init(ctx) != 1){
         printf("failed to derive init\n");
         goto out;
     }
-    if(!EVP_PKEY_derive_set_peer(ctx, peer_pub_key)){
+    if(EVP_PKEY_derive_set_peer(ctx, peer_pub_key) != 1){
         printf("failed to set peer\n");
         goto out;
     }
-    if(!EVP_PKEY_derive(ctx, NULL, &skeylen)){
+    if(EVP_PKEY_derive(ctx, NULL, &skeylen) != 1){
         printf("failed to get skeylen\n");
         goto out;
     }
-    if(!EVP_PKEY_derive(ctx, skey, &skeylen)){
+    if(EVP_PKEY_derive(ctx, skey, &skeylen) != 1){
         printf("failed to derive\n");
         goto out;
     }
@@ -526,7 +526,7 @@ int signature(char* key_path, char* pub_key_path){
         goto out;
     }
     printf("signed: siglen: %d, hashlen: %d\n", siglen, hash_length);
-    if (EVP_PKEY_verify_init(ctx_verify) <= 0){
+    if (EVP_PKEY_verify_init(ctx_verify) != 1){
 		printf("signature verify init failed\n");
         goto out;
     }
@@ -691,7 +691,7 @@ int cert_create(char* cert_file, char* priv_path, char* pub_path, char* cert_fil
         printf("s issuer name failed\n");
         goto out;
     }
-    if(X509_set_pubkey(x509_s, pub_key_s) == 0){
+    if(X509_set_pubkey(x509_s, pub_key_s) != 1){
         printf("s set pubkey fail\n");
         goto out;
     }
@@ -733,7 +733,7 @@ int cert_create(char* cert_file, char* priv_path, char* pub_path, char* cert_fil
         printf("c issuer name failed\n");
         goto out;
     }
-    if(X509_set_pubkey(x509_c, pub_key_c) == 0){
+    if(X509_set_pubkey(x509_c, pub_key_c) != 1){
         printf("c set pubkey fail\n");
         goto out;
     }
