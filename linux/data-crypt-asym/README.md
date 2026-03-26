@@ -69,13 +69,160 @@ cert-gen         : rsa generate certificate
 cert-verify      : rsa verify certificate
 tls              : tls communication
 ```
+Ones that begin with `ec-*` are operations using eliptic curve \
+rather than RSA.
+
+First, I'm going to go with RSA key generation and show you how to \
+encrypt a piece of secret data using the public key, followed by decryption \
+using the private key.
+
+Let's create RSA key pairs(it's plural because I'm going to create \
+multiple key pairs to be used as CA, server, and client going forward).
+
+```shell
+$ ./asym.out keygen
+keygen success
+
+$ ls | grep pem
+c_priv.pem
+c_pub.pem
+ca_priv.pem
+ca_pub.pem
+s_priv.pem
+s_pub.pem
+
+$ cat ca_priv.pem 
+-----BEGIN PRIVATE KEY-----
+MIIJQwIBADANBgkqhkiG9w0BAQEFAASCCS0wggkpAgEAAoICAQDdnUuJBECaWN3e
+slvI6qLmh6GlFhl9t0bVIiTWeDIYonr9uKnd4wbxA1FCcKRe+RIccwcHAIXZoZR3
+$ cat ca_pub.pem 
+-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA3Z1LiQRAmljd3rJbyOqi
+5oehpRYZfbdG1SIk1ngyGKJ6/bip3eMG8QNRQnCkXvkSHHMHBwCF2aGUd5FMpvDF
+
+```
 
 
+Now, let's encrypt a message `cryptoinc` using the public key named \
+`ca_pub.pem`
 
+```shell
 
+$./asym.out encrypt
+original message: cryptoinc
+0: 0F 1: 92 2: 82 3: 19 4: 87 5: FA 6: 91 7: 3E 8: 27 9: 7B 10: 33 11: 08 12: 77 13: B5 14: 38 15: 95 16: F7 17: 80 18: E5 19: 42 20: D9 21: 42 22: 5D 23: 9A 24: BB 25: D0 26: 37 27: C0 28: 10 29: 9C 30: A8 31: 3F
+[CUT]
+501: 9B 502: F3 503: 9A 504: 2F 505: C6 506: AC 507: 75 508: B3 509: 61 510: 4A 511: 45 
+enclen: 512
+encrypt success
 
+```
+As you can see above, this command displays the resulting binary data \
+of the public encryption operation, along with the total length of \
+that data. 
 
+The total length of the result of this operation is determined by \
+the RSA key bits length, and in this case, it's 4096. Changing macro \
+value below in file `asym.h` will also change the resulting data \ length, and crucially the max length of the original message.
 
+```c
+#define THIS_RSA_BITS 4096
+```
+You can also check out the result in file `enc_msg.bin`.
+
+```shell
+$ cat enc_msg.bin
+0F92821987FA913E277B330877B53895F780E542D9425D9ABBD037C0109CA83FDDA6B1EFA4DADA51A2EB26AA46E1F43E410E3E81BBBD2ECFA9C3C81FEB8952FBA5C19002F4445C0B039AF79113FBA5BEA8CBF6AAC6476AC293834FF8D2D18F22437AB6
+[CUT]
+```
+
+Now, let's decrypt this using the private key.
+
+```shell
+$ ./asym.out decrypt
+0: 0F 1: 92 2: 82 3: 19 4: 87 5: FA 6: 91 7: 3E 8: 27 9: 7B 10: 33 11: 08 12: 77 13: B5 14: 38 15: 95 16: F7 17: 80 18: E5 19: 42 20: D9 21: 42 22: 5D 23: 9A 24: BB 25: D0 26: 37 27: C0 28: 10 29: 9C 30: A8 31: 3F
+[CUT]
+501: 9B 502: F3 503: 9A 504: 2F 505: C6 506: AC 507: 75 508: B3 509: 61 510: 4A 511: 45 
+declen: 9
+original message: cryptoinc
+decrypt success
+
+```
+As you can see, the decryption is successfully done and the orinal \
+message `cryptoinc` is retrieved.
+
+In case of RSA, this function is mainly used to communicate a shared \
+secret per session securely between two parties (namely client and \
+server)
+
+How about eliptic curve? Let's find out.
+
+You can create EC key pairs using the command below.
+
+```shell
+$ ./asym.out ec-keygen
+ec-keygen success
+
+```
+
+In case of EC, you cannot directly use RSA's encryption/decryption, but \
+something equivalent is called "derivation".
+
+If party A and party B want to securely communicate a shared secret, \
+what they need is each other's public key, which is used along with \
+each party's own private key to derive a share secret key separately. \
+Here is a simple diagram.
+
+```shell
+- assuming same EC curve (in this case prime256v1)
++---------------+                         +----------------+
+|   A's         |                         |  B's           |
+|   private     |----A's public key------>|  private       |
+|   key         |<---B's public key-------|  key           |
++---------------+                         +----------------+
+      |                                           |
+      |                                           |
+      |                                           |
+      +----> calculated           calculated <----+
+             shared key           share key
+             on A's side          on B's side
+
+- calculated shared key then used for secure communication
+```
+
+With this example, I'm going to use `s_priv.pem` and `s_pub.pem` as A, \
+and `ca_priv.pem` and `ca_pub.pem` as B.
+
+Let's first derive the shared key on A's side.
+
+```shell
+$ ./asym.out ec-derive
+0: BE 1: 49 2: 43 3: 42 4: E2 5: 4A 6: 42 7: 77 8: 02 9: DA 10: 08 11: 35 12: EE 13: 78 14: F4 15: 3B 16: F8 17: 63 18: 75 19: 97 20: 4B 21: C1 22: EF 23: 37 24: 4A 25: 99 26: C3 27: A5 28: 5B 29: F4 30: 15 31: 53 
+skey len: 32
+ec-derive success
+```
+
+As you can see, data with length of 32 (which is surely can be used for \
+such algorithms as AES-256)
+
+You can check the raw binary of this data as below.
+
+```shell
+$ cat shared_key.bin 
+BE494342E24A427702DA0835EE78F43BF86375974BC1EF374A99C3A55BF41553
+```
+
+Now let's generate the data on B's side, and check if that data matches \
+with the data generated on A's side.
+
+```shell
+$ ./asym.out ec-verify
+skeylen: 32
+0: BE 1: 49 2: 43 3: 42 4: E2 5: 4A 6: 42 7: 77 8: 02 9: DA 10: 08 11: 35 12: EE 13: 78 14: F4 15: 3B 16: F8 17: 63 18: 75 19: 97 20: 4B 21: C1 22: EF 23: 37 24: 4A 25: 99 26: C3 27: A5 28: 5B 29: F4 30: 15 31: 53 
+ec-verify success
+
+```
+They're the same, as you can see from the hex display of both results.
 
 
 

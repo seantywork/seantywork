@@ -13,7 +13,7 @@ static inline void print_help(){
 
     printf("sig              : signature sign and verification\n");
     printf("cert-gen         : rsa generate certificate\n");
-    printf("cert-verify      : rsa verify vertificate\n");
+    printf("cert-verify      : rsa verify certificate\n");
     printf("tls              : tls communication\n");
 
 }

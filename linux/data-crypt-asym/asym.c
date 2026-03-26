@@ -234,7 +234,7 @@ int asym_encrypt(char* pub_key_path, char* enc_msg_path, int msg_len, char* msg)
     pub_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
     fclose(fp);
     ctx = EVP_PKEY_CTX_new(pub_key, NULL);
-    
+    printf("original message: %s\n", msg);    
     if(!EVP_PKEY_encrypt_init(ctx)){
         printf("encrypt init failed\n");
         goto out;
@@ -294,7 +294,7 @@ int asym_decrypt(char* pub_key_path, char* priv_key_path, char* enc_msg_path, ch
     }
     memcpy(plain_msg, dec_msg, dec_len);
     printf("declen: %d\n", dec_len);
-    printf("%s\n", plain_msg);
+    printf("original message: %s\n", plain_msg);
     result = 1;
 out:
     if(priv_key != NULL){
