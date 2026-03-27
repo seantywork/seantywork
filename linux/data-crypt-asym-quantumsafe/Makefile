@@ -1,13 +1,19 @@
+FLAG := -g -Wall -O2
+INC := -Iopenssl-qs/include -Iliboqs/build/include
+LIB := -Lopenssl-qs -Wl,-rpath=openssl-qs -Lliboqs/build/lib -Wl,-rpath=liboqs/build/lib
 
-INCL := -Iopenssl-qs/include -Iliboqs/build/include
-LOC := $(INCL) -Lopenssl-qs -Wl,-rpath=openssl-qs -Lliboqs/build/lib -Wl,-rpath=liboqs/build/lib
+all: qs_common.o qs.o qs_tls.o
+	gcc $(FLAG) $(INC) $(LIB) -o asym_qs.out main.c qs_common.o qs.o qs_tls.o -lpthread -loqs -lssl -lcrypto
 
-all:
-	gcc -g -Wall -O2 $(INCL) -c -o qs_common.o qs_common.c 
-	gcc -g -Wall -O2 $(INCL) -c -o qs.o qs.c 
-	gcc -g -Wall -O2 $(INCL) -c -o qs_tls.o qs_tls.c 
+qs_common.o:
+	gcc $(FLAG) $(INC) $(LIB) -c -o qs_common.o qs_common.c 
 
-	gcc -g -Wall -O2 $(LOC) -o asym_qs.out main.c qs_common.o qs.o qs_tls.o -lpthread -loqs -lssl -lcrypto
+qs.o:
+	gcc $(FLAG) $(INC) $(LIB) -c -o qs.o qs.c 
+
+qs_tls.o:
+	gcc $(FLAG) $(INC) $(LIB) -c -o qs_tls.o qs_tls.c 
+
 
 clean:
 

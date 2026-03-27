@@ -278,14 +278,151 @@ verify the signature with:
 ```
 
 
-For this one and the rest, it doesn't matter which kind of key to use. I'm \
+For this command and the rest, it doesn't matter which kind of key to use. I'm \
 going to go with EC.
 
-Let's check this function out.
+I'm going to use `ca_priv.pem` as the private key and `ca_pub.pem` as \
+its public key.
 
+Let's check out.
 
+```shell
+$ ./asym.out sig
+0: 2c 1: f2 2: 4d 3: ba 4: 5f 5: b0 6: a3 7: 0e 8: 26 9: e8 10: 3b 11: 2a 12: c5 13: b9 14: e2 15: 9e 16: 1b 17: 16 18: 1e 19: 5c 20: 1f 21: a7 22: 42 23: 5e 24: 73 25: 04 26: 33 27: 62 28: 93 29: 8b 30: 98 31: 24 
+signed: siglen: 71, hashlen: 32
+result: 1
+sig success
+```
 
+Now, with all these tests passed, it's time to do find out something that \
+is more family to all of us.
 
+Let's create certificates!
+
+For this tutorial, I'm going to create a total of three certificates, which are \
+`ca.crt.pem`, `srv.crt.pem`, and `cli.crt.pem`. \
+The latter two are signed by the `ca` and all of them will \
+be used to demonstrate the working of mutual TLS communication \
+of the `srv` server and `cli` client.
+
+This is the command to generate certs based on the keys
+
+```shell
+$ ./asym.out cert-gen
+cert-gen success
+
+```
+
+You can check the content of these certificates using the comman below.
+
+```shell
+$ openssl x509 -in srv.crt.pem -text -noout
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            5f:4e:18:63:11:42:9e:8e:08:f3:d6:ff:65:6d:7e:72:33:86:0c:67
+        Signature Algorithm: ecdsa-with-SHA256
+        Issuer: CN = localhost_ca
+        Validity
+            Not Before: Mar 27 05:56:31 2026 GMT
+            Not After : Mar 27 05:56:31 2027 GMT
+        Subject: CN = localhost
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (256 bit)
+                pub:
+                    04:ac:31:08:1a:9b:29:90:3e:9e:59:ef:7d:a6:43:
+                    71:9a:e5:e0:ac:92:84:90:04:73:53:6b:83:e6:7d:
+                    52:9b:04:60:bd:27:78:53:b6:26:3a:de:be:60:f8:
+                    07:3e:36:1a:b9:df:68:11:f5:95:e3:fc:c8:d9:27:
+                    b7:ea:bf:06:a3
+                ASN1 OID: prime256v1
+                NIST CURVE: P-256
+        X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                AE:06:EE:43:25:EB:2C:4F:CD:EB:BA:56:81:0B:C6:84:93:6C:51:B4
+            X509v3 Authority Key Identifier: 
+                74:AD:30:12:B8:D9:FA:0B:B2:49:90:BC:85:D2:87:96:25:6B:28:6A
+            X509v3 Subject Alternative Name: 
+                DNS:localhost
+    Signature Algorithm: ecdsa-with-SHA256
+    Signature Value:
+        30:45:02:20:40:2f:70:b9:d9:1c:bf:81:34:23:6d:7c:3d:d5:
+        8c:08:5e:33:74:77:84:79:4a:66:61:e6:16:cd:0e:24:5c:67:
+        02:21:00:a0:45:7a:5e:26:84:35:0d:22:d4:72:d0:a3:3e:2b:
+        be:d7:5e:49:24:48:31:cd:32:e9:c0:c7:6d:bc:2f:92:59
+
+```
+
+Let's check if server certificate is verifiable using ca certicate.
+
+```shell
+$ ./asym.out cert-verify
+cert-verify success
+```
+By changing the first argument to the below function, you can \
+see for yourself if client certificate is also verifiable by ca \
+certificate.
+
+```c
+// main.c
+        result = cert_verify(cert_path_s, cert_path);
+        if(result != 1){
+            fprintf(stderr,"%s failed: %d\n",argv[1], result);
+            return result;
+        } else {
+            fprintf(stdout, "%s success\n", argv[1]);
+        }  
+
+```
+
+Finally, this is the part where I'll test out mutual TLS between \
+the client and the server works using these certificates.
+
+Here is the command to do so.
+
+```shell
+
+$ ./asym.out tls
+client load ca: ./ca.crt.pem
+client file done: ./cli.crt.pem
+server load ca: ./ca.crt.pem
+server file done: ./srv.crt.pem
+server thread created
+server accept...
+server accepted
+  issuer cn: : localhost_ca
+  subject cn: : localhost_ca
+verify_callback (depth=1)(preverify=1)
+  issuer cn: : localhost_ca
+  subject cn: : localhost
+verify_callback (depth=0)(preverify=1)
+client ssl connected
+client ssl verified
+  issuer cn: : localhost_ca
+  subject cn: : localhost_ca
+verify_callback (depth=1)(preverify=1)
+  issuer cn: : localhost_ca
+  subject cn: : client
+verify_callback (depth=0)(preverify=1)
+server ssl accepted
+success: server hello
+tls success
+```
+As you can see above, client side first checks if the certificate is \
+correct, which is observable because we see `  subject cn: : localhost` \
+line first where comman name `localhost` is the server certificate.
+Then, followed immediately, server side also checks the certificate \
+sent by client, which is observable as we see `  subject cn: : client`.
+
+The Test terminates as the server successfully receives the string \
+`hello` from the client.
+
+Thank you for reading this, goodday!
+
+Below are some miscellaneous OpenSSL commands regarding key generation\
+, certificate generation.
 
 
 

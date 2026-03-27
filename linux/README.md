@@ -30,7 +30,7 @@
         <li><a href="data-container-kube-net/">data-container-kube-net</a></li>
         <li><a href="data-container-podman/">data-container-podman</a></li>
         <li><a href="data-cpu-affinity-thread/">data-cpu-affinity-thread</a></li>
-        <li><a href="data-crypt-asym/">.data-crypt-asym</a></li>
+        <li><a href="data-crypt-asym/">data-crypt-asym</a></li>
         <li><a href="data-crypt-asym-quantumsafe/">.data-crypt-asym-quantumsafe</a></li>
         <li><a href="data-crypt-sym/">.data-crypt-sym</a></li>
         <li><a href="data-dynamic-lib/">.data-dynamic-lib</a></li>
