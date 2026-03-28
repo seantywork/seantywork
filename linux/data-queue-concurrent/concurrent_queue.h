@@ -52,6 +52,8 @@ void spinlock_unlock(struct spinlock* spinlock) {
 
 
 #if LOCK_SPIN
+#define LOCK_T struct spinlock
+#define COND_T struct spinlock
 #define LOCK_INIT spinlock_init
 #define LOCK_SIG_INIT spinlock_init
 #define LOCK spinlock_lock
@@ -62,6 +64,8 @@ void spinlock_unlock(struct spinlock* spinlock) {
 
 #define LOCK_SIG_SEND(sig) do{}while(0);
 #else 
+#define LOCK_T pthread_mutex_t
+#define COND_T pthread_cond_t
 #define LOCK_INIT pthread_mutex_init
 #define LOCK_SIG_INIT pthread_cond_init
 #define LOCK pthread_mutex_lock
@@ -161,5 +165,102 @@ typedef struct testdata {
     uint32_t bottom;
 } testdata;
 
+
+#define DECL_QUEUE(__q_t, __data_t) \
+typedef struct __q_t##_node __q_t##_node; \
+struct __q_t##_node { \
+    uint32_t datalen; \
+    uint8_t in_use; \
+    uint8_t rsvd[3]; \
+	__data_t* data; \
+	__q_t##_node* prev; \
+	__q_t##_node* next; \
+}; \
+typedef struct __q_t##_bucket { \
+	uint32_t limit; \
+	LOCK_T lock; \
+	COND_T sig; \
+	__q_t##_node* qhead; \
+	__q_t##_node* qtail; \
+} __q_t##_bucket; \
+__q_t##_bucket* __q_t##_make(int max); \
+void __q_t##_delete(__q_t##_bucket* q); \
+void __q_t##_en(__q_t##_bucket* q, __data_t* data); \
+void __q_t##_de(__q_t##_bucket* q, __data_t* data); \
+
+
+#define DEF_QUEUE(__q_t, __data_t) \
+__q_t##_bucket* __q_t##_make(int max){ \
+    __q_t##_bucket* q = (__q_t##_bucket*)malloc(sizeof(__q_t##_bucket)); \
+    memset(q, 0, sizeof(__q_t##_bucket)); \
+    LOCK_INIT(&q->lock, NULL); \
+    LOCK_SIG_INIT(&q->sig, NULL); \
+    for(int i = 0; i < max; i++){ \
+        __q_t##_node* n = (__q_t##_node*)malloc(sizeof(__q_t##_node)); \
+        memset(n, 0, sizeof(__q_t##_node)); \
+        n->data = malloc(sizeof(__data_t)); \
+        n->datalen = sizeof(__data_t); \
+        if(i == 0){ \
+            q->qhead = n; \
+            q->qtail = n; \
+        } else { \
+            q->qtail->next = n; \
+            q->qtail = q->qtail->next; \
+        } \
+    } \
+    q->qtail->next = q->qhead; \
+    q->qtail = q->qhead; \
+    q->limit = max; \
+    return q; \
+} \
+void __q_t##_delete(__q_t##_bucket* q){ \
+    if(q == NULL){ \
+        return; \
+    } \
+    __q_t##_node* data = q->qhead; \
+    LOCK(&q->lock); \
+    for(int i = 0; i < q->limit; i++){ \
+        __q_t##_node* tmp = data->next; \
+        free(data->data); \
+        free(data); \
+        data = tmp; \
+    } \
+    UNLOCK(&q->lock); \
+    free(q); \
+} \
+void __q_t##_en(__q_t##_bucket* q, __data_t* data){ \
+    for(;;){ \
+        LOCK(&q->lock); \
+        if((q->qhead == q->qtail) && (q->qhead->in_use == 1)){ \
+            LOCK_SIG_WAIT(&q->sig, &q->lock); \
+        } \
+        memcpy(q->qtail->data, data, q->qtail->datalen); \
+        if((q->qhead == q->qtail) && (q->qhead->in_use != 1)){ \
+            LOCK_SIG_SEND(&q->sig); \
+        } \
+        q->qtail->in_use = 1; \
+        q->qtail = q->qtail->next; \
+        UNLOCK(&q->lock); \
+        break; \
+    } \
+} \
+void __q_t##_de(__q_t##_bucket* q, __data_t* data){ \
+    for(;;){ \
+        LOCK(&q->lock); \
+        if((q->qhead == q->qtail) && (q->qhead->in_use != 1)){ \
+            LOCK_SIG_WAIT(&q->sig, &q->lock); \
+        } \
+        memcpy(data, q->qhead->data, q->qhead->datalen); \
+        if((q->qhead == q->qtail) && (q->qhead->in_use == 1)){ \
+            LOCK_SIG_SEND(&q->sig); \
+        } \
+        q->qhead->in_use = 0; \
+        q->qhead = q->qhead->next; \
+        UNLOCK(&q->lock); \
+        break; \
+    } \
+} \
+
+DECL_QUEUE(cc_queue, testdata)
 
 #endif 
