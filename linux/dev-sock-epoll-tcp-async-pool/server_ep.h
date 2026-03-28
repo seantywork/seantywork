@@ -55,22 +55,19 @@ extern pthread_t *WORK_TID;
 extern worker_t *WORKERS;
 
 #define MAX_JOB 8192
-#define JOB_KEEP 0
-#define JOB_DONE 1
 
 typedef enum job_kind {
-    JK_NONE,
-    JK_CONN,
-    JK_READ,
-    JK_DATA,
-    JK_WRITE,
+    JOB_NONE,
+    JOB_DONE,
+    JOB_CONN,
+    JOB_READ,
+    JOB_DATA,
+    JOB_WRITE,
 } job_kind;
 
 typedef struct job_t {
-    int in_use;
-    
     void* data;
-    uint8_t (*job)(void* data, job_kind* next);
+    job_kind (*job)(void* data);
 } job_t;
 
 typedef struct conn_context_t {
@@ -91,10 +88,10 @@ job_t* new_job();
 void free_job(job_t* j);
 int make_socket_non_blocking (int);
 void* worker(void* varg);
-uint8_t handle_conn(void* data, job_kind* next);
-uint8_t handle_read(void* data, job_kind* next);
-uint8_t handle_data(void* data, job_kind* next);
-uint8_t handle_write(void* data, job_kind* next);
+job_kind handle_conn(void* data);
+job_kind handle_read(void* data);
+job_kind handle_data(void* data);
+job_kind handle_write(void* data);
 
 bool _atomic_compare_exchange(int* ptr, int compare, int exchange);
 void _atomic_store(int* ptr, int value);

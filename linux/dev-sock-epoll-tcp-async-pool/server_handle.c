@@ -42,44 +42,36 @@ void* worker(void *varg){
     worker_t* worker = (worker_t*)varg;
     work_queue_bucket* wq = (work_queue_bucket*)worker->work_queue;
     job_t* job = NULL;
-    job_kind jk = JK_NONE;
+    job_kind jk = JOB_NONE;
     printf("worker ready: %d\n", worker->id);
     while(1){
         work_queue_de(wq, &job);
         printf("wk start: %d\n", worker->id);
-        if(job->job(job->data, &jk) == JOB_DONE){
-            free_job(job);
-            job = NULL;
-        } else {
-            if(jk == JK_NONE){
-                printf("wk invalid: none while keep?: %d\n", worker->id);
+        jk = job->job(job->data);
+        switch (jk){
+            case JOB_DATA:
+                printf("next: data\n");
+                job->job = handle_data;
+                break;
+            case JOB_WRITE:
+                printf("next: write\n");
+                job->job = handle_write;
+                break;
+            default:
+                printf("next: free\n");                
                 free_job(job);
-                continue;
-            }
-            switch (jk){
-                case JK_DATA:
-                    printf("next: data\n");
-                    job->job = handle_data;
-                    break;
-                case JK_WRITE:
-                    printf("next: write\n");
-                    job->job = handle_write;
-                    break;
-                default:
-                    printf("wk invalid: id %d, jk: %d\n", worker->id, jk);
-                    free_job(job);
-                    continue;     
-            }
-            work_queue_en(wq, &job);
+                printf("wk done: %d\n", worker->id);
+                continue;     
         }
+        work_queue_en(wq, &job);
         printf("wk done: %d\n", worker->id);
     }
     pthread_exit(NULL);
 }
 
 
-uint8_t handle_conn(void* data, job_kind* next){
-    uint8_t result = JOB_DONE;
+job_kind handle_conn(void* data){
+    job_kind result = JOB_DONE;
     conn_context_t* ctx = (conn_context_t*)data;
     struct epoll_event event;
     while(TRUE){
@@ -116,14 +108,13 @@ uint8_t handle_conn(void* data, job_kind* next){
             printf("handle epoll add success\n");
         }
     }
-    *next = JK_NONE;
     return result;
 }
 
 
-uint8_t handle_read(void* data, job_kind* next){
+job_kind handle_read(void* data){
     read_context_t* ctx = (read_context_t*)data;
-    int done = JOB_KEEP;
+    job_kind done = JOB_DATA;
     int valread = 0;
     ctx->buff = (uint8_t*)malloc(MAX_BUFF);
     ctx->datalen = 0; 
@@ -158,25 +149,22 @@ uint8_t handle_read(void* data, job_kind* next){
     }
     printf("read: %d\n", valread);
     ctx->datalen = (uint32_t)valread;
-    *next = JK_DATA;
     return done;
 }
 
 
-uint8_t handle_data(void *data, job_kind* next){
-    int done = JOB_KEEP;
+job_kind handle_data(void *data){
+    job_kind done = JOB_WRITE;
     read_context_t* ctx = (read_context_t*)data;
     printf("data: %d\n", ctx->datalen);
-    *next = JK_WRITE;
     return done;
 }
 
-uint8_t handle_write(void *data, job_kind* next){
-    int done = JOB_DONE;
+job_kind handle_write(void *data){
+    job_kind done = JOB_DONE;
     read_context_t* ctx = (read_context_t*)data;
     int wval = write(ctx->fd, ctx->buff, ctx->datalen);
     printf("write: %d\n", wval);
-    *next = JK_NONE;
     free(ctx->buff);
     return done;
 }
