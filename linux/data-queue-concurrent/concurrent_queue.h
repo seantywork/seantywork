@@ -232,6 +232,10 @@ void __q_t##_en(__q_t##_bucket* q, __data_t* data){ \
         pthread_mutex_lock(&q->lock); \
         if((q->qhead == q->qtail) && (q->qhead->in_use == 1)){ \
             pthread_cond_wait(&q->sig, &q->lock); \
+            if((q->qhead == q->qtail) && (q->qhead->in_use == 1)){ \
+                pthread_mutex_unlock(&q->lock); \
+                continue; \
+            } \
         } \
         memcpy(&q->qtail->data, data, q->qtail->datalen); \
         if((q->qhead == q->qtail) && (q->qhead->in_use != 1)){ \
@@ -248,6 +252,10 @@ void __q_t##_de(__q_t##_bucket* q, __data_t* data){ \
         pthread_mutex_lock(&q->lock); \
         if((q->qhead == q->qtail) && (q->qhead->in_use != 1)){ \
             pthread_cond_wait(&q->sig, &q->lock); \
+            if((q->qhead == q->qtail) && (q->qhead->in_use != 1)){ \
+                pthread_mutex_unlock(&q->lock); \
+                continue; \
+            } \
         } \
         memcpy(data, &q->qhead->data, q->qhead->datalen); \
         if((q->qhead == q->qtail) && (q->qhead->in_use == 1)){ \

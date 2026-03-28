@@ -1,5 +1,5 @@
 CC      := gcc
-CFLAGS  := -Wall -g
+CFLAGS  := -Wall -g -O2
 LIBS    := -lpthread
 
 SERVER_EP := server_ep.out
