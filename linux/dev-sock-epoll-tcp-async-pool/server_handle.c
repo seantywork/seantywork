@@ -1,29 +1,102 @@
 #include "server_ep.h"
 
-void handle_conn(){
+DEF_QUEUE(work_queue, job_t*)
+
+job_t* new_job(){
+    job_t* j = (job_t*)malloc(sizeof(job_t));
+    memset(j, 0, sizeof(job_t));
+    return j;
+}
+
+void free_job(job_t* j){
+    if(j->data != NULL){
+        free(j->data);
+        j->data = NULL;
+    }
+    free(j);
+}
+
+int make_socket_non_blocking (int sfd){
+  int flags, s;
+
+  flags = fcntl (sfd, F_GETFL, 0);
+  if (flags == -1)
+    {
+      perror ("fcntl get");
+      return -1;
+    }
+
+  flags |= O_NONBLOCK;
+  s = fcntl (sfd, F_SETFL, flags);
+  if (s == -1)
+    {
+      perror ("fcntl set");
+      return -2;
+    }
+
+  return 0;
+}
 
 
+void* worker(void *varg){
+    worker_t* worker = (worker_t*)varg;
+    work_queue_bucket* wq = (work_queue_bucket*)worker->work_queue;
+    job_t* job = NULL;
+    job_kind jk = JK_NONE;
+    printf("worker ready: %d\n", worker->id);
+    while(1){
+        work_queue_de(wq, &job);
+        printf("wk start: %d\n", worker->id);
+        if(job->job(job->data, &jk) == JOB_DONE){
+            free_job(job);
+            job = NULL;
+        } else {
+            if(jk == JK_NONE){
+                printf("wk invalid: none while keep?: %d\n", worker->id);
+                free_job(job);
+                continue;
+            }
+            switch (jk){
+                case JK_DATA:
+                    printf("next: data\n");
+                    job->job = handle_data;
+                    break;
+                case JK_WRITE:
+                    printf("next: write\n");
+                    job->job = handle_write;
+                    break;
+                default:
+                    printf("wk invalid: id %d, jk: %d\n", worker->id, jk);
+                    free_job(job);
+                    continue;     
+            }
+            work_queue_en(wq, &job);
+        }
+        printf("wk done: %d\n", worker->id);
+    }
+    pthread_exit(NULL);
+}
+
+
+uint8_t handle_conn(void* data, job_kind* next){
+    uint8_t result = JOB_DONE;
+    conn_context_t* ctx = (conn_context_t*)data;
+    struct epoll_event event;
     while(TRUE){
-
         struct sockaddr in_addr;
         socklen_t in_len;
         int infd;
-
         in_len = sizeof(in_addr);
-   
-        infd = accept(SOCKFD, &in_addr, &in_len);
-
+        infd = accept(ctx->fd, &in_addr, &in_len);
         if(infd == -1){
-
             if(
                 (errno == EAGAIN) ||
                 (errno == EWOULDBLOCK)
             ){
                 printf("all incoming connections handled\n");
                 break;
-
             } else{
-                printf("errbo: %d\n", errno);
+                printf("errno: %d\n", errno);
                 printf("error handling incoming connection\n");
                 break;
             }
@@ -31,341 +104,88 @@ void handle_conn(){
 
         if(make_socket_non_blocking(infd) < 0){
             printf("failed new conn non block\n");
-            exit(EXIT_FAILURE);
+            break;
         }
-
-        EVENT.data.fd = infd;
-        EVENT.events = EPOLLIN | EPOLLET;
-
-        if (epoll_ctl(EPLFD, EPOLL_CTL_ADD, infd, &EVENT) < 0){
-
+        memset(&event, 0, sizeof(struct epoll_event));
+        event.data.fd = infd;
+        event.events = EPOLLIN | EPOLLET;
+        if (epoll_ctl(ctx->eplfd, EPOLL_CTL_ADD, infd, &event) < 0){
             printf("handle epoll add failed\n");
-            exit(EXIT_FAILURE);
-
+            break;
         }  else {
-
             printf("handle epoll add success\n");
-
         }
-
-
-
     }
-
-
+    *next = JK_NONE;
+    return result;
 }
 
 
-void handle_client(int i){
-
-    int done = 0;
-
-
+uint8_t handle_read(void* data, job_kind* next){
+    read_context_t* ctx = (read_context_t*)data;
+    int done = JOB_KEEP;
     int valread = 0;
-    char buff[MAX_BUFF] = {0}; 
+    ctx->buff = (uint8_t*)malloc(MAX_BUFF);
+    ctx->datalen = 0; 
     struct sockaddr_in peeraddr;
     socklen_t peerlen;
-
     peerlen = sizeof(peeraddr);
-
-    while(valread != MAX_BUFF){
-
+    while(valread < MAX_BUFF){
         int n = 0;
-
-        n = read(CLIENT_SOCKET[i].data.fd, buff + valread, MAX_BUFF - valread);
-
+        n = read(ctx->fd, ctx->buff + valread, MAX_BUFF - valread);
         if(n == -1){
-
             if(errno != EAGAIN){
                 printf("handle read error\n");
-                
-            }
-
-            done = 1;      
-
-
+            }    
+            done = JOB_DONE;
+            break;
         } else if (n == 0){
-
-            getpeername(CLIENT_SOCKET[i].data.fd, (SA*)&peeraddr, &peerlen);
+            getpeername(ctx->fd, (SA*)&peeraddr, &peerlen);
             printf("client disconnected: ip=%s, port=%d\n",
                 inet_ntoa(peeraddr.sin_addr),
                 ntohs(peeraddr.sin_port)
             );
-
-            done = 1;
-
+            free(ctx->buff);
+            done = JOB_DONE;
+            break;
         }
-
         valread += n;    
-
     }
-
-    if (done){
-
-        close(CLIENT_SOCKET[i].data.fd);
+    if (done == JOB_DONE){
+        close(ctx->fd);
         printf("closed sock\n");
-        return;
+        return done;
     }
-
-    uint8_t* newbuff = malloc(MAX_BUFF * sizeof(uint8_t));
-
-    memcpy(newbuff, buff, MAX_BUFF * sizeof(uint8_t));
-
-    to_worker(i, CLIENT_SOCKET[i].data.fd, newbuff);
-
-
+    printf("read: %d\n", valread);
+    ctx->datalen = (uint32_t)valread;
+    *next = JK_DATA;
+    return done;
 }
 
 
-void to_worker(int id, int fd, uint8_t* data){
-
-    int idx = 0;
-    
-    while(1){
-
-        pthread_mutex_lock(&APOOL[id].lock);
-
-        spinlock_lock(&APOOL[id].data_idx_lock);
-
-        if(APOOL[id].data_idx == MAX_BUFF){
-
-            spinlock_unlock(&APOOL[id].data_idx_lock);
-
-            pthread_mutex_unlock(&APOOL[id].lock);
-
-            continue;
-        }
-
-        APOOL[id].data_idx += 1;
-
-        idx = APOOL[id].data_idx;
-
-        APOOL[id].fd = fd;
-        APOOL[id].data[idx] = data;
-
-        spinlock_unlock(&APOOL[id].data_idx_lock);
-
-        break;
-    }
-
-
-    pthread_cond_signal(&APOOL[id].cond);
-
-    pthread_mutex_unlock(&APOOL[id].lock);
+uint8_t handle_data(void *data, job_kind* next){
+    int done = JOB_KEEP;
+    read_context_t* ctx = (read_context_t*)data;
+    printf("data: %d\n", ctx->datalen);
+    *next = JK_WRITE;
+    return done;
 }
 
-void* worker(void *varg){
-
-    int id = *(int*)varg;
-
-    int wfd;
-
-    int idx;
-
-    uint8_t *wdata;
-
-    while(1){
-
-        pthread_mutex_lock(&APOOL[id].lock);
-
-        pthread_cond_wait(&APOOL[id].cond, &APOOL[id].lock);
-
-        spinlock_lock(&APOOL[id].data_idx_lock);
-
-        if (APOOL[id].data_idx < 0){
-
-            spinlock_unlock(&APOOL[id].data_idx_lock);
-
-            pthread_mutex_unlock(&APOOL[id].lock);
-
-            continue;
-        }
-
-        idx = APOOL[id].data_idx;
-        
-        APOOL[id].data_idx -= 1;
-        
-        wfd = APOOL[id].fd;
-
-        wdata = (uint8_t*)malloc(MAX_BUFF * sizeof(uint8_t));
-
-        memset(wdata, 0, MAX_BUFF * sizeof(uint8_t));
-
-        memcpy(wdata, APOOL[id].data[idx], MAX_BUFF * sizeof(uint8_t));
-
-        free(APOOL[id].data[idx]);
-
-        spinlock_unlock(&APOOL[id].data_idx_lock);
-
-        pthread_mutex_unlock(&APOOL[id].lock);        
-
-        printf("worker: %d: received: %s\n", id, wdata);
-
-        to_writer(id, wfd, wdata);
-
-    }
-
-}
-
-void to_writer(int id, int fd, uint8_t* data){
-
-    int idx = 0;
-
-    while(1){
-
-        pthread_mutex_lock(&AWPOOL[id].lock);
-
-        spinlock_lock(&AWPOOL[id].data_idx_lock);
-
-        if(AWPOOL[id].data_idx == MAX_BUFF){
-
-            spinlock_unlock(&AWPOOL[id].data_idx_lock);
-
-            pthread_mutex_unlock(&AWPOOL[id].lock);
-
-            continue;
-        }
-
-        AWPOOL[id].data_idx += 1;
-
-        idx = AWPOOL[id].data_idx;
-
-        AWPOOL[id].fd = fd;
-        AWPOOL[id].data[idx] = data;
-
-        spinlock_unlock(&AWPOOL[id].data_idx_lock);
-
-        break;
-    }
-
-
-    pthread_cond_signal(&AWPOOL[id].cond);
-
-    pthread_mutex_unlock(&AWPOOL[id].lock);   
+uint8_t handle_write(void *data, job_kind* next){
+    int done = JOB_DONE;
+    read_context_t* ctx = (read_context_t*)data;
+    int wval = write(ctx->fd, ctx->buff, ctx->datalen);
+    printf("write: %d\n", wval);
+    *next = JK_NONE;
+    free(ctx->buff);
+    return done;
 }
 
 
-void* writer(void *varg){
-
-    int id = *(int*)varg;
-
-    int wfd;
-
-    int idx;
-
-    uint8_t *wdata;
-
-    for (;;){
-
-        pthread_mutex_lock(&AWPOOL[id].lock);
-
-        pthread_cond_wait(&AWPOOL[id].cond, &AWPOOL[id].lock);
-
-        spinlock_lock(&AWPOOL[id].data_idx_lock);
-
-        if (AWPOOL[id].data_idx < 0){
-
-            spinlock_unlock(&AWPOOL[id].data_idx_lock);
-
-            pthread_mutex_unlock(&AWPOOL[id].lock);
-
-            continue;
-        }
-
-        idx = AWPOOL[id].data_idx;
-        
-        AWPOOL[id].data_idx -= 1;
-        
-        wfd = AWPOOL[id].fd;
-
-        wdata = (uint8_t*)malloc(MAX_BUFF * sizeof(uint8_t));
-
-        memset(wdata, 0, MAX_BUFF * sizeof(uint8_t));
-
-        memcpy(wdata, AWPOOL[id].data[idx], MAX_BUFF * sizeof(uint8_t));
-
-        free(AWPOOL[id].data);
-
-        spinlock_unlock(&AWPOOL[id].data_idx_lock);
-
-        pthread_mutex_unlock(&AWPOOL[id].lock);
-
-        printf("writer received: id: %d: data: %s\n", id, wdata);
-
-        int wval = write(wfd, wdata, MAX_BUFF);
-
-        printf("write data: %d\n", wval);
-
-
-        free(wdata);
-
-    }
-
+bool _atomic_compare_exchange(int* ptr, int compare, int exchange) {
+    return __atomic_compare_exchange_n(ptr, &compare, exchange,
+            0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 }
-
-
-/*
-void handle_client(int i){
-
-    int done = 0;
-
-
-    while(TRUE){
-        int valread;
-        char buff[MAX_BUFF] = {0}; 
-        char wbuff[MAX_BUFF] = {0};
-        struct sockaddr_in peeraddr;
-        socklen_t peerlen;
-
-        peerlen = sizeof(peeraddr);
-
-        valread = read(CLIENT_SOCKET[i].data.fd, buff, sizeof(buff));
-
-        if(valread == -1){
-
-            if(errno != EAGAIN){
-                printf("handle read error\n");
-
-                done = 1;                
-            }
-
-            break;
-
-
-        } else if (valread == 0){
-
-
-            getpeername(CLIENT_SOCKET[i].data.fd, (SA*)&peeraddr, &peerlen);
-            printf("client disconnected: ip=%s, port=%d\n",
-                inet_ntoa(peeraddr.sin_addr),
-                ntohs(peeraddr.sin_port)
-            );
-
-            done = 1;
-
-            break;
-
-        }
-
-        strcat(wbuff, "SERVER RESP: ");
-
-        strcat(wbuff, buff);
-
-        send(CLIENT_SOCKET[i].data.fd, wbuff, strlen(wbuff), 0);
-
-    }
-
-    if (done){
-
-        close(CLIENT_SOCKET[i].data.fd);
-        printf("closed sock\n");
-
-    }
-
-
-
+void _atomic_store(int* ptr, int value) {
+    __atomic_store_n(ptr, value, __ATOMIC_SEQ_CST);
 }
-*/
-
-
-

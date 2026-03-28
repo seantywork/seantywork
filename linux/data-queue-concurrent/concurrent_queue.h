@@ -172,14 +172,14 @@ struct __q_t##_node { \
     uint32_t datalen; \
     uint8_t in_use; \
     uint8_t rsvd[3]; \
-	__data_t* data; \
+	__data_t data; \
 	__q_t##_node* prev; \
 	__q_t##_node* next; \
 }; \
 typedef struct __q_t##_bucket { \
 	uint32_t limit; \
-	LOCK_T lock; \
-	COND_T sig; \
+	pthread_mutex_t lock; \
+	pthread_cond_t sig; \
 	__q_t##_node* qhead; \
 	__q_t##_node* qtail; \
 } __q_t##_bucket; \
@@ -193,12 +193,12 @@ void __q_t##_de(__q_t##_bucket* q, __data_t* data); \
 __q_t##_bucket* __q_t##_make(int max){ \
     __q_t##_bucket* q = (__q_t##_bucket*)malloc(sizeof(__q_t##_bucket)); \
     memset(q, 0, sizeof(__q_t##_bucket)); \
-    LOCK_INIT(&q->lock, NULL); \
-    LOCK_SIG_INIT(&q->sig, NULL); \
+    pthread_mutex_init(&q->lock, NULL); \
+    pthread_cond_init(&q->sig, NULL); \
     for(int i = 0; i < max; i++){ \
         __q_t##_node* n = (__q_t##_node*)malloc(sizeof(__q_t##_node)); \
         memset(n, 0, sizeof(__q_t##_node)); \
-        n->data = malloc(sizeof(__data_t)); \
+        memset(&n->data, 0, sizeof(__data_t)); \
         n->datalen = sizeof(__data_t); \
         if(i == 0){ \
             q->qhead = n; \
@@ -218,45 +218,44 @@ void __q_t##_delete(__q_t##_bucket* q){ \
         return; \
     } \
     __q_t##_node* data = q->qhead; \
-    LOCK(&q->lock); \
+    pthread_mutex_lock(&q->lock); \
     for(int i = 0; i < q->limit; i++){ \
         __q_t##_node* tmp = data->next; \
-        free(data->data); \
         free(data); \
         data = tmp; \
     } \
-    UNLOCK(&q->lock); \
+    pthread_mutex_unlock(&q->lock); \
     free(q); \
 } \
 void __q_t##_en(__q_t##_bucket* q, __data_t* data){ \
     for(;;){ \
-        LOCK(&q->lock); \
+        pthread_mutex_lock(&q->lock); \
         if((q->qhead == q->qtail) && (q->qhead->in_use == 1)){ \
-            LOCK_SIG_WAIT(&q->sig, &q->lock); \
+            pthread_cond_wait(&q->sig, &q->lock); \
         } \
-        memcpy(q->qtail->data, data, q->qtail->datalen); \
+        memcpy(&q->qtail->data, data, q->qtail->datalen); \
         if((q->qhead == q->qtail) && (q->qhead->in_use != 1)){ \
-            LOCK_SIG_SEND(&q->sig); \
+            pthread_cond_broadcast(&q->sig); \
         } \
         q->qtail->in_use = 1; \
         q->qtail = q->qtail->next; \
-        UNLOCK(&q->lock); \
+        pthread_mutex_unlock(&q->lock); \
         break; \
     } \
 } \
 void __q_t##_de(__q_t##_bucket* q, __data_t* data){ \
     for(;;){ \
-        LOCK(&q->lock); \
+        pthread_mutex_lock(&q->lock); \
         if((q->qhead == q->qtail) && (q->qhead->in_use != 1)){ \
-            LOCK_SIG_WAIT(&q->sig, &q->lock); \
+            pthread_cond_wait(&q->sig, &q->lock); \
         } \
-        memcpy(data, q->qhead->data, q->qhead->datalen); \
+        memcpy(data, &q->qhead->data, q->qhead->datalen); \
         if((q->qhead == q->qtail) && (q->qhead->in_use == 1)){ \
-            LOCK_SIG_SEND(&q->sig); \
+            pthread_cond_broadcast(&q->sig); \
         } \
         q->qhead->in_use = 0; \
         q->qhead = q->qhead->next; \
-        UNLOCK(&q->lock); \
+        pthread_mutex_unlock(&q->lock); \
         break; \
     } \
 } \
