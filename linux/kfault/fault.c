@@ -17,7 +17,7 @@ static void job_handler(struct work_struct* work){
 
     u8* bomb = NULL;
 
-    printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
+    printk(KERN_INFO "workqueue handler: %s\n", __FUNCTION__);
 
     printk(KERN_INFO "counting 5 seconds before light out\n");
 

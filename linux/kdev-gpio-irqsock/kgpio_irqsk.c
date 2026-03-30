@@ -505,9 +505,9 @@ static struct work_struct job;
 
 static void job_handler(struct work_struct* work){
 
-    printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
+    printk(KERN_INFO "workqueue handler: %s\n", __FUNCTION__);
 
-	printk(KERN_INFO "waitqueue handler waiting...\n");
+	printk(KERN_INFO "workqueue handler waiting...\n");
 
 	msleep(100);
 

@@ -4,6 +4,7 @@
 #include <linux/time.h>
 #include <linux/delay.h>
 #include <linux/workqueue.h>
+#include <asm/atomic.h>
 
 static DECLARE_WAIT_QUEUE_HEAD(this_wq);
 static int condition = 0;
@@ -14,7 +15,7 @@ static struct work_struct job;
 static void job_handler(struct work_struct* work){
 
 
-    printk(KERN_INFO "waitqueue handler: %s\n", __FUNCTION__);
+    printk(KERN_INFO "job handler: %s\n", __FUNCTION__);
 
     msleep(5000);
 
@@ -29,7 +30,7 @@ static void job_handler(struct work_struct* work){
 
 static int __init this_wq_init(void){
 
-    printk(KERN_INFO "this waitqueue init\n");
+    printk(KERN_INFO "this workqueue init\n");
 
     INIT_WORK(&job, job_handler);
 
