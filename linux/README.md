@@ -122,6 +122,7 @@
         <li><a href="kfs-debug/">.kfs-debug</a></li>
         <li><a href="kfs-proc/">.kfs-proc</a></li>
         <li><a href="kfs-sys/">.kfs-sys</a></li>
+        <li><a href="khashmap-concurrent/">.khashmap-concurrent</a></li>
         <li><a href="kioctl/">.kioctl</a></li>
         <li><a href="kirq/">.kirq</a></li>
         <li><a href="kirq-completion/">.kirq-completion</a></li>
@@ -143,7 +144,6 @@
         <li><a href="kqueue-concurrent/">.kqueue-concurrent</a></li>
         <li><a href="ksync-mutex/">.ksync-mutex</a></li>
         <li><a href="ksync-rcu/">.ksync-rcu</a></li>
-        <li><a href="ksync-rcu-cmap/">.ksync-rcu-cmap</a></li>
         <li><a href="ksync-spin/">.ksync-spin</a></li>
         <li><a href="ksync-thread/">.ksync-thread</a></li>
         <li><a href="ksysinfo/">.ksysinfo</a></li>

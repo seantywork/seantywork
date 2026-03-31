@@ -9,10 +9,16 @@
 #include <linux/completion.h>
 #include <linux/irqflags.h>
 
+#define USE_COMPLETION 0
+#define TIMEOUT_JIFFIES HZ / 100
+
 struct cond_t {
-//    atomic_t awake;
-//    wait_queue_head_t wq;
+#if USE_COMPLETION 
     struct completion c;
+#else
+    atomic_t awake;
+    wait_queue_head_t wq;
+#endif
 };
 
 typedef struct ccq_node ccq_node;
@@ -44,32 +50,36 @@ void dequeue(ccq_bucket* q, void* data, uint32_t datalen);
 
 
 void _sig_init(struct cond_t* sig){
-//    atomic_set(&sig->awake, 0);
-//    init_waitqueue_head(&sig->wq);
+#if USE_COMPLETION
     init_completion(&sig->c);
+#else
+    atomic_set(&sig->awake, 0);
+    init_waitqueue_head(&sig->wq);
+#endif
 }
 
 void _sig_wait(struct cond_t* sig, struct mutex* lock){
     mutex_unlock(lock);
-    //wait_event(sig->wq, atomic_cmpxchg(&sig->awake, 1, 0));
-    //wait_for_completion_interruptible(&sig->c);
-    wait_for_completion_timeout(&sig->c, HZ / 100);
+#if USE_COMPLETION
+    wait_for_completion_timeout(&sig->c, TIMEOUT_JIFFIES);
     reinit_completion(&sig->c);
-    /*
-    while(!atomic_read(&sig->awake)){
-        ndelay(1000);
-    }    
+#else 
+    wait_event_interruptible_timeout(sig->wq, atomic_read(&sig->awake), TIMEOUT_JIFFIES);
     atomic_set(&sig->awake, 0);
-    */
+#endif
     mutex_lock(lock);
 }
 
 void _sig_broadcast(struct cond_t* sig){
-//    atomic_set(&sig->awake, 1);
+#if USE_COMPLETION
     complete_all(&sig->c);
+#else 
+    atomic_set(&sig->awake, 1);
+    wake_up_interruptible_all(&sig->wq);
+#endif
 }
 
-#define TESTCASE 100000
+#define TESTCASE 10000000
 #define BUFFSIZE 2048
 #define EN_QUEUES 4
 #define DE_QUEUES 4

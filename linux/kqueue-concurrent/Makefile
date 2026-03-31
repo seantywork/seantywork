@@ -1,5 +1,6 @@
 PWD          := $(shell pwd)
 obj-m        += kqueue_cc.o
+obj-m        += kqueue_cc_wq.o
 
 
 all:
