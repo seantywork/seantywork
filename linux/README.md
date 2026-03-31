@@ -127,7 +127,7 @@
         <li><a href="kirq/">.kirq</a></li>
         <li><a href="kirq-completion/">.kirq-completion</a></li>
         <li><a href="kirq-tasklet/">.kirq-tasklet</a></li>
-        <li><a href="kirq-wait/">.kirq-wait</a></li>
+        <li><a href="kirq-waitqueue/">.kirq-waitqueue</a></li>
         <li><a href="kirq-workqueue/">.kirq-workqueue</a></li>
         <li><a href="klog/">.klog</a></li>
         <li><a href="kmem-allocpage/">.kmem-allocpage</a></li>
