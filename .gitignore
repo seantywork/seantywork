@@ -10,4 +10,6 @@ VENV
 *.symvers
 *.order
 *.mod.c
+*.mod
+!go.mod
 .vscode

@@ -1,5 +1,5 @@
 PWD          := $(shell pwd)
-obj-m        += ksig_broadcast.o
+obj-m        += kwait.o
 
 
 all:

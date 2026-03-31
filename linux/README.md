@@ -123,9 +123,11 @@
         <li><a href="kfs-proc/">.kfs-proc</a></li>
         <li><a href="kfs-sys/">.kfs-sys</a></li>
         <li><a href="kioctl/">.kioctl</a></li>
-        <li><a href="kirq-bh-workqueue/">.kirq-bh-workqueue</a></li>
-        <li><a href="kirq-tbh-tasklet/">.kirq-tbh-tasklet</a></li>
-        <li><a href="kirq-th/">.kirq-th</a></li>
+        <li><a href="kirq/">.kirq</a></li>
+        <li><a href="kirq-completion/">.kirq-completion</a></li>
+        <li><a href="kirq-tasklet/">.kirq-tasklet</a></li>
+        <li><a href="kirq-wait/">.kirq-wait</a></li>
+        <li><a href="kirq-workqueue/">.kirq-workqueue</a></li>
         <li><a href="klog/">.klog</a></li>
         <li><a href="kmem-allocpage/">.kmem-allocpage</a></li>
         <li><a href="kmem-kmalloc/">.kmem-kmalloc</a></li>
@@ -138,6 +140,7 @@
         <li><a href="knetlink/">.knetlink</a></li>
         <li><a href="kproc/">.kproc</a></li>
         <li><a href="kptr-share/">.kptr-share</a></li>
+        <li><a href="kqueue-concurrent/">.kqueue-concurrent</a></li>
         <li><a href="ksync-mutex/">.ksync-mutex</a></li>
         <li><a href="ksync-rcu/">.ksync-rcu</a></li>
         <li><a href="ksync-rcu-cmap/">.ksync-rcu-cmap</a></li>

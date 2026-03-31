@@ -7,6 +7,7 @@
 #include <linux/mutex.h>
 #include <linux/kthread.h>	
 #include <linux/completion.h>
+#include <linux/irqflags.h>
 
 struct cond_t {
 //    atomic_t awake;
@@ -43,25 +44,32 @@ void dequeue(ccq_bucket* q, void* data, uint32_t datalen);
 
 
 void _sig_init(struct cond_t* sig){
-//    init_waitqueue_head(&sig->wq);
 //    atomic_set(&sig->awake, 0);
+//    init_waitqueue_head(&sig->wq);
     init_completion(&sig->c);
 }
 
 void _sig_wait(struct cond_t* sig, struct mutex* lock){
     mutex_unlock(lock);
     //wait_event(sig->wq, atomic_cmpxchg(&sig->awake, 1, 0));
-    wait_for_completion_timeout(&sig->c, HZ / 1000);
+    //wait_for_completion_interruptible(&sig->c);
+    wait_for_completion_timeout(&sig->c, HZ / 100);
+    reinit_completion(&sig->c);
+    /*
+    while(!atomic_read(&sig->awake)){
+        ndelay(1000);
+    }    
+    atomic_set(&sig->awake, 0);
+    */
     mutex_lock(lock);
 }
 
 void _sig_broadcast(struct cond_t* sig){
 //    atomic_set(&sig->awake, 1);
     complete_all(&sig->c);
-    reinit_completion(&sig->c);
 }
 
-#define TESTCASE 10000000
+#define TESTCASE 100000
 #define BUFFSIZE 2048
 #define EN_QUEUES 4
 #define DE_QUEUES 4
