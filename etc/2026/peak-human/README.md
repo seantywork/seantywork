@@ -1,2 +1,9 @@
 - mar 24
 - by johan norberg
+- greece(land of trade and openess), solon, cleisthenes, themistocles, pericles, philosophers(socrates, plato, aristotle), conquered by alexander 
+- rome(empire based on socii), republic(starting from revolt against patrician by plebian to emperor augustus), empire with trans-mediterranean market, fall(diseases, war(with invaders), inflation, monopoly of idea(saint augustine))
+- abasid(conquerer with emphasis on trade), scientific exchange(avecenna, averroes), fall(climate, war(sunni shitte), monopoly of idea(gazhali))
+- song(born from chaos after tang), exam to enter officialdom, commerce(paper currency), fall(mongol, ming's suffocation on idea) 
+- renaissance italy, precarious balance between pope and lords, redescovery of laws(justinian, cato, cicero), black death, birth of humanists(da vinci, michellangelo), fall(gunpowder(wars and habsburg), print(followed by religious war), exploration(benefitting emperial spain))
+- dutch(born from terrible land), commerce is the king(fleet and finance), revolt and refugee(80 years war against spain, john locke), fall(war(french anglo invation), civil war(de witt vs orange))
+- anglosphere(born from dutch invasion), small government and strong civil society, industrial revolution, american revolution
