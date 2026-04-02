@@ -15,7 +15,8 @@ void ch_handler(int sig){
 }
 
 int process_packet(int ctx_id, int* verdict, void* data, int datalen){
-
+    printf("ctx: %d: got packet\n", ctx_id);
+    *verdict = NF_ACCEPT;
     return 0;
 };
 
@@ -104,6 +105,15 @@ void* nfq_thread(void* varg){
 		fprintf(stderr, "can't set packet_copy mode\n");
 		return (void*)EXIT_FAILURE;
 	}
+	uint32_t flags = NFQA_CFG_F_GSO;
+	uint32_t mask = NFQA_CFG_F_GSO;
+
+	printf("enabling gso\n");
+	if(nfq_set_queue_flags(qh, mask, flags) < 0){
+		fprintf(stderr, "can't enable gso\n");
+		return (void*)EXIT_FAILURE;
+    }
+
 	fd = nfq_fd(h);
 	int opt = 1;
 	setsockopt(fd, SOL_NETLINK, NETLINK_NO_ENOBUFS, &opt, sizeof(int));
@@ -129,6 +139,21 @@ void* nfq_thread(void* varg){
 	return (void*)EXIT_SUCCESS;
 }
 
+int init(int startqnum, int endqnum){
+    char cmdbuf[1024];
+    system("iptables -F");
+    sprintf(cmdbuf, "iptables -I FORWARD -p all -o %s -j NFQUEUE --queue-balance %d:%d", BRNAME, startqnum, endqnum);
+    system(cmdbuf);
+    memset(cmdbuf, 0, 1024);
+    sprintf(cmdbuf, "iptables -I FORWARD -p all -i %s -j NFQUEUE --queue-balance %d:%d", BRNAME, startqnum, endqnum);
+    system(cmdbuf);
+    memset(cmdbuf, 0, 1024);
+    system("echo 0 | tee /proc/sys/net/ipv4/conf/all/send_redirects");
+    system("echo 0 | tee /proc/sys/net/ipv4/conf/default/send_redirects");
+    system("echo 0 | tee /proc/sys/net/ipv4/conf/all/accept_redirects");
+    system("echo 0 | tee /proc/sys/net/ipv4/conf/default/accept_redirects");
+    return 0;
+}
 
 int load_xdp_prog(){
     DECLARE_LIBBPF_OPTS(bpf_object_open_opts, opts_l);
@@ -259,19 +284,15 @@ void unload_xdp_prog(){
 
 int main(){
 
-    char cmdbuf[1024];
     int startqnum = 100;
     int endqnum = startqnum + MAX_THREADS - 1;
     signal(SIGINT, ch_handler);
-    printf("adding iptable rules...\n");
-    system("iptables -F");
-    sprintf(cmdbuf, "iptables -I FORWARD -p all -o %s -j NFQUEUE --queue-balance %d:%d", BRNAME, startqnum, endqnum);
-    system(cmdbuf);
-    memset(cmdbuf, 0, 1024);
-    sprintf(cmdbuf, "iptables -I FORWARD -p all -i %s -j NFQUEUE --queue-balance %d:%d", BRNAME, startqnum, endqnum);
-    system(cmdbuf);
-    memset(cmdbuf, 0, 1024);
-    printf("added all rules\n");
+    printf("initiating...\n");
+    if(init(startqnum, endqnum) < 0){
+        printf("init failed\n");
+        goto out;
+    }
+    printf("init completed\n");
     printf("creating threads..\n");
     for(int i = 0; i < MAX_THREADS; i++){
         int qnum = startqnum + i;

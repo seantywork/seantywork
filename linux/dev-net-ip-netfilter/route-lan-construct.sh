@@ -30,6 +30,6 @@ sudo sysctl -w net.ipv4.ip_forward=1
 
 sudo iptables -P FORWARD ACCEPT
 
-sudo ip netns exec net1 ip route add 192.168.26.0/24 via 192.168.62.5 dev veth2
+sudo ip netns exec net1 ip route add default via 192.168.62.5 dev veth2
 
-sudo ip netns exec net2 ip route add 192.168.62.0/24 via 192.168.26.5 dev veth22
+sudo ip netns exec net2 ip route add default via 192.168.26.5 dev veth22

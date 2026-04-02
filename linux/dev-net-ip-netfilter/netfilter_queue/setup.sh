@@ -24,6 +24,9 @@ sudo ip netns exec vnet0 ip link set veth21 master vbr0
 sudo ip netns exec vnet0 ip link set up veth11
 sudo ip netns exec vnet0 ip link set up veth21
 sudo ip netns exec vnet0 ip link set up vbr0
+sudo ip netns exec vnet0 ip addr add 10.10.10.10/32 dev vbr0
+sudo ip netns exec vnet0 ip route add default dev vbr0
+sudo ip netns exec vnet0 ip link set up lo
 
 sudo ip netns exec vnet0 sysctl -w net.ipv4.ip_forward=1
 
