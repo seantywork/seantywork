@@ -1,2 +1,11 @@
 - apr 3
-- alec nevala-lee
+- by alec nevala-lee
+- luis alvarez story
+- chicago year, geiger counter and cosmic ray
+- berkeley year, cyclotron and slow neutron beam, helium-3
+- war year in englang, microwave radar, blinding landing system
+- war year in los alamos, project manhatten, implosion team
+- thermonuclear bomb support, fallout with oppenheimer, testifying against him
+- bubble chamber, particle discovery, nobel price
+- excursion, investigating kennedy assasination, ufo, pyramid, etc
+- with his son, investigating dinosaur extinction cause using irridium, and suggesting extinction by meteor hit
