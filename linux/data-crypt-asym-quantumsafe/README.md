@@ -84,7 +84,7 @@ processes.
 A                                         B
 +---------------+                         +----------------+
 |   B's         |                         |  B's           |
-|   public      |-------A's hint--------->|  private       |
+|   public      |-----A's wrappedkey----->|  private       |
 |   key         |                         |  key           |
 +---------------+                         +----------------+
       |                                           |
@@ -112,7 +112,7 @@ enclen: 1088
 seclen: 32
   encap test succeeded
 ```
-As you can see above, calculated hint length is 1088, and the secret length is 32, which can be use for \
+As you can see above, calculated wrappedkey length is 1088, and the secret length is 32, which can be use for \
 256bit symmetric cipher including AES256-GCM.
 
 Now, let's see if we can decapsulate on the other side.
@@ -128,7 +128,7 @@ sig: mldsa65, kem: mlkem768
 seclen: 32
   decap test succeeded
 ```
-Using the hint and the private key, the decapsulation step checks if newly \
+Using the wrappedkey and the private key, the decapsulation step checks if newly \
 calculated secret key matches the other one calculated in the encapsulation \
 step
 
@@ -139,6 +139,136 @@ step
         printf("memcmp failed\n");
         goto out;
     }
+```
+
+Now, it's time to check out how signature verification works. Though OpenSSL apis \
+are slightly different, the overall flow of signing and verifying is the same as \
+that one in case of RSA and eliptic curve.
+
+```shell
+message: hello
+      |
+      |
+      V
+SHA256 digest of it:
+2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+      |
+      |
+      V
+sign the digest with:
++---------------+
+|   A's         |
+|   private key |
++---------------+
+      |
+      |
+      V
+verify the signature with:
++---------------+
+|   A's         |    &  independently calculated
+|   public key  |       SHA256 digest
++---------------+       on the same message
+```
+
+Let's run it.
+
+```shell
+$ ./asym_qs.out sig
+sig: mldsa65, kem: mlkem768
+0: 2c 1: f2 2: 4d 3: ba 4: 5f 5: b0 6: a3 7: 0e 8: 26 9: e8 10: 3b 11: 2a 12: c5 13: b9 14: e2 15: 9e 16: 1b 17: 16 18: 1e 19: 5c 20: 1f 21: a7 22: 42 23: 5e 24: 73 25: 04 26: 33 27: 62 28: 93 29: 8b 30: 98 31: 24 
+signed: siglen: 3309, hashlen: 32
+result: 1
+  signature test succeeded
+
+```
+
+I'll defer `liboqs` demonstration until we get through the certificates and TLS \
+communication part.
+
+Fun part to remember when generating postquantum certificates is that we should not \
+supply message digest algorithm (at least when using `mlds65a`).
+
+```shell
+
+$ ./asym_qs.out cert-gen
+sig: mldsa65, kem: mlkem768
+cert create test succeeded
+$ ls ./certs/ | grep crt
+mldsa65.crt.pem
+mldsa65_ca.crt.pem
+mldsa65_cli.crt.pem
+```
+
+If you try to read the certificates using OpenSSL version below 3.5+, you will see \
+something like below. Unable to decode the public key bytes and signature algorithm.
+
+```shell
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 1 (0x1)
+        Signature Algorithm: 2.16.840.1.101.3.4.3.18
+        Issuer: C = CH, O = test.org, CN = localhost_ca
+        Validity
+            Not Before: Apr 10 04:58:23 2026 GMT
+            Not After : Apr 10 04:58:23 2027 GMT
+        Subject: C = CH, O = test.org, CN = localhost_ca
+        Subject Public Key Info:
+            Public Key Algorithm: 2.16.840.1.101.3.4.3.18
+            Unable to load Public Key
+40D7E635017E0000:error:03000072:digital envelope routines:X509_PUBKEY_get0:decode error:../crypto/x509/x_pubkey.c:458:
+40D7E635017E0000:error:03000072:digital envelope routines:X509_PUBKEY_get0:decode error:../crypto/x509/x_pubkey.c:458:
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+    Signature Algorithm: 2.16.840.1.101.3.4.3.18
+    Signature Value:
+        d1:fa:2f:fe:e3:f5:e3:50:11:e9:aa:53:8b:ea:1d:99:78:d5:
+        f6:c8:9b:07:67:ae:91:ee:09:68:87:c3:c1:c9:cc:46:69:4d:
+        64:74:e7:ff:06:0b:a8:0d:9f:dd:24:d1:a3:3c:3d:a2:a3:05:
+        e0:5d:57:2d:cc:49:81:b9:fa:3f:96:9c:cc:9f:f1:e8:5e:55:
+```
+
+It's time to check out if those certificates are correctly signed.
+
+```shell
+$ ./asym_qs.out cert-verify
+sig: mldsa65, kem: mlkem768
+result: 1
+cert verify test succeeded
+```
+
+Finally, we get to the part where we let client and server communicate over \
+secure channel established by mutal TLS.
+
+```shell
+$ ./asym_qs.out tls
+sig: mldsa65, kem: mlkem768
+client load ca: certs/mldsa65_ca.crt.pem
+client file done: certs/mldsa65_cli.crt.pem
+server load ca: certs/mldsa65_ca.crt.pem
+server file done: certs/mldsa65.crt.pem
+server thread created
+server accept...
+server accepted
+  Issuer (cn): localhost_ca
+  Subject (cn): localhost_ca
+verify_callback (depth=1)(preverify=1)
+  Issuer (cn): localhost_ca
+  Subject (cn): localhost
+verify_callback (depth=0)(preverify=1)
+client ssl connected
+client ssl verified
+  Issuer (cn): localhost_ca
+  Subject (cn): localhost_ca
+verify_callback (depth=1)(preverify=1)
+  Issuer (cn): localhost_ca
+  Subject (cn): localhost_c
+verify_callback (depth=0)(preverify=1)
+server ssl accepted
+success: server hello
+tls net test succeeded
+
 ```
 
 # misc
