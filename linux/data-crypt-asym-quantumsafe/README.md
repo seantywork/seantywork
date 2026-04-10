@@ -9,20 +9,14 @@ communication process.
 
 To avoid the installation of OpenSSL version 3.5+ affecting the whole \
 system, I'm going to keep the shared objects and libraries within this \
-folder. Use `setup_openssl3.sh` and `setup_liboqs.sh` to download and \
+folder. Use `setup_openssl3.sh` to download and \
 compile dependencies of this write-up.
 
 ```shell
 $ ./setup_openssl3.sh
-$ ./setup_liboqs.sh
 ```
 
-While it's not necessary to install `liboqs` if I'm focusing 100% on \
-OpenSSL, but I included it because I also wanted to share how to use \  
-that library to generate keys, manage key encapsulation and \
-digital signature.
-
-Also, I have to choose what algorithm to use to demontrate postquantum \
+I have to choose what algorithm to use to demontrate postquantum \
 cryptography. There are two notable and (in my opinion) widely adoptable \
 algorithms for digital signature and key exchange, `mldsa65`, and `mlkem768`. \
 I'm going to stick to those two for the whole tutorial.
@@ -45,16 +39,13 @@ keygen        : pq key generation
 encap         : pq key encap
 decap         : pq key decap
 sig           : pq signature 
-oqs-kem       : pq key encap/decap using liboqs 
-oqs-sig       : pq signature using liboqs 
 cert-gen      : pq certificate generation 
 cert-verify   : pq certificate verification 
 tls           : pq tls 
 
 ```
 
-Except of entry beginning with `oqs-*`, every entry is using OpenSSL 3.5.* \
-for postquantum cryptography.
+Every entry is using OpenSSL 3.5.* for postquantum cryptography.
 
 Let's get to the key generation!
 
@@ -182,8 +173,6 @@ result: 1
 
 ```
 
-I'll defer `liboqs` demonstration until we get through the certificates and TLS \
-communication part.
 
 Fun part to remember when generating postquantum certificates is that we should not \
 supply message digest algorithm (at least when using `mlds65a`).

@@ -1,6 +1,7 @@
 #include "qs.h"
 #include "qs_tls.h"
 
+/*
 static void cleanup_heap(uint8_t *secret_key, uint8_t *shared_secret_e,
     uint8_t *shared_secret_d, uint8_t *public_key,
     uint8_t *ciphertext, OQS_KEM *kem) {
@@ -24,7 +25,7 @@ static void cleanup_heap_sig(uint8_t *public_key, uint8_t *secret_key, uint8_t *
     OQS_MEM_insecure_free(signature);
     OQS_SIG_free(sig);
 }
-
+*/
 int qs_key_create(){
     SSL_CTX *cctx = NULL, *sctx = NULL;
     int ret = 1, testresult = 0;
@@ -275,7 +276,7 @@ out:
     return result;
 }
 
-
+/*
 int oqs_kem(){
 
 	OQS_KEM *kem = NULL;
@@ -501,7 +502,7 @@ int oqs_signature() {
 
 }
 
-
+*/
 
 
 

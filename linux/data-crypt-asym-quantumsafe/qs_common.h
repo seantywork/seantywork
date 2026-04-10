@@ -25,7 +25,7 @@
 #include <sys/types.h>
 #include <pthread.h>
 
-#include "oqs/oqs.h"
+//#include "oqs/oqs.h"
 
 
 

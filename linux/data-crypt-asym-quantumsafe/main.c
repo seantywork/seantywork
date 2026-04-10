@@ -9,8 +9,8 @@ void print_help(){
     printf("encap         : pq key encap\n");
     printf("decap         : pq key decap\n");
     printf("sig           : pq signature \n");
-    printf("oqs-kem       : pq key encap/decap using liboqs \n");
-    printf("oqs-sig       : pq signature using liboqs \n");
+//    printf("oqs-kem       : pq key encap/decap using liboqs \n");
+//    printf("oqs-sig       : pq signature using liboqs \n");
     printf("cert-gen      : pq certificate generation \n");
     printf("cert-verify   : pq certificate verification \n");
     printf("tls           : pq tls \n");
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
             ERR_print_errors_fp(stderr);
             errcnt++;
         }
-    }else if(strcmp(argv[1], "sig") == 0){
+    } else if(strcmp(argv[1], "sig") == 0){
         if (qs_signature() == 1) {
             fprintf(stderr, cGREEN "  signature test succeeded" cNORM "\n");
         } else {
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
             ERR_print_errors_fp(stderr);
             errcnt++;
         }
-    }else if(strcmp(argv[1], "oqs-kem") == 0){
+    /*} else if(strcmp(argv[1], "oqs-kem") == 0){
         if (oqs_kem() == OQS_SUCCESS) {
             fprintf(stderr, cGREEN "  KEM test succeeded" cNORM "\n");
         } else {
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
         } else {
             errcnt += 1;
             fprintf(stderr, cRED "sig test failed" cNORM "\n");
-        }
+        }  */
     } else if (strcmp(argv[1], "cert-gen") == 0){
         if(qs_cert_create() == 1) {
             fprintf(stderr, cGREEN "cert create test succeeded" cNORM "\n");
