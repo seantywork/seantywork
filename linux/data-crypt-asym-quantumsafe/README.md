@@ -319,8 +319,9 @@ openssl s_server -key certs/mldsa65.key.pem -cert certs/mldsa65.crt.pem -CAfile 
 
 And connect from the client that is also using the programmatically generated certificates.\
 You will see in the below, that the connection is successful, and TLS handshake using \
-`mldsa65`, which is obviously a digital signature algorithm, is being done using a hybrid \
-algorithm called `X25519MLKEM768`. \
+`mldsa65`, which is obviously a digital signature algorithm(thus not very obvious which\
+key exchange mechanism it is using), is being done using a hybrid algorithm \
+called `X25519MLKEM768`. \
 More on this algorithm [here](https://www.netmeister.org/blog/tls-hybrid-kex.html). \
 It seems using `mldsa65` implies(by default maybe?) `mlkem768` key generation and \
 encap/decap process we've just seen above, along with `x25519` key derivation mechanism \
