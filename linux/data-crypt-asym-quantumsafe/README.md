@@ -260,6 +260,164 @@ tls net test succeeded
 
 ```
 
+However, to really thoroughly see if I've done it correctly, I've decided to \
+install OpenSSL 3.5+ system-wide and test the TLS communication using \
+`openssl s_server` and `openssl s_client`.
+
+Here's how to install it system-wide.
+
+```shell
+
+$ cd openssl-qs
+$ sudo make install
+$ sudo ldconfig /usr/local/lib64/
+$ openssl version
+OpenSSL 3.5.5 27 Jan 2026 (Library: OpenSSL 3.5.5 27 Jan 2026)
+```
+Now, if I check the certificate, the public key section is correctly displayed.
+
+```shell
+$ openssl x509 -in certs/mldsa65_ca.crt.pem -text -noout
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 1 (0x1)
+        Signature Algorithm: ML-DSA-65
+        Issuer: C=CH, O=test.org, CN=localhost_ca
+        Validity
+            Not Before: Apr 13 07:27:43 2026 GMT
+            Not After : Apr 13 07:27:43 2027 GMT
+        Subject: C=CH, O=test.org, CN=localhost_ca
+        Subject Public Key Info:
+            Public Key Algorithm: ML-DSA-65
+                ML-DSA-65 Public-Key:
+                pub:
+                    e3:46:88:1f:dd:4f:37:88:a7:2c:3a:a0:0e:30:86:
+...
+[CUT]
+...
+                    df:9b:6f:70:ad:2f:9d:a2:31:a8:0d:66:09:bf:67:
+                    7a:2f
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+    Signature Algorithm: ML-DSA-65
+    Signature Value:
+        67:54:c2:c9:3e:18:26:d7:a3:1b:b1:a4:9a:df:e5:b7:83:e2:
+        0e:8e:1b:1d:5e:17:45:a9:6b:70:ac:b4:80:83:8f:08:b4:5d:
+...
+[CUT]
+```
+
+Run the server using programmatically generated certificates and keys...
+
+```shell
+# server
+openssl s_server -key certs/mldsa65.key.pem -cert certs/mldsa65.crt.pem -CAfile certs/mldsa65_ca.crt.pem -port 9999
+
+```
+
+And connect from the client that is also using the programmatically generated certificates.\
+You will see in the below, that the connection is successful, and TLS handshake using \
+`mldsa65`, which is obviously a digital signature algorithm, is being done using a hybrid \
+algorithm called `X25519MLKEM768`. \
+More on this algorithm [here](https://www.netmeister.org/blog/tls-hybrid-kex.html). \
+It seems using `mldsa65` implies(by default maybe?) `mlkem768` key generation and \
+encap/decap process we've just seen above, along with `x25519` key derivation mechanism \
+to have a final shared key.
+
+
+```shell
+# client
+$ openssl s_client -connect localhost:9999 -key certs/mldsa65_cli.key.pem -cert certs/mldsa65_cli.crt.pem -CAfile certs/mldsa65_ca.crt.pem 
+Connecting to 127.0.0.1
+CONNECTED(00000003)
+Can't use SSL_get_servername
+depth=1 C=CH, O=test.org, CN=localhost_ca
+verify return:1
+depth=0 C=CH, O=test.org, CN=localhost
+verify return:1
+---
+Certificate chain
+ 0 s:C=CH, O=test.org, CN=localhost
+   i:C=CH, O=test.org, CN=localhost_ca
+   a:PKEY: ML-DSA-65, 15616 (bit); sigalg: ML-DSA-65
+   v:NotBefore: Apr 13 07:27:43 2026 GMT; NotAfter: Apr 13 07:27:43 2027 GMT
+ 1 s:C=CH, O=test.org, CN=localhost_ca
+   i:C=CH, O=test.org, CN=localhost_ca
+   a:PKEY: ML-DSA-65, 15616 (bit); sigalg: ML-DSA-65
+   v:NotBefore: Apr 13 07:27:43 2026 GMT; NotAfter: Apr 13 07:27:43 2027 GMT
+---
+Server certificate
+-----BEGIN CERTIFICATE-----
+MIIVXTCCCFqgAwIBAgIBATALBglghkgBZQMEAxIwNzELMAkGA1UEBhMCQ0gxETAP
+...
+[CUT]
+...
+J1F+hpveAgYINDZMCg4zQ0pVY2yAhIWVsdTZ6gAAAAAAAAAAAAAAAAAAAAIKEhge
+KA==
+-----END CERTIFICATE-----
+subject=C=CH, O=test.org, CN=localhost
+issuer=C=CH, O=test.org, CN=localhost_ca
+---
+No client certificate CA names sent
+Peer signature type: mldsa65
+Negotiated TLS1.3 group: X25519MLKEM768
+---
+SSL handshake has read 15672 bytes and written 1604 bytes
+Verification: OK
+---
+New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+Protocol: TLSv1.3
+Server public key is 15616 bit
+This TLS version forbids renegotiation.
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+Early data was not sent
+Verify return code: 0 (ok)
+---
+---
+Post-Handshake New Session Ticket arrived:
+SSL-Session:
+    Protocol  : TLSv1.3
+    Cipher    : TLS_AES_256_GCM_SHA384
+...
+[CUT]
+...
+    00c0 - 93 d7 70 9e 02 fa de 0b-95 5c 6b ec fc 88 55 29   ..p......\k...U)
+
+    Start Time: 1776065440
+    Timeout   : 7200 (sec)
+    Verify return code: 0 (ok)
+    Extended master secret: no
+    Max Early Data: 0
+---
+read R BLOCK
+---
+Post-Handshake New Session Ticket arrived:
+SSL-Session:
+    Protocol  : TLSv1.3
+    Cipher    : TLS_AES_256_GCM_SHA384
+...
+[CUT]
+...
+    Start Time: 1776065440
+    Timeout   : 7200 (sec)
+    Verify return code: 0 (ok)
+    Extended master secret: no
+    Max Early Data: 0
+---
+read R BLOCK
+
+```
+Also, you can find some `openssl` commands to use for generating postquantum keys and \
+certificates in the below section.
+
+Thanks!
+
+
+
 # misc
 
 ```shell
