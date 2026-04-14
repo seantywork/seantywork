@@ -4,85 +4,55 @@
 
 int howmany;
 
-EVP_CIPHER* cipher;
+
+void print_help(){
+    printf("keygen  : \n");
+    printf("enc-gcm : \n");
+    printf("dec-gcm : \n");
+    printf("enc-cbc : \n");
+    printf("dec-cbc : \n"); 
+}
 
 
 int main(int argc, char** argv){
-
     if(argc < 2){
         fprintf(stderr, "too few arguments\n");
+        print_help();
         return -1;
     }
-
-
-
-    srand ((unsigned int) time (NULL));
-
-    switch(KEYBIT){
-        case 128: 
-            cipher  = EVP_aes_128_gcm ();
-            break;
-        case 192: 
-            cipher  = EVP_aes_192_gcm ();
-            break;
-        case 256: 
-#if CBC
-            cipher  = EVP_aes_256_cbc ();
-            break;
-#else
-            cipher  = EVP_aes_256_gcm ();
-            break;
-#endif
-        default:
-            break;
-
-    }
+    char* key_path = "./key.data";
+    char* iv_path = "./iv.data";
+    char* cbc_iv_path = "./cbc_iv.data";
+    char* auth_key_path = "./auth_key.data";
+    char* ad = "vvvvvvvv";
+    char* enc_msg = "cryptoinc";
+    int enc_len = strlen(enc_msg);
+    char* enc_path = "./enc.bin";
+    char* tag_path = "./tag.data";
+    char* auth_data_path = "./auth.data";
+    int result = 0;
 
 
     if(strcmp(argv[1], "keygen") == 0){
-
-        char* key_path = "./key.data";
-        char* iv_path = "./iv.data";
-
-        int result = sym_keygen(key_path, iv_path);
-
-
-    } else if (strcmp(argv[1], "encrypt") == 0){
-
-        char* key_path = "./key.data";
-        char* iv_path = "./iv.data";
-        char* ad = "vvvvvvvv";
-
-        char* enc_msg = "cryptoinc";
-        
-        int enc_len = strlen(enc_msg);
-
-        char* enc_path = "./enc.bin";
-
-        int result = sym_encrypt(key_path, iv_path, enc_len, enc_msg, enc_path, ad);
-
-
-    } else if (strcmp(argv[1], "decrypt") == 0){
-
-        char* key_path = "./key.data";
-        char* iv_path = "./iv.data";
-        char* enc_path = "./enc.bin";
-        char* ad = "vvvvvvvv";
-        char dec_msg[MAX_OUT] = {0};
-
-        int result = sym_decrypt(key_path, iv_path, enc_path, dec_msg, ad);
-
-        printf("%s\n", dec_msg);
-
-
+        result = sym_keygen(key_path, iv_path, cbc_iv_path, auth_key_path);
+    } else if (strcmp(argv[1], "enc-gcm") == 0){
+        result = sym_encrypt_gcm(key_path, iv_path, enc_len, enc_msg, enc_path, ad, tag_path);
+    } else if (strcmp(argv[1], "dec-gcm") == 0){
+        result = sym_decrypt_gcm(key_path, iv_path, enc_path, ad, tag_path);
+    } else if (strcmp(argv[1], "enc-cbc") == 0){
+        result = sym_encrypt_cbc(key_path, cbc_iv_path, enc_len, enc_msg, enc_path, auth_key_path, auth_data_path);
+    } else if (strcmp(argv[1], "dec-cbc") == 0){
+        result = sym_decrypt_cbc(key_path, cbc_iv_path, enc_path, auth_key_path, auth_data_path);
     } else {
-
-
-        fprintf(stderr, "invalid argument\n");
+        fprintf(stderr, "invalid argument: %s\n", argv[1]);
+        print_help();
         return -10;
-
     }
-    printf("done\n");
+    if(result != 1){
+        printf("failed: %s\n", argv[1]);
+    } else {
+        printf("success: %s\n", argv[1]);
+    }
 
     return 0;
 
