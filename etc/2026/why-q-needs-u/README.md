@@ -1,2 +1,6 @@
 - apr 10
 - by danny bate
+- egyptial hieroglyph, phoenician, greek, estrucan, roman, middle age
+- rune, old english, old norse, 1066 william(french), great vowel shift
+- samuel johnson dictionary, british southern and northen divide, renaissance and roman spelling
+- q is associated with u in rome(from greece), y diverges into (u, v, w, y)
