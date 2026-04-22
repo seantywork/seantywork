@@ -528,7 +528,7 @@ unsigned char* hex2char(int* arrlen, unsigned char* hexarray){
 
         *arrlen += 1;
 
-        printf("%d: %c%c %d %x ", i, hexarray[2 * i], hexarray[2 * i + 1], n, chararray[i]);
+        printf("%d: %2X ", i, n);
 
     }
 

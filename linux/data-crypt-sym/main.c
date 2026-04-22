@@ -6,11 +6,11 @@ int howmany;
 
 
 void print_help(){
-    printf("keygen  : \n");
-    printf("enc-gcm : \n");
-    printf("dec-gcm : \n");
-    printf("enc-cbc : \n");
-    printf("dec-cbc : \n"); 
+    printf("keygen  : generate key for encryption/decryption\n");
+    printf("enc-gcm : gcm encryption\n");
+    printf("dec-gcm : gcm decryption\n");
+    printf("enc-cbc : cbc encryption\n");
+    printf("dec-cbc : cbc decryption\n"); 
 }
 
 
