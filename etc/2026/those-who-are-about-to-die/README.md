@@ -1,2 +1,6 @@
 - april, 20
 - by harry sidebottom
+- stuffing at dinner, gladiators(slave, criminals, and free men), no privacy
+- school(ludus, pact), training, sex(not too public as depicted by other popular sources), sleep
+- anticipation(gift, giveout), colosseum(built late because of senatorial competition), entrance, seats(stratified, higher status toward lower podium)
+- beast hunt, execution, gladiators(tombstones)

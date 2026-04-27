@@ -12,4 +12,5 @@
 - [behave](behave)
 - [peak-human](peak-human)
 - [collisions](collisions)
-- [why-q-needs-u](why-q-needs-u)
+- [why q needs u](why-q-needs-u)
+- [those who are about to die](those-who-are-about-to-die)
