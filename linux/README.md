@@ -32,7 +32,7 @@
         <li><a href="data-cpu-affinity-thread/">data-cpu-affinity-thread</a></li>
         <li><a href="data-crypt-asym/">data-crypt-asym</a></li>
         <li><a href="data-crypt-asym-quantumsafe/">data-crypt-asym-quantumsafe</a></li>
-        <li><a href="data-crypt-sym/">.data-crypt-sym</a></li>
+        <li><a href="data-crypt-sym/">data-crypt-sym</a></li>
         <li><a href="data-dynamic-lib/">.data-dynamic-lib</a></li>
         <li><a href="data-ebpf-seccomp/">.data-ebpf-seccomp</a></li>
         <li><a href="data-fault/">.data-fault</a></li>
