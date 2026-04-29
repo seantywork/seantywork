@@ -448,6 +448,7 @@ int sym_decrypt_cbc(char* key_path, char* iv_path, char* enc_path, char* auth_ke
     } else {
         printf("authenticated\n");
     }
+    printf("%s\n",dec_msg);
     result = 1;
 out:
     if(ctx != NULL){
