@@ -74,6 +74,7 @@
         <li><a href="dev-net-ebpf-xdp/">.dev-net-ebpf-xdp</a></li>
         <li><a href="dev-net-ethtool/">.dev-net-ethtool</a></li>
         <li><a href="dev-net-firewall/">.dev-net-firewall</a></li>
+        <li><a href="dev-net-ha/">.dev-net-ha</a></li>
         <li><a href="dev-net-http-request/">.dev-net-http-request</a></li>
         <li><a href="dev-net-http-server/">.dev-net-http-server</a></li>
         <li><a href="dev-net-ip-netfilter/">.dev-net-ip-netfilter</a></li>
