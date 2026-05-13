@@ -31,6 +31,6 @@ Enjoy!
 - [etc](https://seanty.work/etc/)
 <details>
     <ul>
-        <li><a href="https://seanty.work/2026-0313-good-luck/">good luck</a></li>
+        <li><a href="https://seanty.work/20260313-good-luck/">good luck</a></li>
     </ul>
 </details>
