@@ -12,6 +12,10 @@
         directories beginning with `dev` are ones PRIMARILY related to
         io devices. such as:
             network devices, disks, serials...  
+    - hw-*:
+        directories beginning with `hw` are ones PRIMARILY related to
+        hardware NOT PRIMARILY controlled by linux kernel drivers, 
+        such as NIC card firmware and etc
     - k*:
         directories beginning with `k` are ones PRIMARILY related to
         linux kernel
@@ -107,6 +111,7 @@
         <li><a href="dev-sock-unix/">.dev-sock-unix</a></li>
         <li><a href="dev-sock-vpn-socks5/">.dev-sock-vpn-socks5</a></li>
         <li><a href="dev-sonar/">.dev-sonar</a></li>
+        <li><a href="hw-stm32/">.hw-stm32</a></li>
         <li><a href="kbuild/">.kbuild</a></li>
         <li><a href="kbuild-rt/">.kbuild-rt</a></li>
         <li><a href="kcrypt/">.kcrypt</a></li>
