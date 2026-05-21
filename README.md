@@ -25,7 +25,6 @@ Here is the basic description of the stuff below.
 I'm working to get all available. \
 Enjoy!
 
-
 ## stuff
 - [linux](https://seanty.work/linux/)
 - [etc](https://seanty.work/etc/)
