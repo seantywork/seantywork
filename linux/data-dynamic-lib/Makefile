@@ -3,14 +3,13 @@ all:
 	@echo "dl"
 
 
-build:
+build: libsuperdym.so
 
-	gcc -o test.out main.c -ldl
+	gcc -g -O2 -o test.out main.c -ldl
 
+libsuperdym.so:
+	gcc -Wall -g -O2 -c -fPIC -o super_dym.o super_dym.c
+	gcc -g -O2 -shared -o libsuperdym.so super_dym.o
 
-lib:
-
-	gcc -Wall -c -fpic -o super_dym.o super_dym.c
-
-	gcc -shared -o libsuperdym.so super_dym.o
-
+clean:
+	rm -rf *.so *.out *.o
