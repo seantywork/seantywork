@@ -1,2 +1,6 @@
 - april 28
 - jill lepore
+- revolution era(article of confederation, not amendable), philadelphia convention(the compromise between populous states, slave states(3/5), and smaller states(1 senator for all states)), the first congress and twelve amendements by james madison
+- interpretation and nullification(southern states), slavery and representation were focal points(especially andre jackson vs john adams), union and confederate(leading to civil war and 13-15th amendments), other issues(women, religion, colonies)
+- conservative vs progressive(income tax, anti-trust,  16-18 amendments), supreme court as the amendment intrument(fdr, civil rights(brown, roe))
+- polarization(partly due to the unamendability), originalism(boosted under the reagan regime) 
