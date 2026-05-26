@@ -1,7 +1,7 @@
 # stm32
 
 ```shell
-# stm32 f4 crosscompile
+# stm32 l476rg crosscompile
 # arm toolchain
 # https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
 # from linux x86_64 host to stm32
