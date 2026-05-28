@@ -38,7 +38,6 @@
         <li><a href="data-crypt-asym-quantumsafe/">data-crypt-asym-quantumsafe</a></li>
         <li><a href="data-crypt-sym/">data-crypt-sym</a></li>
         <li><a href="data-dynamic-lib/">.data-dynamic-lib</a></li>
-        <li><a href="data-ebpf-seccomp/">.data-ebpf-seccomp</a></li>
         <li><a href="data-fault/">.data-fault</a></li>
         <li><a href="data-fault-signal/">.data-fault-signal</a></li>
         <li><a href="data-fork-clone-namespace/">.data-fork-clone-namespace</a></li>
