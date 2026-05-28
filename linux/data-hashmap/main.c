@@ -2,22 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-
-
-typedef struct elem elem;
-typedef struct elem{
-    uint64_t id;
-    uint64_t flag;
-    elem* next;
-}elem;
-
-#define IN_USE (1 << 1)
-#define IS_IN_USE(x) ((x & IN_USE) == IN_USE)
-
-typedef struct hmap{
-    uint64_t size;
-    elem** bucks;
-}hmap;
+#include "map_def.h"
 
 uint64_t _hashfunc(void* data, uint32_t datalen){
     uint64_t h = 5381;
@@ -27,25 +12,49 @@ uint64_t _hashfunc(void* data, uint32_t datalen){
     }
     return h;
 }
-hmap* hmap_create(uint64_t size, int depth){
+
+typedef struct elem{
+    uint64_t id;
+}elem;
+
+#if NO_MAP_DEF
+#define IN_USE (1 << 1)
+#define IS_IN_USE(x) ((x & IN_USE) == IN_USE)
+
+typedef struct hmap_node hmap_node;
+typedef struct hmap_node{
+    elem data;
+    uint64_t flag;
+    hmap_node* next;
+}hmap_node;
+
+typedef struct hmap{
+    uint64_t size;
+    uint64_t (*hashfunc)(void* data, uint32_t datalen);
+    hmap_node** bucks;
+}hmap;
+
+
+hmap* hmap_create(uint64_t size, int depth, uint64_t (*hashfunc)(void* data, uint32_t datalen)){
     hmap* h = malloc(sizeof(hmap));
     h->size = size;
-    h->bucks = malloc(sizeof(elem*) * h->size);
+    h->bucks = malloc(sizeof(hmap_node*) * h->size);
     for(int i = 0; i < h->size; i++){
         h->bucks[i] = NULL;
         for(int j = 0; j < depth; j++){
-            elem* e = malloc(sizeof(elem));
-            memset(e, 0, sizeof(elem));
-            e->next = h->bucks[i];
-            h->bucks[i] = e;
+            hmap_node* hn = malloc(sizeof(hmap_node));
+            memset(hn, 0, sizeof(hmap_node));
+            hn->next = h->bucks[i];
+            h->bucks[i] = hn;
         }
     }
+    hm->hashfunc = hashfunc;
     return h;
 }
 int hmap_get(hmap* hm, elem* key, elem* ret){
     int stat = -1;
-    uint64_t idx = _hashfunc(&key->id, sizeof(uint64_t)) % hm->size;
-    elem* e = hm->bucks[idx];
+    uint64_t idx = hm->hashfunc(&key->id, sizeof(uint64_t)) % hm->size;
+    hmap_node* e = hm->bucks[idx];
     for(;;){
         if(e == NULL){
             break;
@@ -54,8 +63,8 @@ int hmap_get(hmap* hm, elem* key, elem* ret){
             e = e->next;
             continue;
         }
-        if(memcmp(&key->id, &e->id, sizeof(uint64_t)) == 0){
-            memcpy(ret, e, sizeof(elem));
+        if(memcmp(&key->id, &e->data.id, sizeof(uint64_t)) == 0){
+            memcpy(ret, &e->data, sizeof(elem));
             stat = 1;
             break;
         }
@@ -65,12 +74,12 @@ int hmap_get(hmap* hm, elem* key, elem* ret){
 }
 int hmap_set(hmap* hm, elem* val){
     int ret = -1;
-    uint64_t idx = _hashfunc(&val->id, sizeof(uint64_t)) % hm->size;
-    elem* e = hm->bucks[idx];
+    uint64_t idx = hm->hashfunc(&val->id, sizeof(uint64_t)) % hm->size;
+    hmap_node* e = hm->bucks[idx];
     for(;;){
         if(e == NULL){
-            e = malloc(sizeof(elem));
-            memcpy(e, val, sizeof(elem));
+            e = malloc(sizeof(hmap_node));
+            memcpy(&e->data, val, sizeof(elem));
             e->flag = IN_USE;
             e->next = hm->bucks[idx];
             hm->bucks[idx] = e;
@@ -78,12 +87,8 @@ int hmap_set(hmap* hm, elem* val){
             break;
         }
         if(IS_IN_USE(e->flag)){
-            if(memcmp(&val->id, &e->id, sizeof(uint64_t)) == 0){
-                uint64_t flag = e->flag;
-                elem* next = e->next;
-                memcpy(e, val, sizeof(elem));
-                e->flag = flag;
-                e->next = next;
+            if(memcmp(&val->id, &e->data.id, sizeof(uint64_t)) == 0){
+                memcpy(&e->data, val, sizeof(elem));
                 ret = 1;
                 break;
             } else {
@@ -91,19 +96,21 @@ int hmap_set(hmap* hm, elem* val){
                 continue;
             }
         }
-        elem* next = e->next;
-        memcpy(e, val, sizeof(elem));
+        memcpy(&e->data, val, sizeof(elem));
         e->flag = IN_USE;
-        e->next = next;
         ret = 1;
         break;
     }
     return ret;
 }
 
+#endif
+
+DECL_MAP(hmap, elem)
+DEF_MAP(hmap, elem, uint64_t, id)
 
 int main(){
-    hmap* h = hmap_create(1024, 4);
+    hmap* h = hmap_create(1024, 4, _hashfunc);
     int a = 0;
     int b = 0;
     for(int i = 0 ; i < 1024; i++){
