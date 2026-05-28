@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "utils.h"
 
 int comp(const void *a, const void *b) {
     return ((*(int **)a)[0] - (*(int **)b)[0]);
