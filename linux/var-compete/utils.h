@@ -95,4 +95,15 @@ int __map_t##_set(__map_t* hm, __data_t* val){ \
     return ret; \
 }\
 
+
+uint64_t _hashfunc(void* data, uint32_t datalen){
+    uint64_t h = 5381;
+    uint8_t* udata = (uint8_t*)data;
+    for(int i = 0; i < datalen; i++){
+        h = ((h << 5) + h) + udata[i];
+    }
+    return h;
+}
+
+
 #endif
