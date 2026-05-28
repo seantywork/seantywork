@@ -45,6 +45,7 @@
         <li><a href="data-fork-daemon/">.data-fork-daemon</a></li>
         <li><a href="data-fork-exec/">.data-fork-exec</a></li>
         <li><a href="data-fork-prctl-seccomp/">.data-fork-prctl-seccomp</a></li>
+        <li><a href="data-hashmap/">.data-hashmap</a></li>
         <li><a href="data-hashmap-concurrent/">.data-hashmap-concurrent</a></li>
         <li><a href="data-hex/">.data-hex</a></li>
         <li><a href="data-list/">.data-list</a></li>
