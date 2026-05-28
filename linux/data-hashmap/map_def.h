@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#define __mflag_NOT_IN_USE (0 << 1)
 #define __mflag_IN_USE (1 << 1)
 #define __mflag_test_IN_USE(x) ((x & __mflag_IN_USE) == __mflag_IN_USE)
 
@@ -90,6 +91,29 @@ int __map_t##_set(__map_t* hm, __data_t* val){ \
         e->flag = __mflag_IN_USE; \
         ret = 1; \
         break; \
+    } \
+    return ret; \
+}\
+int __map_t##_del(__map_t* hm, __data_t* key){ \
+    int ret = -1; \
+    uint64_t idx = hm->hashfunc(&key->__key_name, sizeof(__key_t)) % hm->size; \
+    __map_t##_node* e = hm->bucks[idx]; \
+    for(;;){ \
+        if(e == NULL){ \
+            break; \
+        } \
+        if(__mflag_test_IN_USE(e->flag)){ \
+            if(memcmp(&key->__key_name, &e->data.__key_name, sizeof(__key_t)) == 0){ \
+                memset(&e->data, 0, sizeof(__data_t)); \
+                e->flag = __mflag_NOT_IN_USE; \
+                ret = 1; \
+                break; \
+            } else { \
+                e = e->next; \
+                continue; \
+            } \
+        } \
+        e = e->next; \
     } \
     return ret; \
 }\

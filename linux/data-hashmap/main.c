@@ -135,6 +135,19 @@ int main(){
         printf("failed to validate: %d != %d\n", a, b);
         return -1;
     }
+    for(int i = 0; i < 1024; i++){
+        elem e;
+        e.id = i;
+        hmap_del(h, &e);
+    }
+    for(int i = 0; i < 1024; i++){
+        elem e;
+        e.id = i;
+        if(hmap_get(h, &e, &e) > 0){
+            printf("deleted el should not be gettable: %d\n", i);
+            return -1;
+        }
+    }
     printf("success\n");
     return 0;
 }
