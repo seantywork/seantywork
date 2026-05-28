@@ -1,2 +1,0 @@
-- may 26
-- fyodor dostoevsky
