@@ -59,9 +59,10 @@ static int update_ccmap(struct cc_map* cmap, int key, int value){
     struct node* n = NULL;
     struct node* old_n = NULL;
     struct node* new_n = NULL;
+    unsigned long flags;
     __u32 idx = _hashfunc((__u32)key, (__u32)cmap->count);
     rcu_read_lock();
-    spin_lock(&cmap->buckets[idx].lock);
+    spin_lock_irqsave(&cmap->buckets[idx].lock, flags);
     list_for_each_entry(n, &cmap->buckets[idx].nodes, _node){
         if(n->key != key){
             continue;
@@ -85,7 +86,7 @@ static int update_ccmap(struct cc_map* cmap, int key, int value){
     result = (int)idx;
 
 done:
-    spin_unlock(&cmap->buckets[idx].lock);
+    spin_unlock_irqrestore(&cmap->buckets[idx].lock, flags);
     rcu_read_unlock();
 //    synchronize_rcu();
 //    if(old_n != NULL && new_n != NULL){
@@ -102,9 +103,10 @@ static int remove_ccmap(struct cc_map* cmap, int key){
     int result = -1;
     struct node* n = NULL;
     struct node* found_n = NULL;
+    unsigned long flags;
     __u32 idx = _hashfunc((__u32)key, (__u32)cmap->count);
     rcu_read_lock();
-    spin_lock(&cmap->buckets[idx].lock);
+    spin_lock_irqsave(&cmap->buckets[idx].lock, flags);
     list_for_each_entry(n, &cmap->buckets[idx].nodes, _node){
         if(n->key != key){
             continue;
@@ -118,7 +120,7 @@ static int remove_ccmap(struct cc_map* cmap, int key){
     list_del_rcu(&found_n->_node);
     result = (int)idx;
 done:
-    spin_unlock(&cmap->buckets[idx].lock);
+    spin_unlock_irqrestore(&cmap->buckets[idx].lock, flags);
     rcu_read_unlock();
     if(found_n != NULL){
         call_rcu(&found_n->_rcu, _ccmap_cb);
@@ -146,13 +148,14 @@ static void delete_ccmap(struct cc_map* cmap){
     }
     struct node* n = NULL;
     struct node* tmp_n = NULL;
+    unsigned long flags;
     for(int i = 0; i < cmap->count; i++){
-        spin_lock(&cmap->buckets[i].lock);
+        spin_lock_irqsave(&cmap->buckets[i].lock, flags);
         list_for_each_entry_safe(n, tmp_n, &cmap->buckets[i].nodes, _node){
             list_del(&n->_node);
             kfree(n);
         }
-        spin_unlock(&cmap->buckets[i].lock);
+        spin_unlock_irqrestore(&cmap->buckets[i].lock, flags);
     }
     kfree(cmap->buckets);
     kfree(cmap);
