@@ -62,7 +62,6 @@ static int update_ccmap(struct cc_map* cmap, int key, int value){
     unsigned long flags;
     __u32 idx = _hashfunc((__u32)key, (__u32)cmap->count);
     rcu_read_lock();
-    spin_lock_irqsave(&cmap->buckets[idx].lock, flags);
     list_for_each_entry(n, &cmap->buckets[idx].nodes, _node){
         if(n->key != key){
             continue;
@@ -72,8 +71,9 @@ static int update_ccmap(struct cc_map* cmap, int key, int value){
     }
     new_n = kzalloc(sizeof(struct node), GFP_ATOMIC);
     if(new_n == NULL){
-        goto done;
+        goto error;
     }
+    spin_lock_irqsave(&cmap->buckets[idx].lock, flags);
     if(old_n == NULL){
         new_n->key = key;
         new_n->value = value;
@@ -84,9 +84,8 @@ static int update_ccmap(struct cc_map* cmap, int key, int value){
         list_replace_rcu(&old_n->_node, &new_n->_node);
     }
     result = (int)idx;
-
-done:
     spin_unlock_irqrestore(&cmap->buckets[idx].lock, flags);
+error:
     rcu_read_unlock();
 //    synchronize_rcu();
 //    if(old_n != NULL && new_n != NULL){
@@ -106,7 +105,6 @@ static int remove_ccmap(struct cc_map* cmap, int key){
     unsigned long flags;
     __u32 idx = _hashfunc((__u32)key, (__u32)cmap->count);
     rcu_read_lock();
-    spin_lock_irqsave(&cmap->buckets[idx].lock, flags);
     list_for_each_entry(n, &cmap->buckets[idx].nodes, _node){
         if(n->key != key){
             continue;
@@ -115,12 +113,13 @@ static int remove_ccmap(struct cc_map* cmap, int key){
         break;
     }
     if(found_n == NULL){
-        goto done;
+        goto notfound;
     }
+    spin_lock_irqsave(&cmap->buckets[idx].lock, flags);
     list_del_rcu(&found_n->_node);
     result = (int)idx;
-done:
     spin_unlock_irqrestore(&cmap->buckets[idx].lock, flags);
+notfound:
     rcu_read_unlock();
     if(found_n != NULL){
         call_rcu(&found_n->_rcu, _ccmap_cb);
