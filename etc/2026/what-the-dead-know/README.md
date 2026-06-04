@@ -1,2 +1,6 @@
 - may 27 
 - by barbara buthcher
+- who, what, how
+- suicide, gay couple serial killer, natural, accident
+- mortis, central part couple killer, underground, loneliness
+- east harlem serial killer, 911
