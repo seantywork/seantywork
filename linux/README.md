@@ -145,6 +145,7 @@
         <li><a href="kneigh/">.kneigh</a></li>
         <li><a href="knetfilter/">.knetfilter</a></li>
         <li><a href="knetlink/">.knetlink</a></li>
+        <li><a href="kper-cpu/">.kper-cpu</a></li>
         <li><a href="kproc/">.kproc</a></li>
         <li><a href="kptr-share/">.kptr-share</a></li>
         <li><a href="kqueue-concurrent/">.kqueue-concurrent</a></li>
