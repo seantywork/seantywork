@@ -123,6 +123,8 @@ static int __init mod_init(void)
 	printk(KERN_INFO "kdma mod_init: before dst: %d, src: %d", *(int *)dst, *(int *)src);
 	if(kdma_transfer(src, dst, 16) < 0){
 		printk(KERN_INFO "kdma mod_init: failed to init\n");
+		kfree(src);
+		kfree(dst);
 		return -1;
 	}
 	printk(KERN_INFO "kdma mod_init: after dst: %d, src: %d", *(int *)dst, *(int *)src);
@@ -134,8 +136,12 @@ static int __init mod_init(void)
 static void __exit mod_exit(void)
 {
     printk(KERN_INFO "kdma mod_exit: mod_exit called\n");
-    kfree(src);
-	kfree(dst);
+	if(src != NULL){
+		kfree(src);
+	}
+	if(dst != NULL){
+		kfree(dst);
+	}
     printk(KERN_INFO "kdma mod_exit: done\n");
 }
 

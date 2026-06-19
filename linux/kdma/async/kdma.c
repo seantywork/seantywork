@@ -1,10 +1,19 @@
 #include <linux/module.h>
-#include <linux/init.h>
+#include <linux/kernel.h>
 #include <linux/dmaengine.h>
 #include <linux/dma-mapping.h>
+#include <linux/types.h>
+#include <linux/kdev_t.h>
+#include <linux/slab.h>
+#include <linux/fs.h>
+#include <linux/platform_device.h>
 
-void *src,  *dst;
-struct dma_chan *kdma_ch;
+
+static void *src = NULL;
+static void *dst = NULL;
+static struct dma_chan *kdma_ch = NULL;
+
+
 
 static int kdma_transfer(const void *kdma_src, void *kdma_dst, unsigned int len){
 
@@ -36,7 +45,6 @@ static int kdma_transfer(const void *kdma_src, void *kdma_dst, unsigned int len)
 		printk(KERN_INFO "kdma transfer: failed to request dma chan\n");
 		return -1;
 	}
-	printk(KERN_INFO "kdma transfer: dma channel name : %s", dma_chan_name(kdma_ch));
 	_dev = kdma_ch->device;
 	kdma_unmap_data = dmaengine_get_unmap_data(_dev->dev, 2, GFP_KERNEL);
 	if(kdma_unmap_data == NULL){
@@ -119,13 +127,14 @@ static int __init mod_init(void)
 {
 	int *writer;
 	printk(KERN_INFO "kdma: in init\n");
-
 	src = kzalloc(16,GFP_KERNEL);
 	dst = kzalloc(16,GFP_KERNEL);
 	writer = (int *)src;
 	*writer = 65;
 	printk(KERN_INFO "kdma mod_init: before dst: %d, src: %d", *(int *)dst, *(int *)src);
 	if(kdma_transfer(src, dst, 16) < 0){
+		kfree(src);
+		kfree(dst);
 		printk(KERN_INFO "kdma mod_init: failed to init\n");
 		return -1;
 	}
@@ -138,8 +147,12 @@ static int __init mod_init(void)
 static void __exit mod_exit(void)
 {
     printk(KERN_INFO "kdma mod_exit: mod_exit called\n");
-    kfree(src);
-	kfree(dst);
+	if(src != NULL){
+		kfree(src);
+	}
+	if(dst != NULL){
+		kfree(dst);
+	}
     printk(KERN_INFO "kdma mod_exit: done\n");
 }
 
