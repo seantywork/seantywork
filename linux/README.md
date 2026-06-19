@@ -112,6 +112,7 @@
         <li><a href="dev-sock-vpn-socks5/">.dev-sock-vpn-socks5</a></li>
         <li><a href="dev-sonar/">.dev-sonar</a></li>
         <li><a href="hw-stm32/">.hw-stm32</a></li>
+        <li><a href="kbit-rmw/">.kbit-rmw</a></li>
         <li><a href="kbuild/">.kbuild</a></li>
         <li><a href="kbuild-rt/">.kbuild-rt</a></li>
         <li><a href="kcrypt/">.kcrypt</a></li>
