@@ -17,6 +17,7 @@
 - [why q needs u](why-q-needs-u)
 - [those who are about to die](those-who-are-about-to-die)
 - [we the people](we-the-people)
+- [crime and punishment](crime-and-punishment)
 
 ## 2025
 
@@ -69,3 +70,4 @@
 ## those before 2024
 - [guns germs steel](guns-germs-steel)
 - [why nations fail](why-nations-fail)
+- [midnight's children](midnights-children)

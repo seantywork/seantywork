@@ -1,2 +1,6 @@
 - jun 4
 - fyodor dostoevsky
+- raskolinikov decrepit, dunya selling herself to luzhin?, killing aloyna and lizveta, delirium and encounters(razumikhin, the office crew)
+- death of marmedalov and encounter with sonya, encounter with mother and dunya, porfiry's hoodwinking, svidrigailov pops out and luzhin rejected by dunya
+- sonya and raskolinikov, sonya and luzhin, the memorial meal incident, raskolinikov's confession to sonya
+- porfiry's accusation, svidrigailov's suicide, raskolinikov's confession, sentencing and resurrection 

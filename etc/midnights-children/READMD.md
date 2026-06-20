@@ -1,0 +1,2 @@
+- jun 23
+- by salman rushdie
