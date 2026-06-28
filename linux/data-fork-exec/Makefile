@@ -1,3 +1,3 @@
 all:
 
-	gcc -o fe.out fork-exec.c
+	gcc -o fe.out fork-exec.c -pthread
