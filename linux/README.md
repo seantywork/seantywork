@@ -141,6 +141,7 @@
         <li><a href="kmem-kmalloc/">.kmem-kmalloc</a></li>
         <li><a href="kmem-krealloc/">.kmem-krealloc</a></li>
         <li><a href="kmem-vmalloc/">.kmem-vmalloc</a></li>
+        <li><a href="kmmio/">.kmmio</a></li>
         <li><a href="kmodlib/">.kmodlib</a></li>
         <li><a href="kmodparam/">.kmodparam</a></li>
         <li><a href="kneigh/">.kneigh</a></li>

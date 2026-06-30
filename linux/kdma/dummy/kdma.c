@@ -11,13 +11,15 @@
 #include <linux/device.h>
 #include <linux/device/driver.h>
 #include <linux/interrupt.h>
-
+#include <linux/io.h>
+#include <asm/atomic.h>
 
 #define SYSFS_DUMMY_DEV "dmadummy"
 #define SYSFS_DUMMY_FILE dmadummy_file
 #define IRQ_1		1
 #define DUMMY_DEV_NAME    "kirq_key"
 #define DUMMY_DEV_ID    	"0001"
+#define TOTAL_DATASIZE 16
 
 static struct platform_device *dma_dummy_pdev = NULL;
 static int dma_dummy_file_stat = -1;
@@ -31,6 +33,9 @@ static struct device_driver dma_dummy_driver = {
     .name = SYSFS_DUMMY_DEV,
     .owner = THIS_MODULE,
     .of_match_table = dma_dummy_of_match,
+	.bus = NULL,
+	.remove = NULL,
+	.dev_groups = NULL
 };
 
 static struct dma_device* dma_dummy_ddev = NULL;
@@ -43,8 +48,13 @@ static void *src = NULL;
 static void *dst = NULL;
 static struct dma_chan *kdma_ch = NULL;
 
+phys_addr_t dma_srcaddr;
+phys_addr_t dma_dstaddr;
 unsigned char dma_align;
 unsigned int dma_align_len;
+
+atomic_t tx_done;
+
 
 static int kdma_transfer(const void *kdma_src, void *kdma_dst, unsigned int len){
 
@@ -98,7 +108,7 @@ static int kdma_transfer(const void *kdma_src, void *kdma_dst, unsigned int len)
 	}
 	kdma_unmap_data->to_cnt = 1;
 	_dma_srcaddr = kdma_unmap_data->addr[0];
-
+	dma_srcaddr = (phys_addr_t)_dma_srcaddr;
 
 	_page = virt_to_page(kdma_dst);
 	if(_page == NULL){
@@ -113,6 +123,7 @@ static int kdma_transfer(const void *kdma_src, void *kdma_dst, unsigned int len)
 	}
 	kdma_unmap_data->from_cnt = 1;
 	_dma_dstaddr = kdma_unmap_data->addr[1];
+	dma_dstaddr = (phys_addr_t)_dma_dstaddr;
 
 	_tx = _dev->device_prep_dma_memcpy(kdma_ch, _dma_dstaddr, _dma_srcaddr, dma_align_len, DMA_CTRL_ACK);
 	if(_tx == NULL){
@@ -223,44 +234,65 @@ static struct dma_async_tx_descriptor *_prep_dma_memcpy(struct dma_chan *chan, d
 }
 
 static void _device_destroy(void){
+
 	if(dma_dummy_async_tx != NULL){
 		kfree(dma_dummy_async_tx);
 	}
 	if(dma_dummy_chan != NULL){
 		kfree(dma_dummy_chan);
 	}
+	if(dma_registered){
+		dma_async_device_unregister(dma_dummy_ddev);
+	}
 	if(dma_dummy_ddev != NULL){
-		if(dma_registered){
-			dma_async_device_unregister(dma_dummy_ddev);
-		}
 		kfree(dma_dummy_ddev);
 	}
 	if(dma_dummy_pdev != NULL){
+		dma_dummy_pdev->dev.driver = NULL;
 		if(dma_dummy_file_stat != -1){
 			device_remove_file(&dma_dummy_pdev->dev, &dev_attr_SYSFS_DUMMY_FILE);
 		}
-		if(!dma_registered){
-			platform_device_unregister(dma_dummy_pdev);	
-		}
-		//platform_device_unregister(dma_dummy_pdev);
+		platform_device_unregister(dma_dummy_pdev);
 	}
 	if(irq_registered){
 		free_irq(IRQ_1, DUMMY_DEV_ID);
 	}
-
+	if(src != NULL){
+		kfree(src);
+	}
+	if(dst != NULL){
+		kfree(dst);
+	}
 }
 
 static irq_handler_t irq_1_handler(unsigned int irq, void* dev_id, struct pt_regs *regs){
+	void* _s = NULL;
+	void* _d = NULL;
 	printk("Device ID %s; Keyboard interrupt occured\n", (char*)dev_id);
-	memcpy(dst, src, dma_align_len);
-
+	if(atomic_cmpxchg(&tx_done, 0, 1) != 0){
+		printk("Device ID %s; tx done already\n", (char*)dev_id);
+		return (irq_handler_t)IRQ_HANDLED;
+	}
+	_s = phys_to_virt(dma_srcaddr);
+	_d = phys_to_virt(dma_dstaddr);
+	printk(KERN_INFO "src: %p, _s: %p, phys: %llu\n", src, _s, dma_srcaddr);
+	printk(KERN_INFO "dst: %p, _d: %p, phys: %llu\n", dst, _d, dma_dstaddr);
+	if(_s == src && _d == dst){
+		memcpy(_d, _s, dma_align_len);
+	} else {
+		memcpy(dst, src, dma_align_len);
+	}
 	dma_dummy_chan->completed_cookie = dma_dummy_chan->cookie;
+	dma_dummy_chan->cookie = 0;
+	
     return (irq_handler_t)IRQ_HANDLED;
 }
 
 
 static int _device_create(void){
 	int result = -1;
+	src = kzalloc(TOTAL_DATASIZE,GFP_KERNEL);
+	dst = kzalloc(TOTAL_DATASIZE,GFP_KERNEL);
 	dma_dummy_pdev = platform_device_register_simple(SYSFS_DUMMY_DEV, -1, NULL, 0);
 	if(IS_ERR(dma_dummy_pdev)){
 		dma_dummy_pdev = NULL;
@@ -268,13 +300,15 @@ static int _device_create(void){
 		goto error;
 	}
 	dma_dummy_pdev->dev.driver = &dma_dummy_driver;
+	
 	dma_dummy_file_stat = device_create_file(&dma_dummy_pdev->dev, &dev_attr_SYSFS_DUMMY_FILE);
 	if(dma_dummy_file_stat){
 		dma_dummy_file_stat = -1;
 		printk(KERN_INFO "failed to create device file\n");
 		goto error;
 	}
-	result = dma_set_mask_and_coherent(&dma_dummy_pdev->dev, DMA_BIT_MASK(40));
+	
+	result = dma_set_mask_and_coherent(&dma_dummy_pdev->dev, DMA_BIT_MASK(64));
 	if(result){
 		printk(KERN_INFO "failed to set dma mask\n");
 		goto error;
@@ -331,19 +365,16 @@ error:
 static int __init mod_init(void)
 {
 	int *writer;
+	atomic_set(&tx_done, 0);
 	printk(KERN_INFO "kdma: in init\n");
 	if(_device_create() < 0){
 		printk(KERN_INFO "failed to init dev\n");
 		return -1;
 	}
-	src = kzalloc(16,GFP_KERNEL);
-	dst = kzalloc(16,GFP_KERNEL);
 	writer = (int *)src;
 	*writer = 65;
 	printk(KERN_INFO "kdma mod_init: before dst: %d, src: %d", *(int *)dst, *(int *)src);
-	if(kdma_transfer(src, dst, 16) < 0){
-		kfree(src);
-		kfree(dst);
+	if(kdma_transfer(src, dst, TOTAL_DATASIZE) < 0){
 		_device_destroy();
 		printk(KERN_INFO "kdma mod_init: failed to init\n");
 		return -1;
@@ -357,12 +388,6 @@ static int __init mod_init(void)
 static void __exit mod_exit(void)
 {
     printk(KERN_INFO "kdma mod_exit: mod_exit called\n");
-	if(src != NULL){
-		kfree(src);
-	}
-	if(dst != NULL){
-		kfree(dst);
-	}
 	_device_destroy();
     printk(KERN_INFO "kdma mod_exit: done\n");
 }
