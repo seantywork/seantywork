@@ -1,5 +1,5 @@
 PWD          := $(shell pwd)
-obj-m        += kirq_th.o
+obj-m        += kirq.o #kirq_th.o 
 
 
 all:
