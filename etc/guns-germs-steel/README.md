@@ -1,2 +1,3 @@
+- july 3
 - by jared diamond
 - it\'s the geography that decides the success of nations

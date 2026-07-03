@@ -19,6 +19,7 @@
 - [we the people](we-the-people)
 - [crime and punishment](crime-and-punishment)
 
+
 ## 2025
 
 - [age of revolutions](age-of-revolutions)
