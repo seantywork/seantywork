@@ -27,6 +27,8 @@ $ sudo cat /sys/class/net/enp1s0/queues/rx-1/rps_cpus
 f
 
 # rfs
+/proc/sys/net/core/rps_sock_flow_entries # 32768 or more
+/sys/class/net/enp1s0/queues/rx-1/rps_flow_cnt # (/proc/sys/net/core/rps_sock_flow_entries) / N(rx queue len)
 
 # netdev
 sysctl net.core.netdev_max_backlog
