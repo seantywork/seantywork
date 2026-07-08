@@ -82,7 +82,7 @@
         <li><a href="dev-net-http-request/">.dev-net-http-request</a></li>
         <li><a href="dev-net-http-server/">.dev-net-http-server</a></li>
         <li><a href="dev-net-ip-netfilter/">.dev-net-ip-netfilter</a></li>
-        <li><a href="dev-net-optimize/">.dev-net-optimize</a></li>
+        <li><a href="dev-net-optimization/">.dev-net-optimization</a></li>
         <li><a href="dev-net-quic-bench/">.dev-net-quic-bench</a></li>
         <li><a href="dev-net-vpn-ipsec/">.dev-net-vpn-ipsec</a></li>
         <li><a href="dev-net-vpn-openvpn/">.dev-net-vpn-openvpn</a></li>

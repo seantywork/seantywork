@@ -1,4 +1,4 @@
-# net-optimize
+# net-optimization
 
 
 
@@ -31,7 +31,7 @@ f
 /sys/class/net/enp1s0/queues/rx-1/rps_flow_cnt # (/proc/sys/net/core/rps_sock_flow_entries) / N(rx queue len)
 
 # netdev
-sysctl net.core.netdev_max_backlog
+sysctl net.core.netdev_max_backlog # 30000 - 60000 # 10gbps - 40gbps
 
 # mem
 sysctl net.core.wmem_default
