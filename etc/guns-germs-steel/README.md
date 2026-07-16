@@ -1,3 +1,8 @@
 - july 3
 - by jared diamond
-- it\'s the geography that decides the success of nations
+- it's(largely) the geography that decides the success of nations
+- food production and domesticates, visible and invisible selection by human, anti-social animals, fertile crescent, the axis
+- germs, the population and density, interspecies transmission
+- tech, writing and gun powder, societal readiness
+- government, scale, force
+- new guinea and australia aboriginal, china, austronesian, across the atlantic, bantu in africa, japan(jomon, yayoi)
