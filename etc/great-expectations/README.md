@@ -1,1 +1,5 @@
 - jul 17
+- by charles dickens
+- poor pip, the convict, ms havisan and estella, the file, the fight, 25 pounds
+- the murder attempt and biddy, great expectations and jagger, london and the pocket, estella returned, the debt and the death of sister
+- the convict magwitch and compeyson, estealla's mother and havisham's fiance, orlick and magwitch's revenge, all is well except for pip and estella don't end up toghther...
