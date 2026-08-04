@@ -1,12 +1,14 @@
-#!/bin/bash 
+#!/bin/bash
+
 virt-install \
   --import \
-  --osinfo ubuntu24.04 \
-  --name test-00 \
-  --ram 4096 \
-  --vcpus 4 \
-  --disk /var/lib/libvirt/images/ubuntu24-8.qcow2,size=100 \
+  --osinfo ubuntu25.10 \
+  --name dev1 \
+  --ram 8192 \
+  --vcpus 8 \
+  --disk /var/lib/libvirt/images/dev1.qcow2,size=64 \
   --graphics none \
-  --network network=test-net \
+  --network network=net1 \
+  --network network=default \
   --console pty,target.type=virtio \
   --autoconsole text
