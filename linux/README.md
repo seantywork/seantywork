@@ -71,6 +71,7 @@
         <li><a href="dev-net-bgp/">.dev-net-bgp</a></li>
         <li><a href="dev-net-br-ovs/">.dev-net-br-ovs</a></li>
         <li><a href="dev-net-can-sock/">.dev-net-can-sock</a></li>
+        <li><a href="dev-net-conf/">.dev-net-conf</a></li>
         <li><a href="dev-net-ebpf-xdp/">.dev-net-ebpf-xdp</a></li>
         <li><a href="dev-net-ethtool/">.dev-net-ethtool</a></li>
         <li><a href="dev-net-firewall/">.dev-net-firewall</a></li>
