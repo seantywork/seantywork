@@ -110,6 +110,7 @@
         <li><a href="dev-sonar/">.dev-sonar</a></li>
         <li><a href="kbit-rmw/">.kbit-rmw</a></li>
         <li><a href="kbuild/">.kbuild</a></li>
+        <li><a href="kbuild-rs/">.kbuild-rs</a></li>
         <li><a href="kbuild-rt/">.kbuild-rt</a></li>
         <li><a href="kcrypt/">.kcrypt</a></li>
         <li><a href="kdev-char/">.kdev-char</a></li>
@@ -138,6 +139,7 @@
         <li><a href="kmem-krealloc/">.kmem-krealloc</a></li>
         <li><a href="kmem-vmalloc/">.kmem-vmalloc</a></li>
         <li><a href="kmmio/">.kmmio</a></li>
+        <li><a href="kmod-rs/">.kmod-rs</a></li>
         <li><a href="kmodlib/">.kmodlib</a></li>
         <li><a href="kmodparam/">.kmodparam</a></li>
         <li><a href="kneigh/">.kneigh</a></li>

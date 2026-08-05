@@ -8,6 +8,6 @@
 *.c linguist-vendored=false
 *.h linguist-vendored=false
 *.cc linguist-vendored
-*.rs linguist-vendored
+*.rs linguist-vendored=false
 *.sh linguist-vendored=false
 0xetc/** linguist-vendored
