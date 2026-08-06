@@ -1,2 +1,9 @@
 - jul 31
 - by enrico moretti
+- the great divergence (of proseperity)
+- globalization and techonology, comparative advantage
+- pixar and multiplier effect, economic rent, offshoring and complement
+- microsoft and albuquerque and seattle, geographic division of education
+- thick labor marker, ecosystem, spillover effect, adapting cluster
+- tendency to not move, cost of living, serendipitous stars
+- human capital(education, attracting, fostering)

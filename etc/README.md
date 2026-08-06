@@ -19,7 +19,7 @@
 - [we the people](we-the-people)
 - [crime and punishment](crime-and-punishment)
 - [great expectations](great-expectations)
-
+- [the new geography of jobs](the-new-geography-of-jobs)
 
 ## 2025
 
