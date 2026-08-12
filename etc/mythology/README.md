@@ -1,2 +1,8 @@
 - aug 6
 - by edith hamilton
+- humanly gods, titans(from cronus to prometheus), olympians(from zeus to hestia), demeter and dionysus and earth gods, men and promethues and pandora
+- psyche, orpheus and pygmallion and daphne, jason and medea(golden fleece), phaeton and pagasus guy and daedalos(whose son is icarus)
+- perseus(medusa and andromeda), theseus(minotaur), hercules, atlanta
+- achilles, trojan horse, odysseus, aeneas
+- atreus(tatalus, agamemnon, orestes), thebes(oedipus)
+- fatal heroism, jortunheim(loki and the giants), asgard(odin, thor, tyr, freyr)
