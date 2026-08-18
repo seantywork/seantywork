@@ -10,4 +10,3 @@
 *.cc linguist-vendored
 *.rs linguist-vendored=false
 *.sh linguist-vendored=false
-0xetc/** linguist-vendored
