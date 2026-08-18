@@ -1,2 +1,0 @@
-- by daron acemoglu, james robinson
-- it\'s the policy that decides the success of nations

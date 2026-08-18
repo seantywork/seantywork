@@ -1,7 +1,0 @@
-- jun 23
-- by salman rushdie
-- kashmir aadam aziz and nasheem, agra nadir khan and mumtaz aziz, ahmed sinai and amina sinai
-- bombay mary and saleem sinai and shiva, ahmed frozen amina gambling and brass monkey, washing chest and voices
-- evie and midnights children conference, pioneer cafe and bloodshed of finger
-- revelation and pakistan and china, upper drainage and jamila singer, alia revenge and destruction
-- man dog and bangladesh, parvati and shiva and aadam sinai, indira

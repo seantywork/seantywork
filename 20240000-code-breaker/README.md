@@ -1,4 +1,0 @@
-- walter isaacson
-- jennifer dodna
-- mrna
-- crispr

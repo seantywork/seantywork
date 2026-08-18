@@ -1,2 +1,0 @@
-- aug 13
-- by steven strogatz

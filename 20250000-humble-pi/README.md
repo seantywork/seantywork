@@ -1,7 +1,0 @@
-- by matt parker
-- time, uint32, calendar 
-- building, fire glass, bridge 
-- data, sql, excel
-- geo, texaco drill, inward door, challenger 
-- compute, off by one, combination, rollover and xray, floating point and scud
-- probability and lottery, algo and trading, rounding and index, unit and mars, randomness 
