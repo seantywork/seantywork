@@ -4,10 +4,15 @@ crap compilation of interesting stuff including linux ones
 
 ## overview
 
-For previous articles published, see [Medium.com](https://medium.com/@seantywork).\
+This is my primary channel to share:\
+- [news about me](#posts)
+- [some helpful pieces of code](#linux)
+
+For previous posts, see [Medium.com](https://medium.com/@seantywork).\
 For publicly available source code, see [GitHub.com](https://github.com/seantywork).\
 [This](https://github.com/seantywork/seantywork) is the main repository of this site.
 
+Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyoon), and [watch](https://www.rottentomatoes.com/profiles/user/zj3hd6F5EfnEIB1tx3UGgIv2skkcaRt4ms8YsVdIPPcA1uzaseNsV5FGGcXdsPBFOJFp8U22cm2hjpI6atD8TYXS1PfX5CNjHxEHVmh96tNV?tab=reviews)
 
 ## posts
 
