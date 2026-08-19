@@ -189,5 +189,3 @@ For publicly available source code, see [GitHub.com](https://github.com/seantywo
         <li><a href="xtra-rs/">.xtra-rs</a></li>
     </ul>
 </details>
-
-
