@@ -36,9 +36,9 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
     - var-*:
         directories beginning with `var` are ones NOT PRIMARILY related to
         any of above 
-    - xtra:
-        something else,
-        such as programming languages other than C, such as Go, C++, Rust...  
+    - xeno:
+        programming languages other than C, such as Rust, Go, C++..  
+        or OS other than Linux, such as Windows...
 ```
 
 <details>
@@ -189,8 +189,8 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
         <li><a href="var-templeos/">.var-templeos</a></li>
         <li><a href="var-ten-k/">.var-tem</a></li>
         <li><a href="var-wc/">.var-wc</a></li>
-        <li><a href="xtra-cc/">.xtra-cc</a></li>
-        <li><a href="xtra-go/">.xtra-go</a></li>
-        <li><a href="xtra-rs/">.xtra-rs</a></li>
+        <li><a href="xeno-cc/">.xeno-cc</a></li>
+        <li><a href="xeno-go/">.xeno-go</a></li>
+        <li><a href="xeno-rs/">.xeno-rs</a></li>
     </ul>
 </details>
