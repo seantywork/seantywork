@@ -11,3 +11,18 @@ set shiftwidth=4
 set expandtab
 
 ```
+
+
+```shell
+
+# ctags
+
+sudo apt install universla-ctags
+
+
+ctags -R --C-kinds=+p $SRC_DIR $TARGET_DIR
+
+# in vim
+:set tags+=<taglocation>
+:tag /<PATTERN_TO_FIND>
+```
