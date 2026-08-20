@@ -4,7 +4,7 @@ crap compilation of interesting stuff including linux ones
 
 ## overview
 
-This is my primary channel to share:\
+This is my primary channel to share:
 - [news about me](#posts)
 - [some helpful pieces of code](#linux)
 
