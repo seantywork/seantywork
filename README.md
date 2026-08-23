@@ -4,9 +4,7 @@ crap compilation of interesting stuff including linux ones
 
 ## overview
 
-This is my primary channel to share:
-- [news about me](#posts)
-- [some helpful pieces of code](#linux)
+This is my primary channel to share posts about anything, including linux topics
 
 For previous posts, see [Medium.com](https://medium.com/@seantywork).\
 For publicly available source code, see [GitHub.com](https://github.com/seantywork).\
@@ -14,14 +12,11 @@ For publicly available source code, see [GitHub.com](https://github.com/seantywo
 
 Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyoon), and [watch](https://www.rottentomatoes.com/profiles/user/zj3hd6F5EfnEIB1tx3UGgIv2skkcaRt4ms8YsVdIPPcA1uzaseNsV5FGGcXdsPBFOJFp8U22cm2hjpI6atD8TYXS1PfX5CNjHxEHVmh96tNV?tab=reviews)
 
-## posts
 
-- [good luck](20260313-good-luck)
-
-
-## linux
-
-```text 
+```text
+    - DATE-*
+        directories beginning with DATE(yyyymmdd) are posts, may or may not
+        be related to linux 
     - data-*:
         directories beginning with `data` are ones NOT PRIMARILY related to 
         io devices. such as:
@@ -39,10 +34,13 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
     - xeno:
         programming languages other than C, such as Rust, Go, C++..  
         or OS other than Linux, such as Windows...
+    - .*:
+        directories beginning with .(dot) are one that are not fully ready to present
 ```
 
 <details>
-    <ul>
+    <ul> 
+        <li><a href="20260313-good-luck/">20260313-good-luck</a></li>
         <li><a href="data-array/">data-array</a></li>
         <li><a href="data-byte-align/">data-byte-align</a></li>
         <li><a href="data-cgroup/">data-cgroup</a></li>
