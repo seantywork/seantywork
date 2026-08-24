@@ -1,6 +1,6 @@
 # crypt-asym-quantumsafe
 
-- [code](https://github.com/seantywork/seantywork/tree/main/linux/data-crypt-asym-quantumsafe)
+- [code](https://github.com/seantywork/seantywork/tree/main/data-crypt-asym-quantumsafe)
 
 Here, I'm going to demonstrate how to use OpenSSL version 3.5+ to \
 incorporate basic quantum safe functionalities into key generation, \

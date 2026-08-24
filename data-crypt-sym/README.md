@@ -1,6 +1,6 @@
 # crypt-sym
 
-- [code](https://github.com/seantywork/seantywork/tree/main/linux/data-crypt-sym)
+- [code](https://github.com/seantywork/seantywork/tree/main/data-crypt-sym)
 
 Here, I'm trying to demonstrate how to use OpenSSL api to perform \
 GCM256 and CBC256 cipher.

@@ -1,6 +1,6 @@
 # crypt-asym
 
-- [code](https://github.com/seantywork/seantywork/tree/main/linux/data-crypt-asym)
+- [code](https://github.com/seantywork/seantywork/tree/main/data-crypt-asym)
 
 In this directory, I'm showcasing basic \
 asymmetric cryptography functionalites provided by \
