@@ -31,7 +31,7 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
     - var-*:
         directories beginning with `var` are ones NOT PRIMARILY related to
         any of above 
-    - xeno:
+    - xeno-*:
         programming languages other than C, such as Rust, Go, C++..  
         or OS other than Linux, such as Windows...
     - .*:
