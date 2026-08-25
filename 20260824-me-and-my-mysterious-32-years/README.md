@@ -13,9 +13,9 @@ not only that, why on earth the BALL! in the first place deserves a satisfying a
 This is not in the spirit of being in pain or grief or even something remotely resembling a feeling of
 remorse, which you can find plenty in alcoholism group sessions, but I'm just simply trying to understand
 the somewhat peculiar trajectory the years before me have drawn. I'd like to think this activity as
-trying to get integrals on the curve of the years from 1 to 32, but it can't be that fancy nor that
+trying to do integral on the curve of the years scoped from 1 to 32, but it can't be that fancy nor that
 mechanical. It might be gross and sometimes messy, but bear with me because I was the one who actually
-wrestled with those formidable years. I didn't ask for troubles(well, maybe some of them).
+wrestled with those formidable years. I am not the one who asked for troubles(or maybe I was?).
 
 The first year began with a father and a mother as usual for all human beings and stays as usual for a
 good while until the father was destroyed by a disease called pulmonary fibrosis. It's a pretty terrible
