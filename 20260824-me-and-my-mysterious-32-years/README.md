@@ -15,13 +15,14 @@ remorse, which you can find plenty in alcoholism group sessions, but I'm just si
 the somewhat peculiar trajectory the years before me have drawn. I'd like to think this activity as
 trying to do integral on the curve of the years scoped from 1 to 32, but it can't be that fancy nor that
 mechanical. It might be gross and sometimes messy, but bear with me because I was the one who actually
-wrestled with those formidable years. I am not the one who asked for troubles(or maybe I was?).
+wrestled with and hurled past those years with varying characteristics. I am not the one who asked for
+troubles(or maybe I was?).
 
 The first year began with a father and a mother as usual for all human beings and stays as usual for a
 good while until the father was destroyed by a disease called pulmonary fibrosis. It's a pretty terrible
 one to be diagnosed with because the patient experiences a long period of slow, painful decline in
-the ability to breathe and the dies a sudden death due to the heart failure. But that one is for the
-20th year to unleash, so let me defer that one.
+the ability to breathe and dies a sudden death due to the heart failure. But that one is for the 20th
+year to unleash, so let me defer that one for the time being.
 
 The first year to fifth year
 
