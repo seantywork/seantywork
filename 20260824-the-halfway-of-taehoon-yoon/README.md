@@ -1,7 +1,7 @@
-# me and my mysterious 32 years
+# the halfway of taehoon yoon
 
 No one really asked, and no one needs to know, but I'm writing this because it is myself who often 
-wonders how the years preceding me(whopping 32 of them in total!) led me to here, where I'm paid to
+wonders how the years preceding him(whopping 32`: of them in total!) led me to here, where I'm paid to
 write computer programs that dictate which chunk of data(possibly porn) shall be serviced at which 
 bitrate(or at all) and the technical documents describing them(definitely without any mention of porn).
 One might ask, what's to wonder? It is what it is, right? I too wish I could get away with that, however,
