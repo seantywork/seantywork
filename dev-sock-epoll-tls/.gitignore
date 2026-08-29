@@ -1,0 +1,15 @@
+*.o
+*.out
+*.so
+*.a
+*.run
+*.cmd
+*.ko
+*.mod
+*.symvers
+*.order
+*.mod.c
+.vscode
+*.pem
+*.txt
+core.*
