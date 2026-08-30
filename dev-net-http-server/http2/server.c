@@ -241,6 +241,7 @@ static void hdl_conn(SSL_CTX *ctx, int epfd, int fd){
         int infd;
         int ssl_accept_ret;
         in_len = sizeof(in_addr);
+        int val = 1;
         ssl = NULL;
         alpn = NULL;
         sess_info si;
@@ -286,6 +287,7 @@ static void hdl_conn(SSL_CTX *ctx, int epfd, int fd){
             printf("failed to non block to fd\n");
             goto err;
         }
+        setsockopt(infd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, sizeof(val));
         si.fd = infd;
         int res = slot_add(gbucket, &si, _add);
         if(res != 0){
@@ -328,7 +330,7 @@ static void hdl_data(int fd){
         printf("data slot op failed: %d\n", result);
         goto exit;
     }
-    int n = SSL_read(si.ssl, buff, H2_MAX_CHUNK);
+    int n = SSL_read(si.ssl, buff, 1);
     if(n < 1){
         printf("ssl read error: %d\n", n);
         slot_del(gbucket, &si, _del);

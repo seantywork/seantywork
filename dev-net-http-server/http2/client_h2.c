@@ -38,10 +38,16 @@ static nghttp2_ssize send_callback(nghttp2_session *session,
         printf("nothing to send\n");
         return (nghttp2_ssize)res;
     }
+    printf("sending...\n");
+    for(int i = 0; i < length; i++){
+        printf("%c", data[i]);
+    }
+    printf("\n");
     res = SSL_write(session_data->ssl, data, length);
     if(res < 1){
         printf("fatal: send callback: %d\n", res);
     } 
+    printf("sent\n");
     return (nghttp2_ssize)res;
 }
 
@@ -59,10 +65,11 @@ static int on_header_callback(nghttp2_session *session,
     case NGHTTP2_HEADERS:
         if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE &&
             session_data->stream_data->stream_id == frame->hd.stream_id) {
-        /* Print response headers for the initiated request. */
-        print_header(stderr, name, namelen, value, valuelen);
-        break;
+            /* Print response headers for the initiated request. */
+            print_header(stderr, name, namelen, value, valuelen);
+            break;
         }
+        printf("recv: header0: %d,%d,%d\n", frame->headers.cat, session_data->stream_data->stream_id, frame->hd.stream_id);
     }
     return 0;
 }
@@ -79,9 +86,10 @@ static int on_begin_headers_callback(nghttp2_session *session,
     case NGHTTP2_HEADERS:
         if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE &&
             session_data->stream_data->stream_id == frame->hd.stream_id) {
-        fprintf(stderr, "Response headers for stream ID=%d:\n",
+            printf("Response headers for stream ID=%d:\n",
                 frame->hd.stream_id);
         }
+        printf("recv: header1: %d,%d,%d\n", frame->headers.cat, session_data->stream_data->stream_id, frame->hd.stream_id);
         break;
     }
     return 0;
@@ -98,8 +106,9 @@ static int on_frame_recv_callback(nghttp2_session *session,
     case NGHTTP2_HEADERS:
         if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE &&
             session_data->stream_data->stream_id == frame->hd.stream_id) {
-        fprintf(stderr, "All headers received\n");
+            printf("All headers received\n");
         }
+        printf("recv: header2: %d,%d,%d\n", frame->headers.cat, session_data->stream_data->stream_id, frame->hd.stream_id);
         break;
     }
     return 0;
@@ -137,7 +146,7 @@ static int on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
                 error_code);
         rv = nghttp2_session_terminate_session(session, NGHTTP2_NO_ERROR);
         if (rv != 0) {
-        return NGHTTP2_ERR_CALLBACK_FAILURE;
+            return NGHTTP2_ERR_CALLBACK_FAILURE;
         }
     }
     return 0;
@@ -216,7 +225,7 @@ void client_h2_submit_request(sess_info2 *session_data) {
     if (stream_id < 0) {
         printf("Could not submit HTTP request: %s\n", nghttp2_strerror(stream_id));
     }
-
+    printf("stream id: %d\n", stream_id);
     stream_data->stream_id = stream_id;
 }
 
@@ -224,7 +233,6 @@ void client_h2_submit_request(sess_info2 *session_data) {
    bufferevent. */
 int client_h2_session_send(sess_info2 *session_data) {
     int rv;
-
     rv = nghttp2_session_send(session_data->session);
     if (rv != 0) {
         printf("Fatal error: session send: %s\n", nghttp2_strerror(rv));

@@ -11,6 +11,8 @@ sudo apt-get install g++ clang make binutils autoconf automake \
 
 tar xf nghttp2-X.Y.Z.tar.bz2
 cd nghttp2-X.Y.Z
+git submodule init 
+autoreconf -i
 ./configure
 make
 ```

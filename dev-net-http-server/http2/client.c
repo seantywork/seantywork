@@ -51,18 +51,20 @@ static int hdl_request(sess_info2* si){
 static int hdl_resp(sess_info2* si){
     int result = -1;
     unsigned char buff[H2_MAX_CHUNK];
-    int n = SSL_read(si->ssl, buff, H2_MAX_CHUNK);
+    int n = SSL_read(si->ssl, buff, 1);
     if(n < 1){
         printf("ssl read error: %d\n", n);
+        n = 0;
         goto exit;
     }
-    n = nghttp2_session_mem_recv2(si->session, buff, n);
-    if (n < 0) {
-        printf("Fatal error: hdl response: %s\n", nghttp2_strerror((int)n));
-        return n;
+    result = nghttp2_session_mem_recv2(si->session, buff, (size_t)n);
+    if (result < 0) {
+        printf("Fatal error: hdl response: %s\n", nghttp2_strerror((int)result));
+        return result;
     }
     if (client_h2_session_send(si) != 0) {
-        return n;
+        printf("session send failed\n");
+        return -1;
     }
 exit:
     return n;
@@ -77,11 +79,12 @@ int client_run(char *url, char *ca_cert, char *client_cert, char *client_key){
     sess_info2 si;
 
     urlparse_url u;
-    char *host;
+    char *host = NULL;
     uint16_t port;
     int rv;
     struct addrinfo hints;
     struct addrinfo* rp;
+    int val = 1;
 
     SSL_CTX *ctx = NULL;
     SSL *ssl = NULL;
@@ -198,11 +201,13 @@ int client_run(char *url, char *ca_cert, char *client_cert, char *client_key){
     }
     si.ssl = ssl;
 
-    if(make_socket_non_blocking(fd) < 0){
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, sizeof(val));
+    si.fd = fd;
+    /*
+    if(make_socket_non_blocking(si.fd) < 0){
         printf("non-blocking failed\n");
         goto err;
     }
-    si.fd = fd;
 
     epfd = epoll_create1(0);
     if(epfd < 0){
@@ -218,25 +223,30 @@ int client_run(char *url, char *ca_cert, char *client_cert, char *client_key){
         goto err;
     }    
     eevents = calloc(H2_MAXCONN + 1, sizeof(eevent));
+    */
     si.stream_data = client_h2_create_http2_stream_data(url, &u);
-
     client_h2_initialize_nghttp2_session(&si);
     client_h2_send_connection_header(&si);
-
+    rv = hdl_resp(&si);
+    printf("resp handled: %d\n", rv);
+    if(rv < 0){
+        goto err;
+    }
+    rv = hdl_request(&si);
+    printf("send request: %d\n", rv);
+    if(rv < 0){
+        goto err;
+    }
     n = 0;
     i = 0;
-    char *str = NULL;
-    size_t size = 0;
-    while(1){
-        printf("GET? [ENTER]: \n");
-        if ((getline(&str, &size, stdin)) != -1){
-            rv = hdl_request(&si);
-            printf("send request: %d\n", rv);
-            if(rv < 0){
-                break;
-            }
+    while (1){
+        rv = hdl_resp(&si);
+        printf("resp handled: %d\n", rv);
+        if(rv < 0){
+            break;
         }
-        printf("waiting...\n");
+
+        /*
         n = epoll_wait(epfd, eevents, H2_MAXCONN + 1, -1);
         for (i = 0 ; i < n; i ++){
             if (
@@ -258,12 +268,15 @@ int client_run(char *url, char *ca_cert, char *client_cert, char *client_key){
             } else {
                 printf("??\n");
             }
-
         }
-    }
+            */
+    } 
 err:
     close(fd);
     close(epfd);
+    if(host != NULL){
+        free(host);
+    }
     if(eevents != NULL){
         free(eevents);
     }

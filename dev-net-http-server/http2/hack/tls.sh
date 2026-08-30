@@ -39,4 +39,4 @@ openssl  x509 -req -extfile <(printf "subjectAltName = DNS:client.test") -days 1
 /bin/cp -Rf *.key ./tls/
 
 
-rm -rf *.pem *.srl *.csr *.crt *.key
+rm -rf *.pem *.srl *.csr *.crt *.key *.pub
