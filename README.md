@@ -40,7 +40,7 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
 
 <details>
     <ul> 
-        <li><a href="20260313-good-luck/">20260313-good-luck</a></li>
+        <li><a href="x2026-good-luck/">good-luck</a></li>
         <li><a href="data-array/">data-array</a></li>
         <li><a href="data-byte-align/">data-byte-align</a></li>
         <li><a href="data-cgroup/">data-cgroup</a></li>
