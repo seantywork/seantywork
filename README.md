@@ -14,8 +14,8 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
 
 
 ```text
-    - DATE-*
-        directories beginning with DATE(yyyymmdd) are posts, may or may not
+    - x*
+        directories beginning with `x` are posts, may or may not
         be related to linux 
     - data-*:
         directories beginning with `data` are ones NOT PRIMARILY related to 
@@ -31,7 +31,7 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
     - var-*:
         directories beginning with `var` are ones NOT PRIMARILY related to
         any of above 
-    - x*:
+    - e*:
         programming languages other than C, such as Rust, Go, C++..  
         or OS other than Linux, such as Windows...
     - .*:
@@ -127,6 +127,9 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
         <li><a href="dev-sock-unix/">.dev-sock-unix</a></li>
         <li><a href="dev-sock-vpn-socks5/">.dev-sock-vpn-socks5</a></li>
         <li><a href="dev-sonar/">.dev-sonar</a></li>
+        <li><a href="ecc/">.ecc</a></li>
+        <li><a href="ego/">.ego</a></li>
+        <li><a href="ers/">.ers</a></li>
         <li><a href="kbit-rmw/">.kbit-rmw</a></li>
         <li><a href="kbuild/">.kbuild</a></li>
         <li><a href="kbuild-rs/">.kbuild-rs</a></li>
@@ -189,8 +192,5 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
         <li><a href="var-templeos/">.var-templeos</a></li>
         <li><a href="var-ten-k/">.var-tem</a></li>
         <li><a href="var-wc/">.var-wc</a></li>
-        <li><a href="xcc/">.xcc</a></li>
-        <li><a href="xgo/">.xgo</a></li>
-        <li><a href="xrs/">.xrs</a></li>
     </ul>
 </details>

@@ -4,13 +4,13 @@ GCC_OBJ_FLAGS := -Wall -c
 
 H2LIB := nghttp2-1.70.0
 
-INCLUDES := -I./include -I$(H2LIB)/lib/includes
+INCLUDES := -I./include -I$(H2LIB)/lib/includes -I$(H2LIB)/third-party/urlparse/
 
-LIBS := -lpthread -lssl -lcrypto -lnghttp2
+LIBS := -lpthread -lssl -lcrypto -lnghttp2 -lurlparse
 
-LINKS := -L$(H2LIB)/lib/.libs -Wl,-rpath=$(H2LIB)/lib/.libs
+LINKS := -L$(H2LIB)/lib/.libs -Wl,-rpath=$(H2LIB)/lib/.libs  -L$(H2LIB)/third-party/.libs -Wl,-rpath=$(H2LIB)/third-party/.libs
 
-OBJS := server.o server_h2.o
+OBJS := server.o server_h2.o client.o client_h2.o
 
 
 build: $(OBJS) 
@@ -25,6 +25,13 @@ server_h2.o:
 
 	gcc $(GCC_OBJ_FLAGS) $(INCLUDES) -o server_h2.o server_h2.c 
 
+client.o:
+
+	gcc $(GCC_OBJ_FLAGS) $(INCLUDES) -o client.o client.c 
+
+client_h2.o:
+
+	gcc $(GCC_OBJ_FLAGS) $(INCLUDES) -o client_h2.o client_h2.c 
 
 
 clean:

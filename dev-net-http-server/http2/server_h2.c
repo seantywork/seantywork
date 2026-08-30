@@ -1,6 +1,13 @@
 #include "h2.h"
 
 
+#define ARRLEN(x) (sizeof(x) / sizeof(x[0]))
+
+#define MAKE_NV(NAME, VALUE)                                                   \
+  {                                                                            \
+    (uint8_t *)NAME,   (uint8_t *)VALUE,     sizeof(NAME) - 1,                 \
+    sizeof(VALUE) - 1, NGHTTP2_NV_FLAG_NONE,                                   \
+  }
 
 
 /* Returns nonzero if the string |s| ends with the substring |sub| */

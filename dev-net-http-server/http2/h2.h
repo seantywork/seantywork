@@ -36,6 +36,8 @@
 #include <openssl/opensslconf.h>
 
 #include <nghttp2/nghttp2.h>
+#include <urlparse.h>
+
 
 #define H2_PORT 8888
 #define H2_MAXCONN 32
@@ -50,13 +52,7 @@
 
 #define H2_MAX_CHUNK 4096
 
-#define ARRLEN(x) (sizeof(x) / sizeof(x[0]))
-
-#define MAKE_NV(NAME, VALUE)                                                   \
-  {                                                                            \
-    (uint8_t *)NAME,   (uint8_t *)VALUE,     sizeof(NAME) - 1,                 \
-    sizeof(VALUE) - 1, NGHTTP2_NV_FLAG_NONE,                                   \
-  }
+#define H2_URL "https://server.test:8888/index.html"
 
 typedef struct http2_stream_data {
     struct http2_stream_data *prev, *next;
@@ -76,6 +72,34 @@ typedef struct sess_info{
     sess_info *self;
 } sess_info;
 
+typedef struct http2_stream_data2 {
+    /* The NULL-terminated URI string to retrieve. */
+    const char *uri;
+    /* Parsed result of the |uri| */
+    urlparse_url *u;
+    /* The authority portion of the |uri|, not NULL-terminated */
+    char *authority;
+    /* The path portion of the |uri|, including query, not
+      NULL-terminated */
+    char *path;
+    /* The length of the |authority| */
+    size_t authoritylen;
+    /* The length of the |path| */
+    size_t pathlen;
+    /* The stream ID of this stream */
+    int32_t stream_id;
+} http2_stream_data2;
+
+typedef struct sess_info2 sess_info2;
+
+typedef struct sess_info2{
+    int fd;
+    SSL *ssl;
+    struct http2_stream_data2 *stream_data;
+    nghttp2_session *session;
+} sess_info2;
+
+
 int server_run(unsigned short port, char *ca_cert, char *server_cert, char *server_key);
 
 int server_h2_recv(sess_info *session_data, unsigned char *data, size_t datalen);
@@ -89,6 +113,21 @@ int server_h2_alpn_select_proto_cb(SSL *ssl, const unsigned char **out,
 void server_h2_initialize_nghttp2_session(sess_info *session_data);
 
 int server_h2_send_connection_header(sess_info *session_data);
+
+int client_run(char *url, char *ca_cert, char *client_cert, char *client_key);
+
+void client_h2_initialize_nghttp2_session(sess_info2 *session_data);
+
+void client_h2_send_connection_header(sess_info2 *session_data);
+
+void client_h2_submit_request(sess_info2 *session_data);
+
+int client_h2_session_send(sess_info2 *session_data);
+
+http2_stream_data2 *client_h2_create_http2_stream_data(const char *uri,
+                                                   urlparse_url *u);
+
+void client_h2_delete_http2_stream_data(http2_stream_data2 *stream_data);
 
 
 #endif
