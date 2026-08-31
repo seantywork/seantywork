@@ -335,6 +335,7 @@ static void hdl_data(int fd){
     for(;;){
         n = SSL_read(si.ssl, buff, H2_MAX_CHUNK);
         if(n < 1){
+            err = SSL_get_error(si.ssl, n);
             if(err == SSL_ERROR_WANT_READ){
                 goto exit;
             }
