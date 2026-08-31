@@ -264,7 +264,7 @@ static void hdl_conn(SSL_CTX *ctx, int epfd, int fd){
         ssl = SSL_new(ctx);
         SSL_set_fd(ssl, infd);
         if((ssl_accept_ret = SSL_accept(ssl)) < 1){
-            int sslerr =  SSL_get_error(ssl, 0);
+            int sslerr =  SSL_get_error(ssl, ssl_accept_ret);
             printf("error handling tls handshake\n");
             if (ssl_accept_ret <=0 && (sslerr == SSL_ERROR_WANT_READ)) {
                 printf("Need to wait until socket is readable.");
