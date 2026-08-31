@@ -16,3 +16,19 @@ autoreconf -i
 ./configure
 make
 ```
+```shell
+curl --http2 -v \
+  --cacert tls/ca.crt \
+  --cert tls/client.crt \
+  --key tls/client.key \
+  https://server.test:8888/index.html
+
+
+curl --http2-prior-knowledge -v \
+  --cacert tls/ca.crt \
+  --cert tls/client.crt \
+  --key tls/client.key \
+  https://server.test:8888/index.html
+
+
+```
