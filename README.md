@@ -111,7 +111,8 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
         <li><a href="dev-sock-epoll-tcp/">.dev-sock-epoll-tcp</a></li>
         <li><a href="dev-sock-epoll-tcp-async-pool/">.dev-sock-epoll-tcp-async-pool</a></li>
         <li><a href="dev-sock-epoll-tls/">.dev-sock-epoll-tls</a></li>
-        <li><a href="dev-sock-io-uring-http/">.dev-sock-io-uring-http</a></li>
+        <li><a href="dev-sock-epoll-tls-ext/">.dev-sock-epoll-tls-ext</a></li>
+        <li><a href="dev-sock-io-uring-ext/">.dev-sock-io-uring-ext</a></li>
         <li><a href="dev-sock-netlink/">.dev-sock-netlink</a></li>
         <li><a href="dev-sock-poll-tcp/">.dev-sock-poll-tcp</a></li>
         <li><a href="dev-sock-quic/">.dev-sock-quic</a></li>
