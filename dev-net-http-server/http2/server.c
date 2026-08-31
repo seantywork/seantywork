@@ -294,12 +294,6 @@ static void hdl_conn(SSL_CTX *ctx, int epfd, int fd){
             printf("failed to add to bucket: %d\n", res);
             goto err;
         }
-        server_h2_initialize_nghttp2_session(si.self);
-        if (server_h2_send_connection_header(si.self) != 0 || server_h2_send(si.self) != 0) {
-            printf("server conn header send failed\n");
-            slot_del(gbucket, &si, _del);
-            goto err;
-        }
         eevent.data.fd = infd;
         eevent.events = EPOLLIN | EPOLLET;
         if (epoll_ctl(epfd, EPOLL_CTL_ADD, infd, &eevent) < 0){
@@ -307,6 +301,12 @@ static void hdl_conn(SSL_CTX *ctx, int epfd, int fd){
             slot_del(gbucket, &si, _del);
         } else {
             printf("handle epoll add success\n"); 
+        }
+        server_h2_initialize_nghttp2_session(si.self);
+        if (server_h2_send_connection_header(si.self) != 0 || server_h2_send(si.self) != 0) {
+            printf("server conn header send failed\n");
+            slot_del(gbucket, &si, _del);
+            goto err;
         }
         continue;
 err:
@@ -330,12 +330,17 @@ static void hdl_data(int fd){
         printf("data slot op failed: %d\n", result);
         goto exit;
     }
-    int n = SSL_read(si.ssl, buff, 1);
+    int n = SSL_read(si.ssl, buff, H2_MAX_CHUNK);
     if(n < 1){
         printf("ssl read error: %d\n", n);
         slot_del(gbucket, &si, _del);
         goto exit;
     }
+    printf("read: %d\n",n);
+    for(int i = 0; i < n; i++){
+        printf("%c", buff[i]);
+    }
+    printf("\n");
     result = server_h2_recv(&si, buff, (size_t)n);
     if(result < 0){
         printf("session recv error: %d\n", result);
@@ -383,10 +388,6 @@ int server_run(unsigned short port, char *ca_cert, char *server_cert, char *serv
         printf("socket bind failed\n");
         return -1;
     } 
-    if(make_socket_non_blocking(fd) < 0){
-        printf("non-blocking failed\n");
-        return -1;
-    }
     if((listen(fd, H2_MAXCONN)) != 0) { 
         printf("listen failed\n");
         return -1;
@@ -434,6 +435,11 @@ int server_run(unsigned short port, char *ca_cert, char *server_cert, char *serv
     SSL_CTX_set_options(ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
     SSL_CTX_set_cipher_list(ctx, H2_PREFERRED_CIPHERS);
     SSL_CTX_set_alpn_select_cb(ctx, server_h2_alpn_select_proto_cb, NULL);
+
+    if(make_socket_non_blocking(fd) < 0){
+        printf("non-blocking failed\n");
+        return -1;
+    }
 
     epfd = epoll_create1(0);
     if(epfd < 0){

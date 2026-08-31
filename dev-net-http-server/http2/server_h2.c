@@ -121,6 +121,10 @@ static nghttp2_ssize send_callback(nghttp2_session *session,
         return (nghttp2_ssize)res;
     }
     printf("sending...\n");
+    for(int i = 0; i < length; i++){
+        printf("%c", data[i]);
+    }
+    printf("\n");
     res = SSL_write(session_data->ssl, data, length);
     if(res < 1){
         printf("fatal: send callback: %d\n", res);

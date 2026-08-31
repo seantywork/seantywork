@@ -1,6 +1,6 @@
 GCC_FLAGS := -Wall -g
 
-GCC_OBJ_FLAGS := -Wall -c
+GCC_OBJ_FLAGS := -Wall -g -c
 
 H2LIB := nghttp2-1.70.0
 

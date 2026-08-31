@@ -189,6 +189,8 @@ void client_h2_send_connection_header(sess_info2 *session_data) {
     /* client 24 bytes magic string will be sent by nghttp2 library */
     rv = nghttp2_submit_settings(session_data->session, NGHTTP2_FLAG_NONE, iv,
                                 ARRLEN(iv));
+//    rv = nghttp2_submit_settings(session_data->session, NGHTTP2_FLAG_NONE, NULL,
+//                                0);
     if (rv != 0) {
         printf("Could not submit SETTINGS: %s\n", nghttp2_strerror(rv));
     }
