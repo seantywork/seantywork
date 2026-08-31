@@ -101,7 +101,7 @@ typedef struct sess_info2{
 } sess_info2;
 
 
-int server_run(unsigned short port, char *ca_cert, char *server_cert, char *server_key);
+int server_run(char *portstr, char *ca_cert, char *server_cert, char *server_key);
 
 int server_h2_recv(sess_info *session_data, unsigned char *data, size_t datalen);
 

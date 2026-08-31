@@ -363,14 +363,17 @@ exit:
     return;
 }
 
-int server_run(unsigned short port, char *ca_cert, char *server_cert, char *server_key){
+int server_run(char *portstr, char *ca_cert, char *server_cert, char *server_key){
     struct sockaddr_in serveaddr;
     struct epoll_event eevent;
     struct epoll_event *eevents = NULL;
     int epfd = 0;
     int n, i;
+    unsigned short port = 0;
     SSL_CTX *ctx = NULL;
     const SSL_METHOD *method;
+
+    sscanf(portstr, "%hu", &port);
 
     gbucket = slot_init();
 
