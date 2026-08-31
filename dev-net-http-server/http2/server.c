@@ -324,30 +324,41 @@ err:
 static void hdl_data(int fd){
     sess_info si;
     int result = -1;
+    int err = 0;
+    int n =0;
     unsigned char buff[H2_MAX_CHUNK];
     si.fd = fd;
     if((result = slot_op(gbucket, &si, _get)) != 0){
         printf("data slot op failed: %d\n", result);
         goto exit;
     }
-    int n = SSL_read(si.ssl, buff, H2_MAX_CHUNK);
-    if(n < 1){
-        printf("ssl read error: %d\n", n);
-        slot_del(gbucket, &si, _del);
-        goto exit;
-    }
-    printf("read: %d\n",n);
-    for(int i = 0; i < n; i++){
-        printf("%c", buff[i]);
-    }
-    printf("\n");
-    result = server_h2_recv(&si, buff, (size_t)n);
-    if(result < 0){
-        printf("session recv error: %d\n", result);
-        slot_del(gbucket, &si, _del);
-        goto exit;
-    }
+    for(;;){
+        n = SSL_read(si.ssl, buff, H2_MAX_CHUNK);
+        if(n < 1){
+            if(err == SSL_ERROR_WANT_READ){
+                goto exit;
+            }
+            if(err == SSL_ERROR_WANT_WRITE){
+                goto exit;
+            }
+            printf("fatal: read: %d\n", err);
+            slot_del(gbucket, &si, _del);
+            goto exit;
+        }
+        
+        printf("read: %d\n",n);
+        for(int i = 0; i < n; i++){
+            printf("%c", buff[i]);
+        }
+        printf("\n");
+        result = server_h2_recv(&si, buff, (size_t)n);
+        if(result < 0){
+            printf("session recv error: %d\n", result);
+            slot_del(gbucket, &si, _del);
+            goto exit;
+        }
 
+    }
 exit:
     return;
 }

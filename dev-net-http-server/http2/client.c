@@ -50,34 +50,37 @@ static int hdl_request(sess_info2* si){
 
 static int hdl_resp(sess_info2* si){
     int result = -1;
+    int n = 0;
     unsigned char buff[H2_MAX_CHUNK];
-    int n = SSL_read(si->ssl, buff, H2_MAX_CHUNK);
-    if(n < 1){
-        int err = SSL_get_error(si->ssl, n);
-        if (err == SSL_ERROR_WANT_WRITE){
-            printf("ssl want write\n");
-            n = 0;
-        } else if(err == SSL_ERROR_WANT_READ) {
-            printf("ssl want read\n");
-            n = 0;
-        } else {
-            printf("ssl read err: %d\n", n);
+    for(;;){
+        n = SSL_read(si->ssl, buff, H2_MAX_CHUNK);
+        if(n < 1){
+            int err = SSL_get_error(si->ssl, n);
+            if (err == SSL_ERROR_WANT_WRITE){
+                printf("ssl want write\n");
+                n = 0;
+            } else if(err == SSL_ERROR_WANT_READ) {
+                printf("ssl want read\n");
+                n = 0;
+            } else {
+                printf("ssl read err: %d\n", n);
+            }
+            goto exit;
         }
-        goto exit;
-    }
-    for(int i = 0; i < n; i++){
-        printf("%c", buff[i]);
-    }
-    printf("\n");
-    result = nghttp2_session_mem_recv2(si->session, buff, (size_t)n);
-    if (result < 0) {
-        printf("Fatal error: hdl response: %s\n", nghttp2_strerror((int)result));
-        return result;
-    }
+        for(int i = 0; i < n; i++){
+            printf("%c", buff[i]);
+        }
+        printf("\n");
+        result = nghttp2_session_mem_recv2(si->session, buff, (size_t)n);
+        if (result < 0) {
+            printf("Fatal error: hdl response: %s\n", nghttp2_strerror((int)result));
+            return result;
+        }
 
-    if (client_h2_session_send(si) != 0) {
-        printf("session send failed\n");
-        return -1;
+        if (client_h2_session_send(si) != 0) {
+            printf("session send failed\n");
+            return -1;
+        }
     }
 
 
