@@ -14,8 +14,8 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
 
 
 ```text
-    - x*
-        directories beginning with `x` are posts, may or may not
+    - YEAR-*
+        directories beginning with `YEAR` are posts, may or may not
         be related to linux 
     - data-*:
         directories beginning with `data` are ones NOT PRIMARILY related to 
@@ -28,19 +28,18 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
     - k*:
         directories beginning with `k` are ones PRIMARILY related to
         linux kernel
-    - var-*:
+    - v*:
         directories beginning with `var` are ones NOT PRIMARILY related to
-        any of above 
-    - e*:
+        any of above, which include 
         programming languages other than C, such as Rust, Go, C++..  
-        or OS other than Linux, such as Windows...
+        and OS other than Linux, such as Windows...
     - .*:
         directories beginning with .(dot) are one that are not fully ready to present
 ```
 
 <details>
     <ul> 
-        <li><a href="x2026-good-luck/">good-luck</a></li>
+        <li><a href="2026-good-luck/">2026-good-luck</a></li>
         <li><a href="data-array/">data-array</a></li>
         <li><a href="data-byte-align/">data-byte-align</a></li>
         <li><a href="data-cgroup/">data-cgroup</a></li>
@@ -128,9 +127,6 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
         <li><a href="dev-sock-unix/">.dev-sock-unix</a></li>
         <li><a href="dev-sock-vpn-socks5/">.dev-sock-vpn-socks5</a></li>
         <li><a href="dev-sonar/">.dev-sonar</a></li>
-        <li><a href="ecc/">.ecc</a></li>
-        <li><a href="ego/">.ego</a></li>
-        <li><a href="ers/">.ers</a></li>
         <li><a href="kbit-rmw/">.kbit-rmw</a></li>
         <li><a href="kbuild/">.kbuild</a></li>
         <li><a href="kbuild-rs/">.kbuild-rs</a></li>
@@ -180,18 +176,21 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
         <li><a href="ktimer/">.ktimer</a></li>
         <li><a href="kxdp/">.kxdp</a></li>
         <li><a href="kxfrm/">.kxfrm</a></li>
-        <li><a href="var-camera-rtmp/">.var-camera-rtmp</a></li>
-        <li><a href="var-cat/">.var-cat</a></li>
-        <li><a href="var-cmake-build-pipe/">.var-cmake-build-pipe</a></li>
-        <li><a href="var-git/">.var-git</a></li>
-        <li><a href="var-grep/">.var-grep</a></li>
-        <li><a href="var-mitm-tls/">.var-mitm-tls</a></li>
-        <li><a href="var-ncat/">.var-ncat</a></li>
-        <li><a href="var-spoof-arp/">.var-spoof-arp</a></li>
-        <li><a href="var-sql/">.var-sql</a></li>
-        <li><a href="var-stack-overflow/">.var-stack-overflow</a></li>
-        <li><a href="var-templeos/">.var-templeos</a></li>
-        <li><a href="var-ten-k/">.var-tem</a></li>
-        <li><a href="var-wc/">.var-wc</a></li>
+        <li><a href="vcamera-rtmp/">.vcamera-rtmp</a></li>
+        <li><a href="vcat/">.vcat</a></li>
+        <li><a href="vcc/">.vcc</a></li>
+        <li><a href="vcmake-build-pipe/">.vcmake-build-pipe</a></li>
+        <li><a href="vgit/">.vgit</a></li>
+        <li><a href="vgo/">.vgo</a></li>
+        <li><a href="vgrep/">.vgrep</a></li>
+        <li><a href="vmitm-tls/">.vmitm-tls</a></li>
+        <li><a href="vncat/">.vncat</a></li>
+        <li><a href="vrs/">.vrs</a></li>
+        <li><a href="vspoof-arp/">.vspoof-arp</a></li>
+        <li><a href="vsql/">.vsql</a></li>
+        <li><a href="vstack-overflow/">.vstack-overflow</a></li>
+        <li><a href="vtempleos/">.vtempleos</a></li>
+        <li><a href="vten-k/">.vtem</a></li>
+        <li><a href="vwc/">.vwc</a></li>
     </ul>
 </details>
