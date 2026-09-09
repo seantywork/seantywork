@@ -110,8 +110,7 @@ Plus, I'd like to [read](https://www.goodreads.com/user/show/203626420-taehoonyo
         <li><a href="dsock-epoll-tcp/">.dsock-epoll-tcp</a></li>
         <li><a href="dsock-epoll-tcp-async-pool/">.dsock-epoll-tcp-async-pool</a></li>
         <li><a href="dsock-epoll-tls/">.dsock-epoll-tls</a></li>
-        <li><a href="dsock-epoll-tls-ext/">.dsock-epoll-tls-ext</a></li>
-        <li><a href="dsock-io-uring-ext/">.dsock-io-uring-ext</a></li>
+        <li><a href="dsock-io-uring/">.dsock-io-uring</a></li>
         <li><a href="dsock-netlink/">.dsock-netlink</a></li>
         <li><a href="dsock-poll-tcp/">.dsock-poll-tcp</a></li>
         <li><a href="dsock-quic/">.dsock-quic</a></li>

@@ -1,140 +1,39 @@
-INFO := "dev, release"
+GCC_FLAGS := -Wall -g
 
-CC := gcc
+GCC_OBJ_FLAGS := -Wall -g -c
 
+H2LIB := nghttp2-1.70.0
 
-ifeq ($(CC), gcc)
+INCLUDES := -I./include -I$(H2LIB)/lib/includes -I$(H2LIB)/third-party/urlparse/
 
-	ifeq ($(ANA),y)
+LIBS := -lpthread -lssl -lcrypto -lnghttp2 -lurlparse
 
-		FLAG := -fanalyzer -Wall -Wextra
+LINKS := -L$(H2LIB)/lib/.libs -Wl,-rpath=$(H2LIB)/lib/.libs  -L$(H2LIB)/third-party/.libs -Wl,-rpath=$(H2LIB)/third-party/.libs
 
-	else 
-		FLAG := -Wall -Wextra
-	endif
-
-endif
+OBJS := server.o server_h2.o client.o client_h2.o
 
 
-ifeq ($(CC), gcc)
-	LINT := cppcheck --enable=all
-else 
-	LINT := clang-tidy -checks="*"
-endif
+build: $(OBJS) 
 
-CC_DEV_FLAGS := -Wall -g 
+	gcc $(GCC_FLAGS) $(INCLUDES) $(LINKS) -o h2.out main.c $(OBJS) $(LIBS) 
 
-CC_REL_FLAGS := -Wall
+server.o:
 
-CC_OBJ_FLAGS := $(FLAG) -c -g
+	gcc $(GCC_OBJ_FLAGS) $(INCLUDES) -o server.o server.c 
 
-CC_DEP_OBJ_FLAGS := -c -g
+server_h2.o:
 
+	gcc $(GCC_OBJ_FLAGS) $(INCLUDES) -o server_h2.o server_h2.c 
 
-DEP_PACKAGES := libssl-dev
+client.o:
 
+	gcc $(GCC_OBJ_FLAGS) $(INCLUDES) -o client.o client.c 
 
-INCLUDES := -I./include 
+client_h2.o:
 
-LIBS := -lpthread -lssl -lcrypto 
-
-
-OBJS := ctl.o
-OBJS += utils.o
-OBJS += sock.o
-
-CLI_OBJS := cli.o
-CLI_OBJS += utils.o
-
-
-LINT_LIST := lint_ctl
-LINT_LIST := lint_utils
-LINT_LIST := lint_sock 
-LINT_LIST := lint_cli
-
-
-all: 
-
-	@echo $(INFO)
-
-
-deps:
-
-	apt-get update
-
-	apt-get -y install $(DEP_PACKAGES)
-
-
-dev: $(OBJS) $(CLI_OBJS) $(DEP_OBJS)
-
-	$(CC) $(CC_DEV_FLAGS) $(INCLUDES) -o engine.out cmd/engine/main.c $(OBJS) $(DEP_OBJS) $(LIBS) 
-
-	$(CC) $(CC_DEV_FLAGS) $(INCLUDES) -o cli.out cmd/cli/main.c $(CLI_OBJS) $(LIBS) 
-
-
-
-release: $(OBJS) $(DEP_OBJS)
-
-	$(CC) $(CC_REL_FLAGS) $(INCLUDES) -o engine.out cmd/engine/main.c $(OBJS) $(DEP_OBJS) $(LIBS) 
-
-	$(CC) $(CC_REL_FLAGS) $(INCLUDES) -o cli.out cmd/cli/main.c $(CLI_OBJS) $(LIBS) 
-
-
-lint: $(LINT_LIST) 
-
-ctl.o:
-
-	$(CC) $(CC_OBJ_FLAGS) $(INCLUDES) -o ctl.o src/ctl.c 
-
-
-utils.o:
-
-	$(CC) $(CC_OBJ_FLAGS) $(INCLUDES) -o utils.o src/utils.c 
-
-sock.o:
-
-	$(CC) $(CC_OBJ_FLAGS) $(INCLUDES) -o sock.o src/sock/sock.c 
-
-
-cli.o:
-
-	$(CC) $(CC_OBJ_FLAGS) $(INCLUDES) -o cli.o src/cli/cli.c 
-
-
-
-lint_ctl:
-
-ifeq ($(CC),gcc)
-	$(LINT) $(INCLUDES) src/ctl.c 
-else 
-	$(LINT) src/ctl.c  -- $(INCLUDES)
-endif
-
-
-lint_utils:
-ifeq ($(CC),gcc)
-	$(LINT) $(INCLUDES) src/utils.c 
-else 
-	$(LINT) src/utils.c  -- $(INCLUDES)
-endif
-
-lint_sock:
-ifeq ($(CC),gcc)
-	$(LINT) $(INCLUDES) src/sock/sock.c 
-else 
-	$(LINT) src/sock/sock.c  -- $(INCLUDES)
-endif
-
-
-lint_cli:
-ifeq ($(CC),gcc)
-	$(LINT) $(INCLUDES) src/cli/cli.c 
-else 
-	$(LINT) src/cli/cli.c  -- $(INCLUDES)
-endif
+	gcc $(GCC_OBJ_FLAGS) $(INCLUDES) -o client_h2.o client_h2.c 
 
 
 clean:
 
-	rm -rf *.o *.out *.txt
-
+	rm -rf *.o *.out

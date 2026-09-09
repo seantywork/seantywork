@@ -1,54 +1,34 @@
-# socialize
-
-I socialize on terminal
-
-## develop
+#
 
 ```shell
+sudo apt-get install g++ clang make binutils autoconf automake \
+  autotools-dev libtool pkg-config \
+  zlib1g-dev libssl-dev libxml2-dev libev-dev \
+  libevent-dev libjansson-dev \
+  libc-ares-dev libjemalloc-dev libsystemd-dev \
+  ruby-dev bison libelf-dev
 
-# build
 
-make deps
-
-make dev
-
+tar xf nghttp2-X.Y.Z.tar.bz2
+cd nghttp2-X.Y.Z
+git submodule init 
+autoreconf -i
+./configure
+make
 ```
-
 ```shell
-
-# generate certs
-
-./hack/tls.sh
-
-
-```
+curl --http2 -v \
+  --cacert tls/ca.crt \
+  --cert tls/client.crt \
+  --key tls/client.key \
+  https://server.test:8888/index.html
 
 
-```shell
-# run engine
-
-./engine.out
-```
-
-```shell
-# run client
-
-./cli.out "addr:port" number | cert location
-
-# ex) ./cli.out "127.0.0.1:3001" tls/sub1.crt.pem
-
-```
-
-
-```shell
-# it is also possible to login as admin specified in config.json
-# at endpoint ${addr}:3000
-
-# using command below
-
-# gencert
-#   : generates client cert
-#   - data: client id
+curl --http2-prior-knowledge -v \
+  --cacert tls/ca.crt \
+  --cert tls/client.crt \
+  --key tls/client.key \
+  https://server.test:8888/index.html
 
 
 ```
